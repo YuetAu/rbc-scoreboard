@@ -238,7 +238,6 @@ export default function Dashboard() {
     const [gameIDModal, setGameIDModal] = useState(true);
 
     const submitGameID = async () => {
-        await syncTime();
         if (gameIDInput.current) {
             console.log("Game ID: "+gameIDInput.current.value);
             setDeviceID(generateSlug(2));
