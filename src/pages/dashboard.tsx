@@ -302,6 +302,12 @@ export default function Dashboard() {
         lastGameProps.current = JSON.stringify(gameProps);
 
         if (greatVictory.current) return;
+
+        if (gameStage.current == "PREP") {
+            resetProps();
+            enqueueSnackbar("No editing in PREP stage.", {variant: "error"})
+            return;
+        }
         
         console.log("Updating Props");
         
