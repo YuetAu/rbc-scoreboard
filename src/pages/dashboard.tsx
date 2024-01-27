@@ -12,6 +12,7 @@ import { ScoreDisplay } from "@/props/dashboard/ScoreDisplay";
 import Teams from "../props/dashboard/teams.json";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCircleDot } from '@fortawesome/free-solid-svg-icons'
+import HistoryList from "@/props/dashboard/HistoryList";
 
 export default function Dashboard() {
 
@@ -24,6 +25,7 @@ export default function Dashboard() {
     const gameStage = useRef("PREP");
     const clockData = useRef({ stage: "PREP", timestamp: 0, elapsed: 0, paused: true });
     const [clockText, setClockText] = useState({ minutes: "00", seconds: "00", milliseconds: "000" });
+    const [elapsedText, setElapsedText] = useState({ minutes: "00", seconds: "00", milliseconds: "000" });
     const grandClock = useRef(false);
     const gameFetchLock = useRef(false);
     const clockElapse = useRef(0);
@@ -41,7 +43,7 @@ export default function Dashboard() {
                         device: { ...gameData.device, [deviceID]: "CONTROLLER" },
                     });
                     console.log("Game Fetched");
-                    enqueueSnackbar(`Game Loaded`, {variant: "success"})
+                    enqueueSnackbar(`Game Loaded`, {variant: "success", preventDuplicate: true})
                     gameStage.current = gameData.clock.stage;
                     clockElapse.current = gameData.clock.elapsed;
                     clockToggle.current = !gameData.clock.paused;
@@ -62,6 +64,8 @@ export default function Dashboard() {
                         const newPropsData = snapshot.val();
                         if (newPropsData) {
                             setGameProps(newPropsData);
+                        } else {
+                            setGameProps({});
                         }
                     });
 
@@ -103,15 +107,24 @@ export default function Dashboard() {
     }, [gameID])
 
     const updateClockText = () => {
+        const elapsedTime = clockData.current.paused ? clockData.current.elapsed : clockData.current.elapsed+(Date.now()-clockData.current.timestamp);
         const remainingTime = clockData.current.paused ? (GAME_STAGES_TIME[GAME_STAGES.indexOf(gameStage.current)]*1000)-clockData.current.elapsed : (GAME_STAGES_TIME[GAME_STAGES.indexOf(gameStage.current)]*1000)-clockData.current.elapsed-(Date.now()-clockData.current.timestamp);
         if (remainingTime >= 0) { 
-            const minutes = Math.floor(remainingTime/60000)+"";
-            const seconds = Math.floor(remainingTime/1000%60)+"";
-            const milliseconds = remainingTime%1000+"";
+            const remainingMinutes = Math.floor(remainingTime/60000)+"";
+            const remainingSeconds = Math.floor(remainingTime/1000%60)+"";
+            const remainingMilliseconds = remainingTime%1000+"";
             setClockText({
-                minutes: minutes.length < 2 ? "0"+minutes : minutes,
-                seconds: seconds.length < 2 ? "0"+seconds : seconds,
-                milliseconds: milliseconds.length < 3 ? milliseconds.length < 2 ? "00"+milliseconds : "0"+milliseconds : milliseconds
+                minutes: remainingMinutes.length < 2 ? "0"+remainingMinutes : remainingMinutes,
+                seconds: remainingSeconds.length < 2 ? "0"+remainingSeconds : remainingSeconds,
+                milliseconds: remainingMilliseconds.length < 3 ? remainingMilliseconds.length < 2 ? "00"+remainingMilliseconds : "0"+remainingMilliseconds : remainingMilliseconds
+            })
+            const elapsedMinutes = Math.floor(elapsedTime/60000)+"";
+            const elapsedSeconds = Math.floor(elapsedTime/1000%60)+"";
+            const elapsedMilliseconds = elapsedTime%1000+"";
+            setElapsedText({
+                minutes: elapsedMinutes.length < 2 ? "0"+elapsedMinutes : elapsedMinutes,
+                seconds: elapsedSeconds.length < 2 ? "0"+elapsedSeconds : elapsedSeconds,
+                milliseconds: elapsedMilliseconds.length < 3 ? elapsedMilliseconds.length < 2 ? "00"+elapsedMilliseconds : "0"+elapsedMilliseconds : elapsedMilliseconds
             })
             if (clockToggle.current) {
                 setTimeout(() => {
@@ -136,7 +149,7 @@ export default function Dashboard() {
                         paused: remainingTime > 0 ? false : true
                     })
                     if (newGameStage == "END") {
-                        enqueueSnackbar(`Game END`, {variant: "success"})
+                        enqueueSnackbar(`Game END`, {variant: "success", preventDuplicate: true})
                         //gameEndVictoryCalc();
                     }
                 }
@@ -165,7 +178,7 @@ export default function Dashboard() {
         clockToggle.current = true;
         clockData.current = { stage: gameStage.current, elapsed: clockElapse.current, paused: false, timestamp: Date.now() };
         updateClockText();
-        enqueueSnackbar("Clock Started", {variant: "success"})
+        enqueueSnackbar("Clock Started", {variant: "success", preventDuplicate: true})
         set(child(dbRef, `games/${gameID}/clock`), {
             stage: gameStage.current,
             timestamp: Date.now(),
@@ -180,7 +193,7 @@ export default function Dashboard() {
         clockElapse.current += Date.now()-clockData.current.timestamp;
         clockData.current = { stage: gameStage.current, elapsed: clockElapse.current, paused: true, timestamp: Date.now() };
         updateClockText();
-        enqueueSnackbar("Clock Stopped", {variant: "success"})
+        enqueueSnackbar("Clock Stopped", {variant: "success", preventDuplicate: true})
         set(child(dbRef, `games/${gameID}/clock`), {
             stage: gameStage.current,
             timestamp: Date.now(),
@@ -205,7 +218,7 @@ export default function Dashboard() {
         clockElapse.current = 0;
         clockData.current = { stage: gameStage.current, paused: true, elapsed: 0, timestamp: Date.now() };
         updateClockText();
-        enqueueSnackbar(`Reset stage ${gameStage.current}`, {variant: "success"});
+        enqueueSnackbar(`Reset stage ${gameStage.current}`, {variant: "success", preventDuplicate: true});
         set(child(dbRef, `games/${gameID}/clock`), {
             stage: gameStage.current,
             timestamp: Date.now(),
@@ -225,7 +238,7 @@ export default function Dashboard() {
         clockElapse.current = 0;
         clockData.current = { stage: nextStage, timestamp: Date.now(), elapsed: 0, paused: remainingTime > 0 ? false : true };
         updateClockText();
-        enqueueSnackbar(`Skip stage to ${gameStage.current}`, {variant: "success"})
+        enqueueSnackbar(`Skip stage to ${gameStage.current}`, {variant: "success", preventDuplicate: true})
         set(child(dbRef, `games/${gameID}/clock`), {
             stage: nextStage,
             timestamp: Date.now(),
@@ -235,7 +248,7 @@ export default function Dashboard() {
     }
 
     const gameIDInput = useRef<HTMLInputElement>(null);
-    const [gameIDModal, setGameIDModal] = useState(true);
+    const [gameIDModal, setGameIDModal] = useState(false);
 
     const submitGameID = async () => {
         if (gameIDInput.current) {
@@ -306,13 +319,38 @@ export default function Dashboard() {
     const greatVictory = useRef<boolean>(false);
     const [gameProps, setGameProps] = useState<any>({});
     const silos = useRef<String[][]>([[],[],[],[],[]]);
+    const history = useRef<any[]>([]);
 
 
     const resetProps = () => {
         setGameProps({});
         silos.current = [[],[],[],[],[]];
+        history.current = [];
         greatVictory.current = false;
         set(child(dbRef, `games/${gameID}/props`), {});
+    }
+
+    
+    const forceReset = () => {
+        stopClock();
+        console.log("Reset Clock")
+        clockToggle.current = false;
+        clockElapse.current = 0;
+        gameStage.current = GAME_STAGES[0]
+        clockData.current = { stage: gameStage.current, paused: true, elapsed: 0, timestamp: Date.now() };
+        updateClockText();
+        setGameProps({});
+        silos.current = [[],[],[],[],[]];
+        history.current = [];
+        greatVictory.current = false;
+        set(child(dbRef, `games/${gameID}`), {
+            clock: {
+                stage: gameStage.current,
+                timestamp: Date.now(),
+                elapsed: 0,
+                paused: true
+            }
+        })
     }
 
     useEffect(() => {
@@ -325,7 +363,7 @@ export default function Dashboard() {
 
         if (gameStage.current == "PREP") {
             resetProps();
-            enqueueSnackbar("No editing in PREP stage.", {variant: "error"})
+            enqueueSnackbar("No editing in PREP stage.", {variant: "error", preventDuplicate: true})
             return;
         }
         
@@ -333,76 +371,82 @@ export default function Dashboard() {
         
         const scores = scoreCalculation();
 
-        set(child(dbRef, `games/${gameID}/props`), {...gameProps, scores});
+        set(child(dbRef, `games/${gameID}/props`), {...gameProps, scores, silos: silos.current, history: history.current});
     }, [gameProps])
 
     const redFirstSiloAction = (value: number) => {
         // Validation
         if ((gameProps.blueFirstSilo || 0) + value > 3) {
-            enqueueSnackbar("First Silo exceeded!", {variant: "error"});
+            enqueueSnackbar("First Silo exceeded!", {variant: "error", preventDuplicate: true});
             return;
         }
 
         silos.current[0].push("RED");
-        setGameProps({...gameProps, redFirstSilo: value, silos: silos.current});
+        history.current.push({action: `RED Silo 1 ${silos.current[0].join("/")}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "RED"});
+        setGameProps({...gameProps, redFirstSilo: value});
         
     }
 
     const redSecondSiloAction = (value: number) => {
         // Validation
         if ((gameProps.blueSecondSilo || 0) + value > 3) {
-            enqueueSnackbar("Second Silo exceeded!", {variant: "error"})
+            enqueueSnackbar("Second Silo exceeded!", {variant: "error", preventDuplicate: true})
             return;
         }
 
         silos.current[1].push("RED");
-        setGameProps({...gameProps, redSecondSilo: value, silos: silos.current });
+        history.current.push({action: `RED Silo 2 ${silos.current[1].join("/")}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "RED"});
+        setGameProps({...gameProps, redSecondSilo: value });
         
     }
 
     const redThirdSiloAction = (value: number) => {
         // Validation
         if ((gameProps.blueThirdSilo || 0) + value > 3) {
-            enqueueSnackbar("Third Silo exceeded!", {variant: "error"})
+            enqueueSnackbar("Third Silo exceeded!", {variant: "error", preventDuplicate: true})
             return;
         }
 
         silos.current[2].push("RED");
-        setGameProps({...gameProps, redThirdSilo: value, silos: silos.current });
+        history.current.push({action: `RED Silo 3 ${silos.current[2].join("/")}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "RED"});
+        setGameProps({...gameProps, redThirdSilo: value});
         
     }
 
     const redFourthSiloAction = (value: number) => {
         // Validation
         if ((gameProps.blueFourthSilo || 0) + value > 3) {
-            enqueueSnackbar("Fourth Silo exceeded!", {variant: "error"})
+            enqueueSnackbar("Fourth Silo exceeded!", {variant: "error", preventDuplicate: true})
             return;
         }
 
         silos.current[3].push("RED");
-        setGameProps({...gameProps, redFourthSilo: value, silos: silos.current });
+        history.current.push({action: `RED Silo 4 ${silos.current[3].join("/")}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "RED"});
+        setGameProps({...gameProps, redFourthSilo: value });
         
     }
 
     const redFifthSiloAction = (value: number) => {
         // Validation
         if ((gameProps.blueFifthSilo || 0) + value > 3) {
-            enqueueSnackbar("Fifth Silo exceeded!", {variant: "error"})
+            enqueueSnackbar("Fifth Silo exceeded!", {variant: "error", preventDuplicate: true})
             return;
         }
 
         silos.current[4].push("RED");
-        setGameProps({...gameProps, redFifthSilo: value, silos: silos.current });
+        history.current.push({action: `RED Silo 5 ${silos.current[4].join("/")}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "RED"});
+        setGameProps({...gameProps, redFifthSilo: value });
         
     }
 
     const redStorageZoneAction = (value: number) => {
         // Validation
         if (value > (gameProps.redSeedling || 0)) {
-            enqueueSnackbar("Storage Zone exceeded placed Seedling!", {variant: "error"})
+            enqueueSnackbar("Storage Zone exceeded placed Seedling!", {variant: "error", preventDuplicate: true})
             return;
         }
 
+        history.current.push({action: `RED Storage Zone ${value}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "RED"})
         setGameProps({...gameProps, redStorageZone: value });
         
     }
@@ -414,77 +458,84 @@ export default function Dashboard() {
             return;
         }
 
-        setGameProps({...gameProps, redSeedling: value });
+        history.current.push({action: `RED Seedling ${value}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "RED"})
+        setGameProps({...gameProps, redSeedling: value});
         
     }
 
     const blueFirstSiloAction = (value: number) => {
         // Validation
         if ((gameProps.redFirstSilo || 0) + value > 3) {
-            enqueueSnackbar("First Silo exceeded!", {variant: "error", anchorOrigin: {vertical: "bottom", horizontal: "right"}});;
+            enqueueSnackbar("First Silo exceeded!", {variant: "error", anchorOrigin: {vertical: "bottom", horizontal: "right"}, preventDuplicate: true});;
             return;
         }
 
         silos.current[0].push("BLUE");
-        setGameProps({...gameProps, blueFirstSilo: value, silos: silos.current });
+        history.current.push({action: `BLUE Silo 1 ${silos.current[0].join("/")}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "BLUE"});
+        setGameProps({...gameProps, blueFirstSilo: value });
         
     }
 
     const blueSecondSiloAction = (value: number) => {
         // Validation
         if ((gameProps.redSecondSilo || 0) + value > 3) {
-            enqueueSnackbar("Second Silo exceeded!", {variant: "error", anchorOrigin: {vertical: "bottom", horizontal: "right"}});
+            enqueueSnackbar("Second Silo exceeded!", {variant: "error", anchorOrigin: {vertical: "bottom", horizontal: "right"}, preventDuplicate: true});
             return;
         }
 
         silos.current[1].push("BLUE");
-        setGameProps({...gameProps, blueSecondSilo: value, silos: silos.current });
+        history.current.push({action: `BLUE Silo 2 ${silos.current[1].join("/")}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "BLUE"});
+        setGameProps({...gameProps, blueSecondSilo: value });
         
     }
 
     const blueThirdSiloAction = (value: number) => {
         // Validation
         if ((gameProps.redThirdSilo || 0) + value > 3) {
-            enqueueSnackbar("Third Silo exceeded!", {variant: "error", anchorOrigin: {vertical: "bottom", horizontal: "right"}});
+            enqueueSnackbar("Third Silo exceeded!", {variant: "error", anchorOrigin: {vertical: "bottom", horizontal: "right"}, preventDuplicate: true});
             return;
         }
 
         silos.current[2].push("BLUE");
-        setGameProps({...gameProps, blueThirdSilo: value, silos: silos.current });
+        history.current.push({action: `BLUE Silo 3 ${silos.current[2].join("/")}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "BLUE"});
+        setGameProps({...gameProps, blueThirdSilo: value });
         
     }
 
     const blueFourthSiloAction = (value: number) => {
         // Validation
         if ((gameProps.redFourthSilo || 0) + value > 3) {
-            enqueueSnackbar("Fourth Silo exceeded!", {variant: "error", anchorOrigin: {vertical: "bottom", horizontal: "right"}});
+            enqueueSnackbar("Fourth Silo exceeded!", {variant: "error", anchorOrigin: {vertical: "bottom", horizontal: "right"}, preventDuplicate: true});
             return;
         }
 
         silos.current[3].push("BLUE");
-        setGameProps({...gameProps, blueFourthSilo: value, silos: silos.current });
+        history.current.push({action: `BLUE Silo 4 ${silos.current[3].join("/")}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "BLUE"});
+        setGameProps({...gameProps, blueFourthSilo: value });
         
     }
 
     const blueFifthSiloAction = (value: number) => {
         // Validation
         if ((gameProps.redFifthSilo || 0) + value > 3) {
-            enqueueSnackbar("First Silo exceeded!", {variant: "error", anchorOrigin: {vertical: "bottom", horizontal: "right"}});
+            enqueueSnackbar("First Silo exceeded!", {variant: "error", anchorOrigin: {vertical: "bottom", horizontal: "right"}, preventDuplicate: true});
             return;
         }
 
         silos.current[4].push("BLUE");
-        setGameProps({...gameProps, blueFifthSilo: value, silos: silos.current });
+        history.current.push({action: `BLUE Silo 5 ${silos.current[4].join("/")}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "BLUE"});
+        setGameProps({...gameProps, blueFifthSilo: value});
         
     }
 
     const blueStorageZoneAction = (value: number) => {
         // Validation
         if (value > (gameProps.blueSeedling || 0)) {
-            enqueueSnackbar("Storage Zone exceeded placed Seedling!", {variant: "error", anchorOrigin: {vertical: "bottom", horizontal: "right"}})
+            enqueueSnackbar("Storage Zone exceeded placed Seedling!", {variant: "error", anchorOrigin: {vertical: "bottom", horizontal: "right"}, preventDuplicate: true})
             return;
         }
 
+        history.current.push({action: `BLUE Storage Zone ${value}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "BLUE"})
         setGameProps({...gameProps, blueStorageZone: value });
         
     }
@@ -492,10 +543,11 @@ export default function Dashboard() {
     const blueSeedlingAction = (value: number) => {
         // Validation
         if (value > 12) {
-            enqueueSnackbar("Seedling exceeded!", {variant: "error", anchorOrigin: {vertical: "bottom", horizontal: "right"}})
+            enqueueSnackbar("Seedling exceeded!", {variant: "error", anchorOrigin: {vertical: "bottom", horizontal: "right"}, preventDuplicate: true})
             return;
         }
 
+        history.current.push({action: `BLUE Seedling ${value}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "BLUE"})
         setGameProps({...gameProps, blueSeedling: value });
         
     }
@@ -541,9 +593,9 @@ export default function Dashboard() {
             const siloArray = silos.current[i];
             const lastElement = siloArray[siloArray.length - 1];
 
-            if (lastElement === "RED" && siloArray.filter((color: String) => color === "RED").length >= 2) {
+            if (lastElement === "RED" && siloArray.filter((color: String) => color === "RED").length >= 2 && siloArray.length == 3) {
                 redOccoupiedSilos++;
-            } else if (lastElement === "BLUE" && siloArray.filter((color: String) => color === "BLUE").length >= 2) {
+            } else if (lastElement === "BLUE" && siloArray.filter((color: String) => color === "BLUE").length >= 2 && siloArray.length == 3) {
                 blueOccoupiedSilos++;
             }
         }
@@ -554,17 +606,23 @@ export default function Dashboard() {
             let greatVictoryTimestamp = (GAME_STAGES_TIME[GAME_STAGES.indexOf(gameStage.current)]*1000)-clockData.current.elapsed-(Date.now()-clockData.current.timestamp);
             enqueueSnackbar(`RED GREAT VICTORY`, {variant: "success", autoHideDuration: 10000, preventDuplicate: true});
             stopClock();
+            history.current.push({action: `RED GREAT VICTORY`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "RED"});
             greatVictory.current = true;
             greatVictoryObject = {redGreatVictory: true, greatVictoryTimestamp}
         } else if (blueOccoupiedSilos >= 3) {
             let greatVictoryTimestamp = (GAME_STAGES_TIME[GAME_STAGES.indexOf(gameStage.current)]*1000)-clockData.current.elapsed-(Date.now()-clockData.current.timestamp);
             enqueueSnackbar(`BLUE GREAT VICTORY`, {variant: "success", anchorOrigin: { horizontal: "right", vertical: "bottom" }, autoHideDuration: 10000, preventDuplicate:true});
             stopClock();
+            history.current.push({action: `BLUE GREAT VICTORY`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "BLUE"});
             greatVictory.current = true;
             greatVictoryObject = {blueGreatVictory: true, greatVictoryTimestamp}
         }
 
         return {...gameProps.scores, redPoints: redPoints, bluePoints: bluePoints, ...greatVictoryObject}
+    }
+
+    const gameEndVictoryCalc = () => {
+
     }
 
     return (
@@ -589,9 +647,9 @@ export default function Dashboard() {
             }}>
                 GameID: {gameID}
                 <br />
-                <Button onClick={()=>{navigator.clipboard.writeText(gameID).then(()=>enqueueSnackbar("GameID Copied!", {variant: "success"}))}} colorScheme="blue" size={"sm"}>Copy GameID</Button>
+                <Button onClick={()=>{navigator.clipboard.writeText(gameID).then(()=>enqueueSnackbar("GameID Copied!", {variant: "success", preventDuplicate: true}))}} colorScheme="blue" size={"sm"}>Copy GameID</Button>
                 <br />
-                <Button onClick={()=>{resetProps();resetClock();closeSnackbar();enqueueSnackbar("Props Reset!", {variant: "success"})}} colorScheme="red" size={"sm"}>Force Reset</Button>
+                <Button onClick={()=>{forceReset();closeSnackbar();enqueueSnackbar("Props Reset!", {variant: "success", preventDuplicate: true})}} colorScheme="red" size={"sm"}>Force Reset</Button>
             </Box>
             <Box style={{
                 fontSize: '1rem',
@@ -626,20 +684,36 @@ export default function Dashboard() {
                 position: 'absolute',
             }}>
                 <Box style={{
-                    left: '4%',
-                    top: '10%',
+                    left: '7%',
+                    top: '-5%',
                     position: 'absolute',
                     zIndex: 10,
                 }}>
                     <ScoreDisplay color={"red"} team={currentTeam.redTeam} editable={true} score={gameProps.scores?.redPoints||0} teams={Teams} setTeam={redUpdateTeam} />
                 </Box>
                 <Box style={{
-                    right: '4%',
-                    top: '10%',
+                    right: '7%',
+                    top: '-5%',
                     position: 'absolute',
                     zIndex: 10,
                 }}>
                     <ScoreDisplay color={"blue"} team={currentTeam.blueTeam} editable={true} score={gameProps.scores?.bluePoints||0} teams={Teams} setTeam={blueUpdateTeam} />
+                </Box>
+                <Box style={{
+                    left: '4%',
+                    top: '41%',
+                    position: 'absolute',
+                    zIndex: 10,
+                }}>
+                    <HistoryList history={gameProps.history || []} team="RED" color={"red"} />
+                </Box>
+                <Box style={{
+                    right: '4%',
+                    top: '41%',
+                    position: 'absolute',
+                    zIndex: 10,
+                }}>
+                    <HistoryList history={gameProps.history || []} team="BLUE" color={"blue"} />
                 </Box>
                 <Box style={{
                     height: '95%',
@@ -652,7 +726,7 @@ export default function Dashboard() {
                         objectFit: 'contain',
                     }}/>
                 </Box>
-                <Box style={{
+                {/* <Box style={{
                     left: '47%',
                     top: '1%',
                     position: 'absolute',
@@ -731,7 +805,7 @@ export default function Dashboard() {
                     zIndex: 10,
                 }}>
                     <Counter counter={gameProps.blueFifthSilo||0} setCounter={blueFifthSiloAction} color={"blue"} small={true} disableLeftClick={true} />
-                </Box>
+                </Box> */}
                 <Box style={{
                     left: '34.7%',
                     top: '12.5%',
