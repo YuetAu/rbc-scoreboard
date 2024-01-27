@@ -10,6 +10,8 @@ import { Counter } from "@/props/dashboard/Counter";
 import { useSnackbar } from "notistack";
 import { ScoreDisplay } from "@/props/dashboard/ScoreDisplay";
 import Teams from "../props/dashboard/teams.json";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faCircleDot } from '@fortawesome/free-solid-svg-icons'
 
 export default function Dashboard() {
 
@@ -26,6 +28,8 @@ export default function Dashboard() {
     const gameFetchLock = useRef(false);
     const clockElapse = useRef(0);
     const clockToggle = useRef(false);
+
+    const [onlineStatus, setOnlineStatus] = useState(0);
 
     useEffect(() => {
         if (gameID && !gameFetchLock.current) {
@@ -68,6 +72,22 @@ export default function Dashboard() {
                         const newTeamData = snapshot.val();
                         if (newTeamData) {
                             setCurrentTeam(newTeamData);
+                        }
+                    });
+
+                    // Check user online
+                    onValue(child(dbRef, ".info/connected"), (snap) => {
+                        if (snap.val() === true) {
+                            setOnlineStatus(1);
+                        } else {
+                            setOnlineStatus(0);
+                        }
+                    });
+
+                    onValue(child(dbRef, ".info/serverTimeOffset"), (snap) => {
+                        const offset = snap.val();
+                        if (offset > 1000) {
+                            setOnlineStatus(2);
                         }
                     });
                 } else {
@@ -217,7 +237,8 @@ export default function Dashboard() {
     const gameIDInput = useRef<HTMLInputElement>(null);
     const [gameIDModal, setGameIDModal] = useState(true);
 
-    const submitGameID = () => {
+    const submitGameID = async () => {
+        await syncTime();
         if (gameIDInput.current) {
             console.log("Game ID: "+gameIDInput.current.value);
             setDeviceID(generateSlug(2));
@@ -312,8 +333,6 @@ export default function Dashboard() {
         console.log("Updating Props");
         
         const scores = scoreCalculation();
-
-        
 
         set(child(dbRef, `games/${gameID}/props`), {...gameProps, scores});
     }, [gameProps])
@@ -569,13 +588,19 @@ export default function Dashboard() {
                 margin: '1rem',
                 zIndex: 10
             }}>
-            GameID: {gameID}
-            <br />
-            <Button onClick={()=>{navigator.clipboard.writeText(gameID).then(()=>enqueueSnackbar("GameID Copied!", {variant: "success"}))}} colorScheme="blue" size={"sm"}>Copy GameID</Button>
-            <br />
-            <Button onClick={()=>{resetProps();closeSnackbar();enqueueSnackbar("Props Reset!", {variant: "success"})}} colorScheme="red" size={"sm"}>Reset Props</Button>
-            <br />
-            <Button onClick={()=>{resetClock();closeSnackbar();enqueueSnackbar("Clock Reset!", {variant: "success"})}} colorScheme="red" size={"sm"}>Reset Clock</Button>
+                GameID: {gameID}
+                <br />
+                <Button onClick={()=>{navigator.clipboard.writeText(gameID).then(()=>enqueueSnackbar("GameID Copied!", {variant: "success"}))}} colorScheme="blue" size={"sm"}>Copy GameID</Button>
+                <br />
+                <Button onClick={()=>{resetProps();resetClock();closeSnackbar();enqueueSnackbar("Props Reset!", {variant: "success"})}} colorScheme="red" size={"sm"}>Force Reset</Button>
+            </Box>
+            <Box style={{
+                fontSize: '1rem',
+                margin: '1rem',
+                zIndex: 10,
+                color: onlineStatus==1?'lightgreen':onlineStatus==0?'lightcoral':'orange',
+            }}>
+                <FontAwesomeIcon icon={faCircleDot} /> {onlineStatus==1 ? "Connected" : onlineStatus==0 ? "Disconnected": "Large Time Diff"}
             </Box>
             <Box style={{
                 height: '0%',
