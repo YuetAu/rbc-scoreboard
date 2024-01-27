@@ -53,23 +53,21 @@ export default function Dashboard() {
                             updateClockText();
                         }
                     });
-                    if (gameData.props) updateGameProps(gameData.props);
+                    if (gameData.props) setGameProps(gameData.props);
                     onValue(child(dbRef, `games/${gameID}/props`), (snapshot) => {
                         const newPropsData = snapshot.val();
                         if (newPropsData) {
-                            updateGameProps(newPropsData);
+                            setGameProps(newPropsData);
                         }
                     });
 
                     if (gameData.teams) {
-                        setRedTeam(gameData.teams.redTeam);
-                        setBlueTeam(gameData.teams.blueTeam);
+                        setCurrentTeam(gameData.teams);
                     };
                     onValue(child(dbRef, `games/${gameID}/team`), (snapshot) => {
                         const newTeamData = snapshot.val();
                         if (newTeamData) {
-                            setRedTeam(newTeamData.redTeam);
-                            setBlueTeam(newTeamData.blueTeam);
+                            setCurrentTeam(newTeamData);
                         }
                     });
                 } else {
@@ -83,32 +81,6 @@ export default function Dashboard() {
             });
         }
     }, [gameID])
-
-    const updateGameProps = (gameProps: any) => {
-        setRedAutoRobotTask(gameProps.redAutoRobotTask);
-        setBlueAutoRobotTask(gameProps.blueAutoRobotTask);
-        setRedUpperSidePlantingZone(gameProps.redUpperSidePlantingZone);
-        setRedLowerSidePlantingZone(gameProps.redLowerSidePlantingZone);
-        setBlueUpperSidePlantingZone(gameProps.blueUpperSidePlantingZone);
-        setBlueLowerSidePlantingZone(gameProps.blueLowerSidePlantingZone);
-        setRedColouredPlantingZone(gameProps.redColouredPlantingZone);
-        setBlueColouredPlantingZone(gameProps.blueColouredPlantingZone);
-        setRedCenterPlantingZone(gameProps.redCenterPlantingZone);
-        setBlueCenterPlantingZone(gameProps.blueCenterPlantingZone);
-        setRedCenterGoldenPlantingZone(gameProps.redCenterGoldenPlantingZone);
-        setBlueCenterGoldenPlantingZone(gameProps.blueCenterGoldenPlantingZone);
-        setRedUpperSideGoldenPlantingZone(gameProps.redUpperSideGoldenPlantingZone);
-        setBlueUpperSideGoldenPlantingZone(gameProps.blueUpperSideGoldenPlantingZone);
-        setRedLowerSideGoldenPlantingZone(gameProps.redLowerSideGoldenPlantingZone);
-        setBlueLowerSideGoldenPlantingZone(gameProps.blueLowerSideGoldenPlantingZone);
-        setRedColouredGoldenPlantingZone(gameProps.redColouredGoldenPlantingZone);
-        setBlueColouredGoldenPlantingZone(gameProps.blueColouredGoldenPlantingZone);
-        setRedAutoRobotRecogn(gameProps.redAutoRobotRecogn);
-        setBlueAutoRobotRecogn(gameProps.blueAutoRobotRecogn);
-        setRedAutoRobotMove(gameProps.redAutoRobotMove);    
-        setBlueAutoRobotMove(gameProps.blueAutoRobotMove);
-        setGameScore(gameProps.scores);
-    }
 
     const updateClockText = () => {
         const remainingTime = clockData.current.paused ? (GAME_STAGES_TIME[GAME_STAGES.indexOf(gameStage.current)]*1000)-clockData.current.elapsed : (GAME_STAGES_TIME[GAME_STAGES.indexOf(gameStage.current)]*1000)-clockData.current.elapsed-(Date.now()-clockData.current.timestamp);
@@ -145,11 +117,7 @@ export default function Dashboard() {
                     })
                     if (newGameStage == "END") {
                         enqueueSnackbar(`Game END`, {variant: "success"})
-                        gameEndVictoryCalc();
-                    }
-                    if (newGameStage == "GAME") {
-                        stopClock();
-                        resetStage();
+                        //gameEndVictoryCalc();
                     }
                 }
             }
@@ -294,386 +262,286 @@ export default function Dashboard() {
 
     // Game Teams
 
-    const [redTeam, setRedTeam] = useState({"cname": "征龍", "ename": "War Dragon"});
-    const [blueTeam, setBlueTeam] = useState({"cname": "火之龍", "ename": "Fiery Dragon"});
+    const [currentTeam, setCurrentTeam] = useState({"redTeam": {"cname": "征龍", "ename": "War Dragon"}, "blueTeam": {"cname": "火之龍", "ename": "Fiery Dragon"}});
 
     useEffect(() => {
         console.log("Updating Teams")
-        console.log(redTeam, blueTeam)
+        console.log(currentTeam)
 
         if (gameID == "") return;
 
-        set(child(dbRef, `games/${gameID}/team`), {
-            redTeam: redTeam,
-            blueTeam: blueTeam,
-        });
-    }, [redTeam, blueTeam])
+        set(child(dbRef, `games/${gameID}/team`), currentTeam);
+    }, [currentTeam])
+
+    const redUpdateTeam = (value: any) => {
+        setCurrentTeam({...currentTeam, redTeam: value});
+    }
+
+    const blueUpdateTeam = (value: any) => {
+        setCurrentTeam({...currentTeam, blueTeam: value});
+    }
 
     // Game Props
+    const lastGameProps = useRef<any>("");
+    const greatVictory = useRef<boolean>(false);
+    const [gameProps, setGameProps] = useState<any>({});
+    const silos = useRef<String[][]>([[],[],[],[],[]]);
 
-    const [redAutoRobotTask, setRedAutoRobotTask] = useState(0);
-    const [blueAutoRobotTask, setBlueAutoRobotTask] = useState(0);
-    const [redUpperSidePlantingZone, setRedUpperSidePlantingZone] = useState(0);
-    const [redLowerSidePlantingZone, setRedLowerSidePlantingZone] = useState(0);
-    const [blueUpperSidePlantingZone, setBlueUpperSidePlantingZone] = useState(0);
-    const [blueLowerSidePlantingZone, setBlueLowerSidePlantingZone] = useState(0);
-    const [redColouredPlantingZone, setRedColouredPlantingZone] = useState(0);
-    const [blueColouredPlantingZone, setBlueColouredPlantingZone] = useState(0);
-    const [redCenterPlantingZone, setRedCenterPlantingZone] = useState(0);
-    const [blueCenterPlantingZone, setBlueCenterPlantingZone] = useState(0);
-    const [redCenterGoldenPlantingZone, setRedCenterGoldenPlantingZone] = useState(0);
-    const [blueCenterGoldenPlantingZone, setBlueCenterGoldenPlantingZone] = useState(0);
-    const [redUpperSideGoldenPlantingZone, setRedUpperSideGoldenPlantingZone] = useState(0);
-    const [blueUpperSideGoldenPlantingZone, setBlueUpperSideGoldenPlantingZone] = useState(0);
-    const [redLowerSideGoldenPlantingZone, setRedLowerSideGoldenPlantingZone] = useState(0);
-    const [blueLowerSideGoldenPlantingZone, setBlueLowerSideGoldenPlantingZone] = useState(0);
-    const [redColouredGoldenPlantingZone, setRedColouredGoldenPlantingZone] = useState(0);
-    const [blueColouredGoldenPlantingZone, setBlueColouredGoldenPlantingZone] = useState(0);
-    const [redAutoRobotRecogn, setRedAutoRobotRecogn] = useState(0);
-    const [blueAutoRobotRecogn, setBlueAutoRobotRecogn] = useState(0);
-    const [redAutoRobotMove, setRedAutoRobotMove] = useState(0);
-    const [blueAutoRobotMove, setBlueAutoRobotMove] = useState(0);
-
-    const [gameScore, setGameScore] = useState({ red: 0, blue: 0, redOccoupyingZone: 0, blueOccoupyingZone: 0, redPlacedSeedlings: 0, bluePlacedSeedlings: 0, redGreatVictory: false, blueGreatVictory: false });
-    const gameProps = useRef<any>({});
 
     const resetProps = () => {
-        gameProps.current = {
-            redAutoRobotTask: 0,
-            blueAutoRobotTask: 0,
-            redUpperSidePlantingZone: 0,
-            redLowerSidePlantingZone: 0,
-            blueUpperSidePlantingZone: 0,
-            blueLowerSidePlantingZone: 0,
-            redColouredPlantingZone: 0,
-            blueColouredPlantingZone: 0,
-            redCenterPlantingZone: 0,
-            blueCenterPlantingZone: 0,
-            redCenterGoldenPlantingZone: 0,
-            blueCenterGoldenPlantingZone: 0,
-            redUpperSideGoldenPlantingZone: 0,
-            blueUpperSideGoldenPlantingZone: 0,
-            redLowerSideGoldenPlantingZone: 0,
-            blueLowerSideGoldenPlantingZone: 0,
-            redColouredGoldenPlantingZone: 0,
-            blueColouredGoldenPlantingZone: 0,
-            redAutoRobotRecogn: 0,
-            blueAutoRobotRecogn: 0,
-            redAutoRobotMove: 0,
-            blueAutoRobotMove: 0,
-            scores: {
-                red: 0,
-                blue: 0,
-                redOccoupyingZone: 0,
-                blueOccoupyingZone: 0,
-                redPlacedSeedlings: 0,
-                bluePlacedSeedlings: 0,
-                redPlacedGoldenSeedlings: 0,
-                bluePlacedGoldenSeedlings: 0,
-                redGreatVictory: false,
-                blueGreatVictory: false,
-                greatVictoryTimestamp: 0,
-            }
-        }
-        set(child(dbRef, `games/${gameID}/props`), gameProps.current);
-        setRedAutoRobotTask(0);
-        setBlueAutoRobotTask(0);
-        setRedUpperSidePlantingZone(0);
-        setRedLowerSidePlantingZone(0);
-        setBlueUpperSidePlantingZone(0);
-        setBlueLowerSidePlantingZone(0);
-        setRedColouredPlantingZone(0);
-        setBlueColouredPlantingZone(0);
-        setRedCenterPlantingZone(0);
-        setBlueCenterPlantingZone(0);
-        setRedCenterGoldenPlantingZone(0);
-        setBlueCenterGoldenPlantingZone(0);
-        setRedUpperSideGoldenPlantingZone(0);
-        setBlueUpperSideGoldenPlantingZone(0);
-        setRedLowerSideGoldenPlantingZone(0);
-        setBlueLowerSideGoldenPlantingZone(0);
-        setRedColouredGoldenPlantingZone(0);
-        setBlueColouredGoldenPlantingZone(0);
-        setRedAutoRobotRecogn(0);
-        setBlueAutoRobotRecogn(0);
-        setRedAutoRobotMove(0);
-        setBlueAutoRobotMove(0);
+        setGameProps({});
+        silos.current = [[],[],[],[],[]];
+        greatVictory.current = false;
+        set(child(dbRef, `games/${gameID}/props`), {});
     }
 
     useEffect(() => {
-        console.log("Updating Props")
-
         if (gameID == "") return;
+
+        if (lastGameProps.current == JSON.stringify(gameProps)) return;
+        lastGameProps.current = JSON.stringify(gameProps);
+
+        if (greatVictory.current) return;
         
-        //if (!forceResetProps.current && gameStage.current == "PREP") {resetProps(); enqueueSnackbar("Changes not allowed at PREP", {variant: "error", preventDuplicate: true}); return;}
-        //if (gameStage.current == "END") { enqueueSnackbar("Editing after game", {variant: "info"}); }
+        console.log("Updating Props");
+        
+        const scores = scoreCalculation();
 
-        // GameRules
-        if (redAutoRobotTask > 2) {setRedAutoRobotTask(2); return;}
-        if (blueAutoRobotTask > 2) {setBlueAutoRobotTask(2); return;}
+        
 
-        const redPlacedNormalSeedlings = redUpperSidePlantingZone+redCenterPlantingZone+redLowerSidePlantingZone+redColouredPlantingZone;
-        const redPlacedGoldenSeedlings = redUpperSideGoldenPlantingZone+redCenterGoldenPlantingZone+redLowerSideGoldenPlantingZone+redColouredGoldenPlantingZone;
-        const redPlacedSeedlings = redPlacedNormalSeedlings+redPlacedGoldenSeedlings;
-        const bluePlacedNormalSeedlings = blueUpperSidePlantingZone+blueCenterPlantingZone+blueLowerSidePlantingZone+blueColouredPlantingZone;
-        const bluePlacedGoldenSeedlings = blueUpperSideGoldenPlantingZone+blueCenterGoldenPlantingZone+blueLowerSideGoldenPlantingZone+blueColouredGoldenPlantingZone;
-        const bluePlacedSeedlings = bluePlacedNormalSeedlings+bluePlacedGoldenSeedlings;
+        set(child(dbRef, `games/${gameID}/props`), {...gameProps, scores});
+    }, [gameProps])
 
-        /* if (redAutoRobotTask != 2 && redPlacedGoldenSeedlings > 0) {
-            enqueueSnackbar("Red Team Golden Seedlings Not Unlocked", {variant: "error", preventDuplicate: true})
-            setRedUpperSideGoldenPlantingZone(0);
-            setRedCenterGoldenPlantingZone(0); 
-            setRedLowerSideGoldenPlantingZone(0);
-            setRedColouredGoldenPlantingZone(0);
+    const redFirstSiloAction = (value: number) => {
+        // Validation
+        if ((gameProps.blueFirstSilo || 0) + value > 3) {
+            enqueueSnackbar("First Silo exceeded!", {variant: "error"});
             return;
         }
 
-        if (blueAutoRobotTask != 2 && bluePlacedGoldenSeedlings > 0) {
-            enqueueSnackbar("Blue Team Golden Seedlings Not Unlocked", {variant: "error", preventDuplicate: true, anchorOrigin: { horizontal: "right", vertical: "bottom" }})
-            setBlueUpperSideGoldenPlantingZone(0);
-            setBlueCenterGoldenPlantingZone(0); 
-            setBlueLowerSideGoldenPlantingZone(0);
-            setBlueColouredGoldenPlantingZone(0);
-            return;
-        } */
-
-        // For Future Victory Check
-        if (gameProps.current.scores) {
-            if (!gameProps.current.scores.redAutoRobotTaskElapsed && redAutoRobotTask == 2) {gameProps.current.scores.redAutoRobotTaskElapsed = Date.now()-clockData.current.timestamp+clockData.current.elapsed;}
-            if (!gameProps.current.scores.blueAutoRobotTaskElapsed && blueAutoRobotTask == 2) {gameProps.current.scores.blueAutoRobotTaskElapsed = Date.now()-clockData.current.timestamp+clockData.current.elapsed;}
-            if (redAutoRobotTask < 2) {gameProps.current.scores.redAutoRobotTaskElapsed = null}
-            if (blueAutoRobotTask < 2) {gameProps.current.scores.blueAutoRobotTaskElapsed = null}
-        }
-
-        if (redPlacedNormalSeedlings > 9) {
-            enqueueSnackbar("Red Team Too Many Seedlings", {variant: "error", preventDuplicate: true})
-            if (redUpperSidePlantingZone > gameProps.current.redUpperSidePlantingZone) {setRedUpperSidePlantingZone(gameProps.current.redUpperSidePlantingZone); return;}
-            if (redCenterPlantingZone > gameProps.current.redCenterPlantingZone) {setRedCenterPlantingZone(gameProps.current.redCenterPlantingZone); return;}
-            if (redLowerSidePlantingZone > gameProps.current.redLowerSidePlantingZone) {setRedLowerSidePlantingZone(gameProps.current.redLowerSidePlantingZone); return;}
-            if (redColouredPlantingZone > gameProps.current.redColouredPlantingZone) {setRedColouredPlantingZone(gameProps.current.redColouredPlantingZone); return;}
-        }
-
-
-        if (bluePlacedNormalSeedlings > 9) {
-            enqueueSnackbar("Blue Team Too Many Seedlings", {variant: "error", preventDuplicate: true, anchorOrigin: { horizontal: "right", vertical: "bottom" }})
-            if (blueUpperSidePlantingZone > gameProps.current.blueUpperSidePlantingZone) {setBlueUpperSidePlantingZone(gameProps.current.blueUpperSidePlantingZone); return;}
-            if (blueCenterPlantingZone > gameProps.current.blueCenterPlantingZone) {setBlueCenterPlantingZone(gameProps.current.blueCenterPlantingZone); return;}
-            if (blueLowerSidePlantingZone > gameProps.current.blueLowerSidePlantingZone) {setBlueLowerSidePlantingZone(gameProps.current.blueLowerSidePlantingZone); return;}
-            if (blueColouredPlantingZone > gameProps.current.blueColouredPlantingZone) {setBlueColouredPlantingZone(gameProps.current.blueColouredPlantingZone); return;}
-        }
-
-        if (redPlacedGoldenSeedlings > 3) {
-            enqueueSnackbar("Red Team Too Many Golden Seedlings", {variant: "error", preventDuplicate: true})
-            if (redUpperSideGoldenPlantingZone > gameProps.current.redUpperSideGoldenPlantingZone) {setRedUpperSideGoldenPlantingZone(gameProps.current.redUpperSideGoldenPlantingZone); return;}
-            if (redCenterGoldenPlantingZone > gameProps.current.redCenterGoldenPlantingZone) {setRedCenterGoldenPlantingZone(gameProps.current.redCenterGoldenPlantingZone); return;}
-            if (redLowerSideGoldenPlantingZone > gameProps.current.redLowerSideGoldenPlantingZone) {setRedLowerSideGoldenPlantingZone(gameProps.current.redLowerSideGoldenPlantingZone); return;}
-            if (redColouredGoldenPlantingZone > gameProps.current.redColouredGoldenPlantingZone) {setRedColouredGoldenPlantingZone(gameProps.current.redColouredGoldenPlantingZone); return;}
-        }
-
-
-        if (bluePlacedGoldenSeedlings > 3) {
-            enqueueSnackbar("Blue Team Too Many Golden Seedlings", {variant: "error", preventDuplicate: true, anchorOrigin: { horizontal: "right", vertical: "bottom" }})
-            if (blueUpperSideGoldenPlantingZone > gameProps.current.blueUpperSideGoldenPlantingZone) {setBlueUpperSideGoldenPlantingZone(gameProps.current.blueUpperSideGoldenPlantingZone); return;}
-            if (blueCenterGoldenPlantingZone > gameProps.current.blueCenterGoldenPlantingZone) {setBlueCenterGoldenPlantingZone(gameProps.current.blueCenterGoldenPlantingZone); return;}
-            if (blueLowerSideGoldenPlantingZone > gameProps.current.blueLowerSideGoldenPlantingZone) {setBlueLowerSideGoldenPlantingZone(gameProps.current.blueLowerSideGoldenPlantingZone); return;}
-            if (blueColouredGoldenPlantingZone > gameProps.current.blueColouredGoldenPlantingZone) {setBlueColouredGoldenPlantingZone(gameProps.current.blueColouredGoldenPlantingZone); return;}
-        }
-
-        if (redCenterPlantingZone+redCenterGoldenPlantingZone+blueCenterPlantingZone+blueCenterGoldenPlantingZone > 8) {
-            enqueueSnackbar("Center Planting Zone Too Many Seelings", {variant: "error", preventDuplicate: true, anchorOrigin: { horizontal: "center", vertical: "bottom" }})
-            if (redCenterPlantingZone > gameProps.current.redCenterPlantingZone) {setRedCenterPlantingZone(gameProps.current.redCenterPlantingZone); return;}
-            if (redCenterGoldenPlantingZone > gameProps.current.redCenterGoldenPlantingZone) {setRedCenterGoldenPlantingZone(gameProps.current.redCenterGoldenPlantingZone); return;}
-            if (blueCenterPlantingZone > gameProps.current.blueCenterPlantingZone) {setBlueCenterPlantingZone(gameProps.current.blueCenterPlantingZone); return;}
-            if (blueCenterGoldenPlantingZone > gameProps.current.blueCenterGoldenPlantingZone) {setBlueCenterGoldenPlantingZone(gameProps.current.blueCenterGoldenPlantingZone); return;}
-        }
-
-        // Calculate the marks
-        var redPoints = 0;
-        if (redAutoRobotRecogn == 1) redPoints += 30; // 2.5.2.1
-        if (redAutoRobotTask == 2 && redAutoRobotMove == 1) redPoints += 50; // 2.5.2.2
-        if (redAutoRobotTask == 2 && redAutoRobotMove == 0) redPoints += 25; // 2.5.2.2 NOTE
-        redPoints += redColouredPlantingZone * 10; // 2.5.1.1
-        redPoints += (redUpperSidePlantingZone+redLowerSidePlantingZone) * 15; // 2.5.1.2
-        redPoints += redCenterPlantingZone * 20; // 2.5.1.3
-        redPoints += redColouredGoldenPlantingZone * 20; // 2.5.1.4
-        redPoints += (redUpperSideGoldenPlantingZone+redLowerSideGoldenPlantingZone) * 30; // 2.5.1.5
-        redPoints += redCenterGoldenPlantingZone * 40; // 2.5.1.6
-
-        var bluePoints = 0;
-        if (blueAutoRobotRecogn == 1) bluePoints += 30; // 2.5.2.1
-        if (blueAutoRobotTask == 2 && blueAutoRobotMove == 1) bluePoints += 50; // 2.5.2.2
-        if (blueAutoRobotTask == 2 && blueAutoRobotMove == 0) bluePoints += 25; // 2.5.2.2 NOTE
-        bluePoints += blueColouredPlantingZone * 10; // 2.5.1.1
-        bluePoints += (blueUpperSidePlantingZone+blueLowerSidePlantingZone) * 15; // 2.5.1.2
-        bluePoints += blueCenterPlantingZone * 20; // 2.5.1.3
-        bluePoints += blueColouredGoldenPlantingZone * 20; // 2.5.1.4
-        bluePoints += (blueUpperSideGoldenPlantingZone+blueLowerSideGoldenPlantingZone) * 30; // 2.5.1.5
-        bluePoints += blueCenterGoldenPlantingZone * 40; // 2.5.1.6
-
-        // Perform Great Victory Check
-        // Per Interpretation on 2.7.1 and Game Process Realated Great Victory
-        // The team occupying 4 Planting Zones with more than 5 seedlings in total will achieve Great Victory, the team wins and the game ends immediately.
-        var redGreatVictory = false;
-        var blueGreatVictory = false;
-        var greatVictoryTimestamp = 0;
-        var redOccoupyingZone = 0;
-        var blueOccoupyingZone = 0;
-
-        if ((redUpperSidePlantingZone+redUpperSideGoldenPlantingZone) > (blueUpperSidePlantingZone+blueUpperSideGoldenPlantingZone)) {
-            redOccoupyingZone += 1;
-        } else if ((redUpperSidePlantingZone+redUpperSideGoldenPlantingZone) < (blueUpperSidePlantingZone+blueUpperSideGoldenPlantingZone)) {
-            blueOccoupyingZone += 1;
-        }
-
-        if ((redCenterPlantingZone+redCenterGoldenPlantingZone) > (blueCenterPlantingZone+blueCenterGoldenPlantingZone)) {
-            redOccoupyingZone += 1;
-        } else if ((redCenterPlantingZone+redCenterGoldenPlantingZone) < (blueCenterPlantingZone+blueCenterGoldenPlantingZone)) {
-            blueOccoupyingZone += 1;
-        }
-
-        if ((redLowerSidePlantingZone+redLowerSideGoldenPlantingZone) > (blueLowerSidePlantingZone+blueLowerSideGoldenPlantingZone)) {
-            redOccoupyingZone += 1;
-        } else if ((redLowerSidePlantingZone+redLowerSideGoldenPlantingZone) < (blueLowerSidePlantingZone+blueLowerSideGoldenPlantingZone)) {
-            blueOccoupyingZone += 1;
-        }
-
-        if ((redColouredPlantingZone+redColouredGoldenPlantingZone) > (blueColouredPlantingZone+blueColouredGoldenPlantingZone)) {
-            redOccoupyingZone += 1;
-        } else if ((redColouredPlantingZone+redColouredGoldenPlantingZone) < (blueColouredPlantingZone+blueColouredGoldenPlantingZone)) {
-            blueOccoupyingZone += 1;
-        }
-
-        if (redOccoupyingZone == 4 && redPlacedSeedlings > 5) {
-            redGreatVictory = true;
-            greatVictoryTimestamp = (GAME_STAGES_TIME[GAME_STAGES.indexOf(gameStage.current)]*1000)-clockData.current.elapsed-(Date.now()-clockData.current.timestamp);
-            enqueueSnackbar(`RED GREAT VICTORY`, {variant: "success", autoHideDuration: 10000});
-            //stopClock(); // Per Request from HKUST Robocon 2023 CEO Henry
-        }
-
-        if (blueOccoupyingZone == 4 && bluePlacedSeedlings > 5) {
-            blueGreatVictory = true;
-            greatVictoryTimestamp = (GAME_STAGES_TIME[GAME_STAGES.indexOf(gameStage.current)]*1000)-clockData.current.elapsed-(Date.now()-clockData.current.timestamp);
-            enqueueSnackbar(`BLUE GREAT VICTORY`, {variant: "success", anchorOrigin: { horizontal: "right", vertical: "bottom" }, autoHideDuration: 10000});
-            //stopClock(); // Per Request from HKUST Robocon 2023 CEO Henry
-        }
-
-        console.log(redPoints, bluePoints)
-
-        setRedPoints(redPoints);
-        setBluePoints(bluePoints);
-
-        gameProps.current = {
-            ...gameProps.current,
-            redAutoRobotTask: redAutoRobotTask,
-            blueAutoRobotTask: blueAutoRobotTask,
-            redUpperSidePlantingZone: redUpperSidePlantingZone,
-            redLowerSidePlantingZone: redLowerSidePlantingZone,
-            blueUpperSidePlantingZone: blueUpperSidePlantingZone,
-            blueLowerSidePlantingZone: blueLowerSidePlantingZone,
-            redColouredPlantingZone: redColouredPlantingZone,
-            blueColouredPlantingZone: blueColouredPlantingZone,
-            redCenterPlantingZone: redCenterPlantingZone,
-            blueCenterPlantingZone: blueCenterPlantingZone,
-            redCenterGoldenPlantingZone: redCenterGoldenPlantingZone,
-            blueCenterGoldenPlantingZone: blueCenterGoldenPlantingZone,
-            redUpperSideGoldenPlantingZone: redUpperSideGoldenPlantingZone,
-            blueUpperSideGoldenPlantingZone: blueUpperSideGoldenPlantingZone,
-            redLowerSideGoldenPlantingZone: redLowerSideGoldenPlantingZone,
-            blueLowerSideGoldenPlantingZone: blueLowerSideGoldenPlantingZone,
-            redColouredGoldenPlantingZone: redColouredGoldenPlantingZone,
-            blueColouredGoldenPlantingZone: blueColouredGoldenPlantingZone,
-            redAutoRobotRecogn: redAutoRobotRecogn,
-            blueAutoRobotRecogn: blueAutoRobotRecogn,
-            redAutoRobotMove: redAutoRobotMove,
-            blueAutoRobotMove: blueAutoRobotMove,
-            scores: {
-                ...gameProps.current.scores,
-                red: redPoints,
-                blue: bluePoints,
-                redOccoupyingZone: redOccoupyingZone,
-                blueOccoupyingZone: blueOccoupyingZone,
-                redPlacedSeedlings: redPlacedSeedlings,
-                bluePlacedSeedlings: bluePlacedSeedlings,
-                redPlacedGoldenSeedlings: redPlacedGoldenSeedlings,
-                bluePlacedGoldenSeedlings: bluePlacedGoldenSeedlings,
-                redGreatVictory: redGreatVictory,
-                blueGreatVictory: blueGreatVictory,
-                greatVictoryTimestamp: greatVictoryTimestamp,
-            }
-        }
-
-        set(child(dbRef, `games/${gameID}/props`), gameProps.current);
-    }, [redAutoRobotTask, blueAutoRobotTask, 
-        redUpperSidePlantingZone, redLowerSidePlantingZone, 
-        blueUpperSidePlantingZone, blueLowerSidePlantingZone, 
-        redColouredPlantingZone, blueColouredPlantingZone, 
-        redCenterPlantingZone, blueCenterPlantingZone, 
-        redCenterGoldenPlantingZone, blueCenterGoldenPlantingZone,
-        redUpperSideGoldenPlantingZone, blueUpperSideGoldenPlantingZone,
-        redLowerSideGoldenPlantingZone, blueLowerSideGoldenPlantingZone,
-        redColouredGoldenPlantingZone, blueColouredGoldenPlantingZone,
-        redAutoRobotRecogn, blueAutoRobotRecogn,
-        redAutoRobotMove, blueAutoRobotMove,
-    ])
-
-    const gameEndVictoryCalc = () => {
-        // Preform Victory Check after 3 minutes Game Time
-        // Per Interpretation on 2.7.1
-        // The team with a higher total score
-        /*
-        In case two teams have the same score, the winner will be decided according to the following order:
-            i.  The team that occupies more Planting Zone;
-            ii. The team whose AR finished all the AR tasks first;
-            iii. The team with more golden seedlings in the Planting Zones;
-            iv. The team that has committed fewer violations;
-            v. The team with a less total weight of robots;
-            vi. Decisions made by referees.
-        */
-
-        const updateVictory = (redVictory: boolean, blueVictory: boolean) => {
-            set(child(dbRef, `games/${gameID}/props/scores`), {
-                redVictory: redVictory,
-                blueVictory: blueVictory,
-            });
-        }
-
-        var redVictory = false;
-        var blueVictory = false;
+        silos.current[0].push("RED");
+        setGameProps({...gameProps, redFirstSilo: value, silos: silos.current});
         
-        if (gameProps.current.scores.red > gameProps.current.scores.blue) {
-            redVictory = true;
-        } else if (gameProps.current.scores.red < gameProps.current.scores.blue) {
-            blueVictory = true;
-        } else {
-            if (gameProps.current.scores.redOccoupyingZone > gameProps.current.scores.blueOccoupyingZone) {
-                redVictory = true;
-            } else if (gameProps.current.scores.redOccoupyingZone < gameProps.current.scores.blueOccoupyingZone) {
-                blueVictory = true;
-            } else {
-                if (gameProps.current.scores.redAutoRobotTaskElapsed < gameProps.current.scores.blueAutoRobotTaskElapsed) {
-                    redVictory = true;
-                } else if (gameProps.current.scores.redAutoRobotTaskElapsed > gameProps.current.scores.blueAutoRobotTaskElapsed) {
-                    blueVictory = true;
-                } else {
-                    if (gameProps.current.scores.redPlacedGoldenSeedlings > gameProps.current.scores.bluePlacedGoldenSeedlings) {
-                        redVictory = true;
-                    } else if (gameProps.current.scores.redPlacedGoldenSeedlings < gameProps.current.scores.bluePlacedGoldenSeedlings) {
-                        blueVictory = true;
-                    } else {
-                        // Unable to determine winner
-                        redVictory = false;
-                        blueVictory = false;
-                    }
-                }
-            }
-        }
-        if (redVictory) enqueueSnackbar(`RED VICTORY`, {variant: "success", autoHideDuration: 10000})
-        if (blueVictory) enqueueSnackbar(`BLUE VICTORY`, {variant: "success", anchorOrigin: { horizontal: "right", vertical: "bottom" }, autoHideDuration: 10000})
-        updateVictory(redVictory, blueVictory);
     }
 
-    const [redPoints, setRedPoints] = useState(0);
-    const [bluePoints, setBluePoints] = useState(0);
+    const redSecondSiloAction = (value: number) => {
+        // Validation
+        if ((gameProps.blueSecondSilo || 0) + value > 3) {
+            enqueueSnackbar("Second Silo exceeded!", {variant: "error"})
+            return;
+        }
+
+        silos.current[1].push("RED");
+        setGameProps({...gameProps, redSecondSilo: value, silos: silos.current });
+        
+    }
+
+    const redThirdSiloAction = (value: number) => {
+        // Validation
+        if ((gameProps.blueThirdSilo || 0) + value > 3) {
+            enqueueSnackbar("Third Silo exceeded!", {variant: "error"})
+            return;
+        }
+
+        silos.current[2].push("RED");
+        setGameProps({...gameProps, redThirdSilo: value, silos: silos.current });
+        
+    }
+
+    const redFourthSiloAction = (value: number) => {
+        // Validation
+        if ((gameProps.blueFourthSilo || 0) + value > 3) {
+            enqueueSnackbar("Fourth Silo exceeded!", {variant: "error"})
+            return;
+        }
+
+        silos.current[3].push("RED");
+        setGameProps({...gameProps, redFourthSilo: value, silos: silos.current });
+        
+    }
+
+    const redFifthSiloAction = (value: number) => {
+        // Validation
+        if ((gameProps.blueFifthSilo || 0) + value > 3) {
+            enqueueSnackbar("Fifth Silo exceeded!", {variant: "error"})
+            return;
+        }
+
+        silos.current[4].push("RED");
+        setGameProps({...gameProps, redFifthSilo: value, silos: silos.current });
+        
+    }
+
+    const redStorageZoneAction = (value: number) => {
+        // Validation
+        if (value > (gameProps.redSeedling || 0)) {
+            enqueueSnackbar("Storage Zone exceeded placed Seedling!", {variant: "error"})
+            return;
+        }
+
+        setGameProps({...gameProps, redStorageZone: value });
+        
+    }
+
+    const redSeedlingAction = (value: number) => {
+        // Validation
+        if (value > 12) {
+            enqueueSnackbar("Seedling exceeded!", {variant: "error"})
+            return;
+        }
+
+        setGameProps({...gameProps, redSeedling: value });
+        
+    }
+
+    const blueFirstSiloAction = (value: number) => {
+        // Validation
+        if ((gameProps.redFirstSilo || 0) + value > 3) {
+            enqueueSnackbar("First Silo exceeded!", {variant: "error", anchorOrigin: {vertical: "bottom", horizontal: "right"}});;
+            return;
+        }
+
+        silos.current[0].push("BLUE");
+        setGameProps({...gameProps, blueFirstSilo: value, silos: silos.current });
+        
+    }
+
+    const blueSecondSiloAction = (value: number) => {
+        // Validation
+        if ((gameProps.redSecondSilo || 0) + value > 3) {
+            enqueueSnackbar("Second Silo exceeded!", {variant: "error", anchorOrigin: {vertical: "bottom", horizontal: "right"}});
+            return;
+        }
+
+        silos.current[1].push("BLUE");
+        setGameProps({...gameProps, blueSecondSilo: value, silos: silos.current });
+        
+    }
+
+    const blueThirdSiloAction = (value: number) => {
+        // Validation
+        if ((gameProps.redThirdSilo || 0) + value > 3) {
+            enqueueSnackbar("Third Silo exceeded!", {variant: "error", anchorOrigin: {vertical: "bottom", horizontal: "right"}});
+            return;
+        }
+
+        silos.current[2].push("BLUE");
+        setGameProps({...gameProps, blueThirdSilo: value, silos: silos.current });
+        
+    }
+
+    const blueFourthSiloAction = (value: number) => {
+        // Validation
+        if ((gameProps.redFourthSilo || 0) + value > 3) {
+            enqueueSnackbar("Fourth Silo exceeded!", {variant: "error", anchorOrigin: {vertical: "bottom", horizontal: "right"}});
+            return;
+        }
+
+        silos.current[3].push("BLUE");
+        setGameProps({...gameProps, blueFourthSilo: value, silos: silos.current });
+        
+    }
+
+    const blueFifthSiloAction = (value: number) => {
+        // Validation
+        if ((gameProps.redFifthSilo || 0) + value > 3) {
+            enqueueSnackbar("First Silo exceeded!", {variant: "error", anchorOrigin: {vertical: "bottom", horizontal: "right"}});
+            return;
+        }
+
+        silos.current[4].push("BLUE");
+        setGameProps({...gameProps, blueFifthSilo: value, silos: silos.current });
+        
+    }
+
+    const blueStorageZoneAction = (value: number) => {
+        // Validation
+        if (value > (gameProps.blueSeedling || 0)) {
+            enqueueSnackbar("Storage Zone exceeded placed Seedling!", {variant: "error", anchorOrigin: {vertical: "bottom", horizontal: "right"}})
+            return;
+        }
+
+        setGameProps({...gameProps, blueStorageZone: value });
+        
+    }
+
+    const blueSeedlingAction = (value: number) => {
+        // Validation
+        if (value > 12) {
+            enqueueSnackbar("Seedling exceeded!", {variant: "error", anchorOrigin: {vertical: "bottom", horizontal: "right"}})
+            return;
+        }
+
+        setGameProps({...gameProps, blueSeedling: value });
+        
+    }
+
+    const scoreCalculation = () => {
+        /*
+        The score is calculated as follows:
+        (a) Robots successfully plant 01 (one) Seedling: 10 points.
+        (b) Robots successfully harvest 01 (one) Paddy Rice in the Storage Zone: 10
+        points.
+        (c) Robots successfully harvest 01 (one) Empty Grain in the Storage Zone: 10
+        points.
+        (d) The Robot 2 successfully stores 01 (one) Paddy Rice in a Silo: 30 points. 
+        */
+
+        let redPoints = 0;
+        let bluePoints = 0;
+
+        redPoints += (gameProps.redSeedling || 0) * 10;
+        bluePoints += (gameProps.blueSeedling || 0) * 10;
+
+        redPoints += (gameProps.redStorageZone || 0) * 10;
+        bluePoints += (gameProps.blueStorageZone || 0) * 10;
+
+        redPoints += ((gameProps.redFirstSilo || 0) + (gameProps.redSecondSilo || 0) + (gameProps.redThirdSilo || 0) + (gameProps.redFourthSilo || 0) + (gameProps.redFifthSilo || 0)) * 30;
+        bluePoints += ((gameProps.blueFirstSilo || 0) + (gameProps.blueSecondSilo || 0) + (gameProps.blueThirdSilo || 0) + (gameProps.blueFourthSilo || 0) + (gameProps.blueFifthSilo || 0)) * 30;
+
+        /*
+        ‘V Goal’ “Mùa Vàng” (Harvest Glory) is achieved when 3 Silos
+        meeting following conditions.
+        + A Silo is full (3) and contains a minimum of 2 own team color’s
+        Paddy Rice.
+        + The top Paddy Rice is of the team’s colour.
+        The team wins at the moment when Mua Vang is achieved.
+        */
+
+        if (greatVictory.current) return;
+
+        let redOccoupiedSilos = 0;
+        let blueOccoupiedSilos = 0;
+
+        for (let i = 0; i < silos.current.length; i++) {
+            const siloArray = silos.current[i];
+            const lastElement = siloArray[siloArray.length - 1];
+
+            if (lastElement === "RED" && siloArray.filter((color: String) => color === "RED").length >= 2) {
+                redOccoupiedSilos++;
+            } else if (lastElement === "BLUE" && siloArray.filter((color: String) => color === "BLUE").length >= 2) {
+                blueOccoupiedSilos++;
+            }
+        }
+
+        let greatVictoryObject = {}
+
+        if (redOccoupiedSilos >= 3) {
+            let greatVictoryTimestamp = (GAME_STAGES_TIME[GAME_STAGES.indexOf(gameStage.current)]*1000)-clockData.current.elapsed-(Date.now()-clockData.current.timestamp);
+            enqueueSnackbar(`RED GREAT VICTORY`, {variant: "success", autoHideDuration: 10000, preventDuplicate: true});
+            stopClock();
+            greatVictory.current = true;
+            greatVictoryObject = {redGreatVictory: true, greatVictoryTimestamp}
+        } else if (blueOccoupiedSilos >= 3) {
+            let greatVictoryTimestamp = (GAME_STAGES_TIME[GAME_STAGES.indexOf(gameStage.current)]*1000)-clockData.current.elapsed-(Date.now()-clockData.current.timestamp);
+            enqueueSnackbar(`BLUE GREAT VICTORY`, {variant: "success", anchorOrigin: { horizontal: "right", vertical: "bottom" }, autoHideDuration: 10000, preventDuplicate:true});
+            stopClock();
+            greatVictory.current = true;
+            greatVictoryObject = {blueGreatVictory: true, greatVictoryTimestamp}
+        }
+
+        return {...gameProps.scores, redPoints: redPoints, bluePoints: bluePoints, ...greatVictoryObject}
+    }
 
     return (
         <>
@@ -733,7 +601,7 @@ export default function Dashboard() {
                     position: 'absolute',
                     zIndex: 10,
                 }}>
-                    <ScoreDisplay color={"red"} team={redTeam} editable={true} score={redPoints} teams={Teams} setTeam={setRedTeam} />
+                    <ScoreDisplay color={"red"} team={currentTeam.redTeam} editable={true} score={gameProps.scores?.redPoints||0} teams={Teams} setTeam={redUpdateTeam} />
                 </Box>
                 <Box style={{
                     right: '4%',
@@ -741,7 +609,7 @@ export default function Dashboard() {
                     position: 'absolute',
                     zIndex: 10,
                 }}>
-                    <ScoreDisplay color={"blue"} team={blueTeam} editable={true} score={bluePoints} teams={Teams} setTeam={setBlueTeam} />
+                    <ScoreDisplay color={"blue"} team={currentTeam.blueTeam} editable={true} score={gameProps.scores?.bluePoints||0} teams={Teams} setTeam={blueUpdateTeam} />
                 </Box>
                 <Box style={{
                     height: '95%',
@@ -755,181 +623,116 @@ export default function Dashboard() {
                     }}/>
                 </Box>
                 <Box style={{
-                    left: '42.3%',
-                    top: '3%',
+                    left: '47%',
+                    top: '1%',
                     position: 'absolute',
                     zIndex: 10,
                 }}>
-                    <Counter counter={redAutoRobotTask} setCounter={setRedAutoRobotTask} color={"red"} />
+                    <Counter counter={gameProps.redFirstSilo||0} setCounter={redFirstSiloAction} color={"red"} small={true} disableLeftClick={true} />
                 </Box>
                 <Box style={{
-                    left: '55%',
-                    top: '3%',
+                    left: '50.8%',
+                    top: '1%',
                     position: 'absolute',
                     zIndex: 10,
                 }}>
-                    <Counter counter={blueAutoRobotTask} setCounter={setBlueAutoRobotTask} color={"blue"} />
+                    <Counter counter={gameProps.blueFirstSilo||0} setCounter={blueFirstSiloAction} color={"blue"} small={true} disableLeftClick={true} />
+                </Box> 
+                <Box style={{
+                    left: '47%',
+                    top: '7%',
+                    position: 'absolute',
+                    zIndex: 10,
+                }}>
+                    <Counter counter={gameProps.redSecondSilo||0} setCounter={redSecondSiloAction} color={"red"} small={true} disableLeftClick={true} />
                 </Box>
                 <Box style={{
-                    left: '38.5%',
-                    top: '85%',
+                    left: '50.8%',
+                    top: '7%',
                     position: 'absolute',
                     zIndex: 10,
                 }}>
-                    <Counter counter={redColouredPlantingZone} setCounter={setRedColouredPlantingZone} color={"red"} />
+                    <Counter counter={gameProps.blueSecondSilo||0} setCounter={blueSecondSiloAction} color={"blue"} small={true} disableLeftClick={true} />
                 </Box>
                 <Box style={{
-                    left: '58.5%',
-                    top: '85%',
+                    left: '47%',
+                    top: '13.1%',
                     position: 'absolute',
                     zIndex: 10,
                 }}>
-                    <Counter counter={blueColouredPlantingZone} setCounter={setBlueColouredPlantingZone} color={"blue"} />
+                    <Counter counter={gameProps.redThirdSilo||0} setCounter={redThirdSiloAction} color={"red"} small={true} disableLeftClick={true} />
                 </Box>
                 <Box style={{
-                    left: '46%',
-                    top: '79.2%',
+                    left: '50.8%',
+                    top: '13.1%',
                     position: 'absolute',
                     zIndex: 10,
                 }}>
-                    <Counter counter={redLowerSidePlantingZone} setCounter={setRedLowerSidePlantingZone} color={"red"} />
+                    <Counter counter={gameProps.blueThirdSilo||0} setCounter={blueThirdSiloAction} color={"blue"} small={true} disableLeftClick={true} />
                 </Box>
                 <Box style={{
-                    left: '51.5%',
-                    top: '79.2%',
+                    left: '47%',
+                    top: '19.1%',
                     position: 'absolute',
                     zIndex: 10,
                 }}>
-                    <Counter counter={blueLowerSidePlantingZone} setCounter={setBlueLowerSidePlantingZone} color={"blue"} />
+                    <Counter counter={gameProps.redFourthSilo||0} setCounter={redFourthSiloAction} color={"red"} small={true} disableLeftClick={true} />
                 </Box>
                 <Box style={{
-                    left: '46%',
-                    top: '28%',
+                    left: '50.8%',
+                    top: '19.1%',
                     position: 'absolute',
                     zIndex: 10,
                 }}>
-                    <Counter counter={redUpperSidePlantingZone} setCounter={setRedUpperSidePlantingZone} color={"red"} />
+                    <Counter counter={gameProps.blueFourthSilo||0} setCounter={blueFourthSiloAction} color={"blue"} small={true} disableLeftClick={true} />
                 </Box>
                 <Box style={{
-                    left: '51.5%',
-                    top: '28%',
+                    left: '47%',
+                    top: '25.2%',
                     position: 'absolute',
                     zIndex: 10,
                 }}>
-                    <Counter counter={blueUpperSidePlantingZone} setCounter={setBlueUpperSidePlantingZone} color={"blue"} />
+                    <Counter counter={gameProps.redFifthSilo||0} setCounter={redFifthSiloAction} color={"red"} small={true} disableLeftClick={true} />
                 </Box>
                 <Box style={{
-                    left: '45%',
-                    top: '54.5%',
+                    left: '50.8%',
+                    top: '25.2%',
                     position: 'absolute',
                     zIndex: 10,
                 }}>
-                    <Counter counter={redCenterPlantingZone} setCounter={setRedCenterPlantingZone} color={"red"} />
+                    <Counter counter={gameProps.blueFifthSilo||0} setCounter={blueFifthSiloAction} color={"blue"} small={true} disableLeftClick={true} />
                 </Box>
                 <Box style={{
-                    left: '52.2%',
-                    top: '54.5%',
+                    left: '34.7%',
+                    top: '12.5%',
                     position: 'absolute',
                     zIndex: 10,
                 }}>
-                    <Counter counter={blueCenterPlantingZone} setCounter={setBlueCenterPlantingZone} color={"blue"} />
-                </Box>
-
-                <Box style={{
-                    left: '45%',
-                    top: '45%',
-                    position: 'absolute',
-                    zIndex: 10,
-                }}>
-                    <Counter counter={redCenterGoldenPlantingZone} setCounter={setRedCenterGoldenPlantingZone} color={"gold"} />
+                    <Counter counter={gameProps.redStorageZone||0} setCounter={redStorageZoneAction} color={"red"} />
                 </Box>
                 <Box style={{
-                    left: '52.2%',
-                    top: '45%',
+                    left: '62.7%',
+                    top: '12.5%',
                     position: 'absolute',
                     zIndex: 10,
                 }}>
-                    <Counter counter={blueCenterGoldenPlantingZone} setCounter={setBlueCenterGoldenPlantingZone} color={"gold"} />
+                    <Counter counter={gameProps.blueStorageZone||0} setCounter={blueStorageZoneAction} color={"blue"} />
                 </Box>
                 <Box style={{
-                    left: '46%',
-                    top: '20%',
+                    left: '42%',
+                    top: '71.3%',
                     position: 'absolute',
                     zIndex: 10,
                 }}>
-                    <Counter counter={redUpperSideGoldenPlantingZone} setCounter={setRedUpperSideGoldenPlantingZone} color={"gold"} />
+                    <Counter counter={gameProps.redSeedling||0} setCounter={redSeedlingAction} color={"red"} />
                 </Box>
                 <Box style={{
-                    left: '51.5%',
-                    top: '20%',
+                    left: '55.3%',
+                    top: '71.3%',
                     position: 'absolute',
                     zIndex: 10,
                 }}>
-                    <Counter counter={blueUpperSideGoldenPlantingZone} setCounter={setBlueUpperSideGoldenPlantingZone} color={"gold"} />
-                </Box>
-                <Box style={{
-                    left: '46%',
-                    top: '71.2%',
-                    position: 'absolute',
-                    zIndex: 10,
-                }}>
-                    <Counter counter={redLowerSideGoldenPlantingZone} setCounter={setRedLowerSideGoldenPlantingZone} color={"gold"} />
-                </Box>
-                <Box style={{
-                    left: '51.5%',
-                    top: '71.2%',
-                    position: 'absolute',
-                    zIndex: 10,
-                }}>
-                    <Counter counter={blueLowerSideGoldenPlantingZone} setCounter={setBlueLowerSideGoldenPlantingZone} color={"gold"} />
-                </Box>
-                <Box style={{
-                    left: '38.5%',
-                    top: '77%',
-                    position: 'absolute',
-                    zIndex: 10,
-                }}>
-                    <Counter counter={redColouredGoldenPlantingZone} setCounter={setRedColouredGoldenPlantingZone} color={"gold"} />
-                </Box>
-                <Box style={{
-                    left: '58.5%',
-                    top: '77%',
-                    position: 'absolute',
-                    zIndex: 10,
-                }}>
-                    <Counter counter={blueColouredGoldenPlantingZone} setCounter={setBlueColouredGoldenPlantingZone} color={"gold"} />
-                </Box>
-                <Box style={{
-                    left: '32.5%',
-                    top: '1.5%',
-                    position: 'absolute',
-                    zIndex: 10,
-                }}>
-                    <Button onClick={()=>{setRedAutoRobotRecogn(redAutoRobotRecogn==1?0:1)}} colorScheme={redAutoRobotRecogn==1?"green":"red"}>Rc</Button>
-                </Box>
-                <Box style={{
-                    left: '36.5%',
-                    top: '1.5%',
-                    position: 'absolute',
-                    zIndex: 10,
-                }}>
-                    <Button onClick={()=>{setRedAutoRobotMove(redAutoRobotMove==1?0:1)}} colorScheme={redAutoRobotMove==1?"green":"red"}>Mv</Button>
-                </Box>
-                <Box style={{
-                    left: '59.8%',
-                    top: '1.5%',
-                    position: 'absolute',
-                    zIndex: 10,
-                }}>
-                    <Button onClick={()=>{setBlueAutoRobotRecogn(blueAutoRobotRecogn==1?0:1)}} colorScheme={blueAutoRobotRecogn==1?"green":"red"}>Rc</Button>
-                </Box>
-                <Box style={{
-                    left: '63.7%',
-                    top: '1.5%',
-                    position: 'absolute',
-                    zIndex: 10,
-                }}>
-                    <Button onClick={()=>{setBlueAutoRobotMove(blueAutoRobotMove==1?0:1)}} colorScheme={blueAutoRobotMove==1?"green":"red"}>Mv</Button>
+                    <Counter counter={gameProps.blueSeedling||0} setCounter={blueSeedlingAction} color={"blue"} />
                 </Box>
             </Box>
         </Box>
