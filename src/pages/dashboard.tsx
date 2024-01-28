@@ -144,14 +144,14 @@ export default function Dashboard() {
                     gameStage.current = newGameStage;
                     clockToggle.current = remainingTime > 0 ? true : false;
                     clockElapse.current = 0;
-                    console.log("BEFORE RESET", gameProps)
+                    //console.log("BEFORE RESET", gameProps)
                     set(child(dbRef, `games/${gameID}/clock`), {
                         stage: newGameStage,
                         timestamp: Date.now(),
                         elapsed: 0,
                         paused: remainingTime > 0 ? false : true
                     })
-                    console.log("AFTER RESET", gameProps)
+                    //console.log("AFTER RESET", gameProps)
                     if (newGameStage == "END") {
                         enqueueSnackbar(`Game END`, {variant: "success", preventDuplicate: true})
                         gameEndVictoryCalc();
@@ -367,7 +367,7 @@ export default function Dashboard() {
             return;
         }
 
-        console.log(gameProps);
+        //console.log("UPDATE", gameProps);
         
         console.log("Updating Props");
         
@@ -427,7 +427,7 @@ export default function Dashboard() {
     const [siloForceColor, setSiloForceColor] = useState<any>([["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"]]);
 
     const siloAction = (silo: number, pos: number, color: String) => {
-
+        //console.log("Silo Action", gameProps)
         let tmpSilos = gameProps.silos?[...gameProps.silos]:[["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"]];
 
         let siloHeight = 0;
@@ -473,7 +473,7 @@ export default function Dashboard() {
                 if (color == "BLUE") bluePoints += 30;
             })
         });
-        console.log(gameProps.silos)
+        //console.log("SCORE", gameProps.silos)
 
         /*
         ‘V Goal’ “Mùa Vàng” (Harvest Glory) is achieved when 3 Silos
@@ -536,7 +536,7 @@ export default function Dashboard() {
         (e) Determination by The Judge Committee.
         */
 
-        console.log("gameEndVictoryCalc", gameProps)
+        //console.log("gameEndVictoryCalc", gameProps)
 
         let redPoints = scoresRef.current.redPoints;
         let bluePoints = scoresRef.current.bluePoints;
@@ -590,7 +590,17 @@ export default function Dashboard() {
                 zIndex: 10,
                 color: onlineStatus==1?'lightgreen':onlineStatus==0?'lightcoral':'orange',
             }}>
-                <FontAwesomeIcon icon={faCircleDot} /> {onlineStatus==1 ? "Connected" : onlineStatus==0 ? "Disconnected": "Large Time Diff"}
+                {onlineStatus==1 ? "Connected" : onlineStatus==0 ? "Disconnected": "Large Time Diff"} <FontAwesomeIcon icon={faCircleDot} />
+                <br />
+            </Box>
+            <Box style={{
+                right: "1rem",
+                top: "2rem",
+                zIndex: 10,
+                position: 'absolute',
+                color: onlineStatus==1?'lightgreen':onlineStatus==0?'lightcoral':'orange',
+            }}>
+            <Button onClick={()=>navigator.clipboard.writeText(JSON.stringify({...gameProps, teams: currentTeam}))} colorScheme="blue" size={"sm"}>Copy Game Props</Button>
             </Box>
             <Box style={{
                 height: '0%',
