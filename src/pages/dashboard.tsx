@@ -249,8 +249,8 @@ export default function Dashboard() {
     }
 
     const changeStage = (skipStage:number) => {
-        if (GAME_STAGES.indexOf(gameStage.current)+skipStage < 0 ) return;
-        if (GAME_STAGES.indexOf(gameStage.current)+skipStage > GAME_STAGES.length-1 ) return;
+        if (GAME_STAGES.indexOf(gameStage.current)+skipStage < 0 ) {stopClock(); return;}
+        if (GAME_STAGES.indexOf(gameStage.current)+skipStage > GAME_STAGES.length-1 ) {stopClock(); return;}
         const index = GAME_STAGES.indexOf(gameStage.current);
         const nextStage = GAME_STAGES[index+skipStage];
         const remainingTime = GAME_STAGES_TIME[index+skipStage]*1000;
