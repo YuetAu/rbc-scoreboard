@@ -13,6 +13,7 @@ import Teams from "../props/dashboard/teams.json";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCircleDot } from '@fortawesome/free-solid-svg-icons'
 import HistoryList from "@/props/dashboard/HistoryList";
+import { ColorPicker } from "@/props/dashboard/ColorPicker";
 
 export default function Dashboard() {
 
@@ -43,7 +44,7 @@ export default function Dashboard() {
                         device: { ...gameData.device, [deviceID]: "CONTROLLER" },
                     });
                     console.log("Game Fetched");
-                    enqueueSnackbar(`Game Loaded`, {variant: "success", preventDuplicate: true})
+                    enqueueSnackbar(`Game Loaded`, {variant: "success"})
                     gameStage.current = gameData.clock.stage;
                     clockElapse.current = gameData.clock.elapsed;
                     clockToggle.current = !gameData.clock.paused;
@@ -62,6 +63,7 @@ export default function Dashboard() {
                     if (gameData.props) setGameProps(gameData.props);
                     onValue(child(dbRef, `games/${gameID}/props`), (snapshot) => {
                         const newPropsData = snapshot.val();
+                        //console.log("New PROPS", newPropsData);
                         if (newPropsData) {
                             setGameProps(newPropsData);
                         } else {
@@ -142,15 +144,17 @@ export default function Dashboard() {
                     gameStage.current = newGameStage;
                     clockToggle.current = remainingTime > 0 ? true : false;
                     clockElapse.current = 0;
+                    console.log("BEFORE RESET", gameProps)
                     set(child(dbRef, `games/${gameID}/clock`), {
                         stage: newGameStage,
                         timestamp: Date.now(),
                         elapsed: 0,
                         paused: remainingTime > 0 ? false : true
                     })
+                    console.log("AFTER RESET", gameProps)
                     if (newGameStage == "END") {
                         enqueueSnackbar(`Game END`, {variant: "success", preventDuplicate: true})
-                        //gameEndVictoryCalc();
+                        gameEndVictoryCalc();
                     }
                 }
             }
@@ -248,7 +252,7 @@ export default function Dashboard() {
     }
 
     const gameIDInput = useRef<HTMLInputElement>(null);
-    const [gameIDModal, setGameIDModal] = useState(false);
+    const [gameIDModal, setGameIDModal] = useState(true);
 
     const submitGameID = async () => {
         if (gameIDInput.current) {
@@ -299,7 +303,6 @@ export default function Dashboard() {
 
     useEffect(() => {
         console.log("Updating Teams")
-        console.log(currentTeam)
 
         if (gameID == "") return;
 
@@ -318,13 +321,11 @@ export default function Dashboard() {
     const lastGameProps = useRef<any>("");
     const greatVictory = useRef<boolean>(false);
     const [gameProps, setGameProps] = useState<any>({});
-    const silos = useRef<String[][]>([[],[],[],[],[]]);
     const history = useRef<any[]>([]);
 
 
     const resetProps = () => {
         setGameProps({});
-        silos.current = [[],[],[],[],[]];
         history.current = [];
         greatVictory.current = false;
         set(child(dbRef, `games/${gameID}/props`), {});
@@ -340,7 +341,6 @@ export default function Dashboard() {
         clockData.current = { stage: gameStage.current, paused: true, elapsed: 0, timestamp: Date.now() };
         updateClockText();
         setGameProps({});
-        silos.current = [[],[],[],[],[]];
         history.current = [];
         greatVictory.current = false;
         set(child(dbRef, `games/${gameID}`), {
@@ -361,83 +361,20 @@ export default function Dashboard() {
 
         if (greatVictory.current) return;
 
-        if (gameStage.current == "PREP") {
+        if (gameStage.current === "PREP") {
             resetProps();
-            enqueueSnackbar("No editing in PREP stage.", {variant: "error", preventDuplicate: true})
+            enqueueSnackbar("No editing in PREP stage.", {variant: "error"})
             return;
         }
+
+        console.log(gameProps);
         
         console.log("Updating Props");
         
         const scores = scoreCalculation();
 
-        set(child(dbRef, `games/${gameID}/props`), {...gameProps, scores, silos: silos.current, history: history.current});
+        set(child(dbRef, `games/${gameID}/props`), {...gameProps, scores, history: history.current});
     }, [gameProps])
-
-    const redFirstSiloAction = (value: number) => {
-        // Validation
-        if ((gameProps.blueFirstSilo || 0) + value > 3) {
-            enqueueSnackbar("First Silo exceeded!", {variant: "error", preventDuplicate: true});
-            return;
-        }
-
-        silos.current[0].push("RED");
-        history.current.push({action: `RED Silo 1 ${silos.current[0].join("/")}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "RED"});
-        setGameProps({...gameProps, redFirstSilo: value});
-        
-    }
-
-    const redSecondSiloAction = (value: number) => {
-        // Validation
-        if ((gameProps.blueSecondSilo || 0) + value > 3) {
-            enqueueSnackbar("Second Silo exceeded!", {variant: "error", preventDuplicate: true})
-            return;
-        }
-
-        silos.current[1].push("RED");
-        history.current.push({action: `RED Silo 2 ${silos.current[1].join("/")}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "RED"});
-        setGameProps({...gameProps, redSecondSilo: value });
-        
-    }
-
-    const redThirdSiloAction = (value: number) => {
-        // Validation
-        if ((gameProps.blueThirdSilo || 0) + value > 3) {
-            enqueueSnackbar("Third Silo exceeded!", {variant: "error", preventDuplicate: true})
-            return;
-        }
-
-        silos.current[2].push("RED");
-        history.current.push({action: `RED Silo 3 ${silos.current[2].join("/")}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "RED"});
-        setGameProps({...gameProps, redThirdSilo: value});
-        
-    }
-
-    const redFourthSiloAction = (value: number) => {
-        // Validation
-        if ((gameProps.blueFourthSilo || 0) + value > 3) {
-            enqueueSnackbar("Fourth Silo exceeded!", {variant: "error", preventDuplicate: true})
-            return;
-        }
-
-        silos.current[3].push("RED");
-        history.current.push({action: `RED Silo 4 ${silos.current[3].join("/")}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "RED"});
-        setGameProps({...gameProps, redFourthSilo: value });
-        
-    }
-
-    const redFifthSiloAction = (value: number) => {
-        // Validation
-        if ((gameProps.blueFifthSilo || 0) + value > 3) {
-            enqueueSnackbar("Fifth Silo exceeded!", {variant: "error", preventDuplicate: true})
-            return;
-        }
-
-        silos.current[4].push("RED");
-        history.current.push({action: `RED Silo 5 ${silos.current[4].join("/")}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "RED"});
-        setGameProps({...gameProps, redFifthSilo: value });
-        
-    }
 
     const redStorageZoneAction = (value: number) => {
         // Validation
@@ -460,71 +397,6 @@ export default function Dashboard() {
 
         history.current.push({action: `RED Seedling ${value}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "RED"})
         setGameProps({...gameProps, redSeedling: value});
-        
-    }
-
-    const blueFirstSiloAction = (value: number) => {
-        // Validation
-        if ((gameProps.redFirstSilo || 0) + value > 3) {
-            enqueueSnackbar("First Silo exceeded!", {variant: "error", anchorOrigin: {vertical: "bottom", horizontal: "right"}, preventDuplicate: true});;
-            return;
-        }
-
-        silos.current[0].push("BLUE");
-        history.current.push({action: `BLUE Silo 1 ${silos.current[0].join("/")}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "BLUE"});
-        setGameProps({...gameProps, blueFirstSilo: value });
-        
-    }
-
-    const blueSecondSiloAction = (value: number) => {
-        // Validation
-        if ((gameProps.redSecondSilo || 0) + value > 3) {
-            enqueueSnackbar("Second Silo exceeded!", {variant: "error", anchorOrigin: {vertical: "bottom", horizontal: "right"}, preventDuplicate: true});
-            return;
-        }
-
-        silos.current[1].push("BLUE");
-        history.current.push({action: `BLUE Silo 2 ${silos.current[1].join("/")}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "BLUE"});
-        setGameProps({...gameProps, blueSecondSilo: value });
-        
-    }
-
-    const blueThirdSiloAction = (value: number) => {
-        // Validation
-        if ((gameProps.redThirdSilo || 0) + value > 3) {
-            enqueueSnackbar("Third Silo exceeded!", {variant: "error", anchorOrigin: {vertical: "bottom", horizontal: "right"}, preventDuplicate: true});
-            return;
-        }
-
-        silos.current[2].push("BLUE");
-        history.current.push({action: `BLUE Silo 3 ${silos.current[2].join("/")}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "BLUE"});
-        setGameProps({...gameProps, blueThirdSilo: value });
-        
-    }
-
-    const blueFourthSiloAction = (value: number) => {
-        // Validation
-        if ((gameProps.redFourthSilo || 0) + value > 3) {
-            enqueueSnackbar("Fourth Silo exceeded!", {variant: "error", anchorOrigin: {vertical: "bottom", horizontal: "right"}, preventDuplicate: true});
-            return;
-        }
-
-        silos.current[3].push("BLUE");
-        history.current.push({action: `BLUE Silo 4 ${silos.current[3].join("/")}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "BLUE"});
-        setGameProps({...gameProps, blueFourthSilo: value });
-        
-    }
-
-    const blueFifthSiloAction = (value: number) => {
-        // Validation
-        if ((gameProps.redFifthSilo || 0) + value > 3) {
-            enqueueSnackbar("First Silo exceeded!", {variant: "error", anchorOrigin: {vertical: "bottom", horizontal: "right"}, preventDuplicate: true});
-            return;
-        }
-
-        silos.current[4].push("BLUE");
-        history.current.push({action: `BLUE Silo 5 ${silos.current[4].join("/")}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "BLUE"});
-        setGameProps({...gameProps, blueFifthSilo: value});
         
     }
 
@@ -552,6 +424,29 @@ export default function Dashboard() {
         
     }
 
+    const [siloForceColor, setSiloForceColor] = useState<any>([["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"]]);
+
+    const siloAction = (silo: number, pos: number, color: String) => {
+
+        let tmpSilos = gameProps.silos?[...gameProps.silos]:[["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"]];
+
+        let siloHeight = 0;
+        for (let index = 0; index < tmpSilos[silo].length; index++) {
+            const val = tmpSilos[silo][index];
+            if (val === "NONE") {
+                siloHeight = index;
+                break;
+            }
+        }
+
+        if (pos > siloHeight) pos = siloHeight;
+        tmpSilos[silo][pos] = color;
+        history.current.push({action: `Silo ${silo} ${pos} ${color}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: color=="RED"?"RED":"BLUE"})
+        setGameProps({...gameProps, silos: [...tmpSilos]});
+    }
+
+    const scoresRef = useRef<any>({red: 0, blue: 0});
+
     const scoreCalculation = () => {
         /*
         The score is calculated as follows:
@@ -572,8 +467,13 @@ export default function Dashboard() {
         redPoints += (gameProps.redStorageZone || 0) * 10;
         bluePoints += (gameProps.blueStorageZone || 0) * 10;
 
-        redPoints += ((gameProps.redFirstSilo || 0) + (gameProps.redSecondSilo || 0) + (gameProps.redThirdSilo || 0) + (gameProps.redFourthSilo || 0) + (gameProps.redFifthSilo || 0)) * 30;
-        bluePoints += ((gameProps.blueFirstSilo || 0) + (gameProps.blueSecondSilo || 0) + (gameProps.blueThirdSilo || 0) + (gameProps.blueFourthSilo || 0) + (gameProps.blueFifthSilo || 0)) * 30;
+        gameProps.silos?.forEach((silo: String[]) => {
+            silo.forEach((color: String) => {
+                if (color == "RED") redPoints += 30;
+                if (color == "BLUE") bluePoints += 30;
+            })
+        });
+        console.log(gameProps.silos)
 
         /*
         ‘V Goal’ “Mùa Vàng” (Harvest Glory) is achieved when 3 Silos
@@ -589,8 +489,8 @@ export default function Dashboard() {
         let redOccoupiedSilos = 0;
         let blueOccoupiedSilos = 0;
 
-        for (let i = 0; i < silos.current.length; i++) {
-            const siloArray = silos.current[i];
+        gameProps.silos?.forEach((silo: String[]) => {
+            const siloArray = silo;
             const lastElement = siloArray[siloArray.length - 1];
 
             if (lastElement === "RED" && siloArray.filter((color: String) => color === "RED").length >= 2 && siloArray.length == 3) {
@@ -598,7 +498,7 @@ export default function Dashboard() {
             } else if (lastElement === "BLUE" && siloArray.filter((color: String) => color === "BLUE").length >= 2 && siloArray.length == 3) {
                 blueOccoupiedSilos++;
             }
-        }
+        })
 
         let greatVictoryObject = {}
 
@@ -618,11 +518,44 @@ export default function Dashboard() {
             greatVictoryObject = {blueGreatVictory: true, greatVictoryTimestamp}
         }
 
-        return {...gameProps.scores, redPoints: redPoints, bluePoints: bluePoints, ...greatVictoryObject}
+        scoresRef.current = {redPoints, bluePoints}
+        return {redPoints, bluePoints, ...greatVictoryObject}
     }
 
     const gameEndVictoryCalc = () => {
+        /*
+        3.7 Deciding the Winner
+        A Winning Team is determined as follows:
+        1) The team that achieves absolute victory, the “Mùa Vàng”
+        2) The team with a higher total score.
+        3) In case 2 teams have the same scores:
+        (a) The team with a higher total score of the stored Paddy Rice in Area 3.
+        (b) The team with a higher total score of the harvested balls.
+        (c) The team with a higher total score of planting in Area 1.
+        (d) The team gains score of planting in advance in Area 1.
+        (e) Determination by The Judge Committee.
+        */
 
+        console.log("gameEndVictoryCalc", gameProps)
+
+        let redPoints = scoresRef.current.redPoints;
+        let bluePoints = scoresRef.current.bluePoints;
+        //console.log(redPoints, bluePoints)
+
+        if (redPoints > bluePoints) {
+            enqueueSnackbar(`RED WINS`, {variant: "success", autoHideDuration: 10000, preventDuplicate: true});
+            //stopClock();
+            //greatVictory.current = true;
+            //history.current.push({action: `RED WINS`, time: "03:00:00", team: "RED"});
+            //setGameProps({...gameProps, scores: {...gameProps.scores, redVictory: true}});
+        } else if (bluePoints > redPoints) {
+            enqueueSnackbar(`BLUE WINS`, {variant: "success", autoHideDuration: 10000, preventDuplicate: true});
+            //stopClock();
+            //greatVictory.current = true;
+            //history.current.push({action: `BLUE WINS`, time: "03:00:00", team: "BLUE"});
+            //setGameProps({...gameProps, scores: {...gameProps.scores, blueVictory: true}});
+        } 
+        // Dun want to write
     }
 
     return (
@@ -726,6 +659,152 @@ export default function Dashboard() {
                         objectFit: 'contain',
                     }}/>
                 </Box>
+
+                <Box
+                    shadow="lg"
+                    rounded="md"
+                    style={{
+                        left: '39.3%',
+                        top: '0.5%',
+                        position: 'absolute',
+                        zIndex: 10,
+                        fontSize: "2rem",
+                        textAlign: "center",
+                        lineHeight: "2.5rem",
+                        backgroundColor: "white",
+                        color: "black",
+                        width: "19.7rem",
+                        height: "10.5rem",
+                        overflow: "hidden",
+                    }}
+                >
+                    <Box style={{
+                        left: '10%',
+                        bottom: '8%',
+                        position: 'absolute',
+                        zIndex: 10,
+                    }}>
+                        <ColorPicker forceColor={siloForceColor[0][0]} color={gameProps.silos&&gameProps.silos[0][0]||"NONE"} setPicker={siloAction} pos={[0,0]}/>
+                    </Box>
+                    <Box style={{
+                        left: '10%',
+                        bottom: '38%',
+                        position: 'absolute',
+                        zIndex: 10,
+                    }}>
+                        <ColorPicker forceColor={siloForceColor[0][1]} color={gameProps.silos&&gameProps.silos[0][1]||"NONE"} setPicker={siloAction} pos={[0,1]}/>
+                    </Box>
+                    <Box style={{
+                        left: '10%',
+                        bottom: '68%',
+                        position: 'absolute',
+                        zIndex: 10,
+                    }}>
+                        <ColorPicker forceColor={siloForceColor[0][2]} color={gameProps.silos&&gameProps.silos[0][2]||"NONE"} setPicker={siloAction} pos={[0,2]}/>
+                    </Box>
+
+                    <Box style={{
+                        left: '27%',
+                        bottom: '8%',
+                        position: 'absolute',
+                        zIndex: 10,
+                    }}>
+                        <ColorPicker forceColor={siloForceColor[1][0]} color={gameProps.silos&&gameProps.silos[1][0]||"NONE"} setPicker={siloAction} pos={[1,0]}/>
+                    </Box>
+                    <Box style={{
+                        left: '27%',
+                        bottom: '38%',
+                        position: 'absolute',
+                        zIndex: 10,
+                    }}>
+                        <ColorPicker forceColor={siloForceColor[1][1]} color={gameProps.silos&&gameProps.silos[1][1]||"NONE"} setPicker={siloAction} pos={[1,1]}/>
+                    </Box>
+                    <Box style={{
+                        left: '27%',
+                        bottom: '68%',
+                        position: 'absolute',
+                        zIndex: 10,
+                    }}>
+                        <ColorPicker forceColor={siloForceColor[1][2]} color={gameProps.silos&&gameProps.silos[1][2]||"NONE"} setPicker={siloAction} pos={[1,2]}/>
+                    </Box>
+
+                    <Box style={{
+                        left: '43.5%',
+                        bottom: '8%',
+                        position: 'absolute',
+                        zIndex: 10,
+                    }}>
+                        <ColorPicker forceColor={siloForceColor[2][0]} color={gameProps.silos&&gameProps.silos[2][0]||"NONE"} setPicker={siloAction} pos={[2,0]}/>
+                    </Box>
+                    <Box style={{
+                        left: '43.5%',
+                        bottom: '38%',
+                        position: 'absolute',
+                        zIndex: 10,
+                    }}>
+                        <ColorPicker forceColor={siloForceColor[2][1]} color={gameProps.silos&&gameProps.silos[2][1]||"NONE"} setPicker={siloAction} pos={[2,1]}/>
+                    </Box>
+                    <Box style={{
+                        left: '43.5%',
+                        bottom: '68%',
+                        position: 'absolute',
+                        zIndex: 10,
+                    }}>
+                        <ColorPicker forceColor={siloForceColor[2][2]} color={gameProps.silos&&gameProps.silos[2][2]||"NONE"} setPicker={siloAction} pos={[2,2]}/>
+                    </Box>
+
+                    <Box style={{
+                        left: '60%',
+                        bottom: '8%',
+                        position: 'absolute',
+                        zIndex: 10,
+                    }}>
+                        <ColorPicker forceColor={siloForceColor[3][0]} color={gameProps.silos&&gameProps.silos[3][0]||"NONE"} setPicker={siloAction} pos={[3,0]}/>
+                    </Box>
+                    <Box style={{
+                        left: '60%',
+                        bottom: '38%',
+                        position: 'absolute',
+                        zIndex: 10,
+                    }}>
+                        <ColorPicker forceColor={siloForceColor[3][1]} color={gameProps.silos&&gameProps.silos[3][1]||"NONE"} setPicker={siloAction} pos={[3,1]}/>
+                    </Box>
+                    <Box style={{
+                        left: '60%',
+                        bottom: '68%',
+                        position: 'absolute',
+                        zIndex: 10,
+                    }}>
+                        <ColorPicker forceColor={siloForceColor[3][2]} color={gameProps.silos&&gameProps.silos[3][2]||"NONE"} setPicker={siloAction} pos={[3,2]}/>
+                    </Box>
+
+                    <Box style={{
+                        left: '76.5%',
+                        bottom: '8%',
+                        position: 'absolute',
+                        zIndex: 10,
+                    }}>
+                        <ColorPicker forceColor={siloForceColor[4][0]} color={gameProps.silos&&gameProps.silos[4][0]||"NONE"} setPicker={siloAction} pos={[4,0]}/>
+                    </Box>
+                    <Box style={{
+                        left: '76.5%',
+                        bottom: '38%',
+                        position: 'absolute',
+                        zIndex: 10,
+                    }}>
+                        <ColorPicker forceColor={siloForceColor[4][1]} color={gameProps.silos&&gameProps.silos[4][1]||"NONE"} setPicker={siloAction} pos={[4,1]}/>
+                    </Box>
+                    <Box style={{
+                        left: '76.5%',
+                        bottom: '68%',
+                        position: 'absolute',
+                        zIndex: 10,
+                    }}>
+                        <ColorPicker forceColor={siloForceColor[4][2]} color={gameProps.silos&&gameProps.silos[4][2]||"NONE"} setPicker={siloAction} pos={[4,2]}/>
+                    </Box>
+                    
+                </Box>
+
                 {/* <Box style={{
                     left: '47%',
                     top: '1%',

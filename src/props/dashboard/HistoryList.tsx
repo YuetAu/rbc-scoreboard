@@ -37,7 +37,7 @@ export default function HistoryList(props: any) {
                 >
                     <Table variant="striped" size="sm" colorScheme={props.color || "teal"}>
                         <Tbody>
-                            {props.history.map((item: any) => {
+                            {props.history.slice(0).reverse().map((item: any) => {
                                 if (item.team === props.team) {
                                     return (
                                         <Tr key={`${Date.now()}${item.action}${item.time}`}>
