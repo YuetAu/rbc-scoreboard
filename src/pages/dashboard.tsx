@@ -3,7 +3,7 @@ import { FirebaseDatabase } from "@/firebase/config";
 import { Box, Button, Image, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay } from "@chakra-ui/react";
 import { ref, child, set, get, update, onValue } from "firebase/database";
 import { generateSlug } from "random-word-slugs";
-import { useEffect, useRef, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import "@fontsource-variable/quicksand";
 import TimerBox from "@/props/dashboard/TimerBox";
 import { Counter } from "@/props/dashboard/Counter";
@@ -108,6 +108,22 @@ export default function Dashboard() {
         }
     }, [gameID])
 
+    
+    const [countdownBeep, setCountdownBeep] = useState<any>(null);
+    useEffect(() => {
+        setCountdownBeep(new Audio("/sound/countdown.mp3"));
+    }, [])
+    
+    const soundCheck = (stage: string, remainingTime: number) => {
+        switch (stage) {
+            case "PREP":
+                if (remainingTime <= 3000) {
+                    countdownBeep.play();
+                }
+            break;
+        }
+    }
+
     const updateClockText = () => {
         const elapsedTime = clockData.current.paused ? clockData.current.elapsed : clockData.current.elapsed+(Date.now()-clockData.current.timestamp);
         const remainingTime = clockData.current.paused ? (GAME_STAGES_TIME[GAME_STAGES.indexOf(gameStage.current)]*1000)-clockData.current.elapsed : (GAME_STAGES_TIME[GAME_STAGES.indexOf(gameStage.current)]*1000)-clockData.current.elapsed-(Date.now()-clockData.current.timestamp);
@@ -128,6 +144,7 @@ export default function Dashboard() {
                 seconds: elapsedSeconds.length < 2 ? "0"+elapsedSeconds : elapsedSeconds,
                 milliseconds: elapsedMilliseconds.length < 3 ? elapsedMilliseconds.length < 2 ? "00"+elapsedMilliseconds : "0"+elapsedMilliseconds : elapsedMilliseconds
             })
+            soundCheck(gameStage.current, remainingTime);
             if (clockToggle.current) {
                 setTimeout(() => {
                     updateClockText();
