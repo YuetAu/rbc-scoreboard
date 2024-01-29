@@ -524,14 +524,14 @@ export default function Dashboard() {
             let greatVictoryTimestamp = (GAME_STAGES_TIME[GAME_STAGES.indexOf(gameStage.current)]*1000)-clockData.current.elapsed-(Date.now()-clockData.current.timestamp);
             enqueueSnackbar(`RED GREAT VICTORY`, {variant: "success", autoHideDuration: 10000, preventDuplicate: true});
             stopClock();
-            history.current.push({action: `RED GREAT VICTORY`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "RED"});
+            if (grandClock.current) history.current.push({action: `RED GREAT VICTORY`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "RED"});
             greatVictory.current = true;
             greatVictoryObject = {redGreatVictory: true, greatVictoryTimestamp}
         } else if (blueOccoupiedSilos >= 3) {
             let greatVictoryTimestamp = (GAME_STAGES_TIME[GAME_STAGES.indexOf(gameStage.current)]*1000)-clockData.current.elapsed-(Date.now()-clockData.current.timestamp);
             enqueueSnackbar(`BLUE GREAT VICTORY`, {variant: "success", anchorOrigin: { horizontal: "right", vertical: "bottom" }, autoHideDuration: 10000, preventDuplicate:true});
             stopClock();
-            history.current.push({action: `BLUE GREAT VICTORY`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "BLUE"});
+            if (grandClock.current) history.current.push({action: `BLUE GREAT VICTORY`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "BLUE"});
             greatVictory.current = true;
             greatVictoryObject = {blueGreatVictory: true, greatVictoryTimestamp}
         }

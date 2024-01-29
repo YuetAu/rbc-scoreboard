@@ -1,6 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getDatabase } from "firebase/database";
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 
 
 const firebaseConfig = {
@@ -13,9 +14,13 @@ const firebaseConfig = {
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
     measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
-  
+
 // Initialize Firebase
 const FirebaseApp = initializeApp(firebaseConfig);
 const FirebaseDatabase = getDatabase(FirebaseApp);
+const FirebaseAppCheck = initializeAppCheck(FirebaseApp, {
+    provider: new ReCaptchaEnterpriseProvider("6Lc7OF8pAAAAAH6SFYWw1m6lIrP_vuyYBPA_PT5x"),
+    isTokenAutoRefreshEnabled: true
+});
 
-export { FirebaseApp, FirebaseDatabase };
+export { FirebaseApp, FirebaseDatabase, FirebaseAppCheck };
