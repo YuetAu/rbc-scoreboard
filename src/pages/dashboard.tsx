@@ -1,19 +1,19 @@
 import { GAME_STAGES, GAME_STAGES_TIME } from "@/common/gameStages";
 import { FirebaseDatabase } from "@/firebase/config";
-import { Box, Button, Image, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay } from "@chakra-ui/react";
-import { ref, child, set, get, update, onValue } from "firebase/database";
-import { generateSlug } from "random-word-slugs";
-import { use, useEffect, useRef, useState } from "react";
-import "@fontsource-variable/quicksand";
-import TimerBox from "@/props/dashboard/TimerBox";
-import { Counter } from "@/props/dashboard/Counter";
-import { useSnackbar } from "notistack";
-import { ScoreDisplay } from "@/props/dashboard/ScoreDisplay";
-import Teams from "../props/dashboard/teams.json";
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faCircleDot } from '@fortawesome/free-solid-svg-icons'
-import HistoryList from "@/props/dashboard/HistoryList";
 import { ColorPicker } from "@/props/dashboard/ColorPicker";
+import { Counter } from "@/props/dashboard/Counter";
+import HistoryList from "@/props/dashboard/HistoryList";
+import { ScoreDisplay } from "@/props/dashboard/ScoreDisplay";
+import TimerBox from "@/props/dashboard/TimerBox";
+import { Box, Button, Image, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay } from "@chakra-ui/react";
+import "@fontsource-variable/quicksand";
+import { faCircleDot } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { child, get, onValue, ref, set, update } from "firebase/database";
+import { useSnackbar } from "notistack";
+import { generateSlug } from "random-word-slugs";
+import { useEffect, useRef, useState } from "react";
+import Teams from "../props/dashboard/teams.json";
 
 export default function Dashboard() {
 
