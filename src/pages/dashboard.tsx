@@ -65,6 +65,7 @@ export default function Dashboard() {
                         const newPropsData = snapshot.val();
                         //console.log("New PROPS", newPropsData);
                         if (newPropsData) {
+                            history.current = newPropsData.history || [];
                             setGameProps(newPropsData);
                         } else {
                             setGameProps({});
