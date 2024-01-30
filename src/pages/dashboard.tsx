@@ -1,5 +1,5 @@
 import { GAME_STAGES, GAME_STAGES_TIME } from "@/common/gameStages";
-import { FirebaseDatabase } from "@/firebase/config";
+import { FirebaseApp, FirebaseDatabase } from "@/firebase/config";
 import { ColorPicker } from "@/props/dashboard/ColorPicker";
 import { Counter } from "@/props/dashboard/Counter";
 import HistoryList from "@/props/dashboard/HistoryList";
@@ -14,6 +14,7 @@ import { useSnackbar } from "notistack";
 import { generateSlug } from "random-word-slugs";
 import { useEffect, useRef, useState } from "react";
 import Teams from "../props/dashboard/teams.json";
+import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 
 export default function Dashboard() {
 
@@ -33,6 +34,16 @@ export default function Dashboard() {
     const clockToggle = useRef(false);
 
     const [onlineStatus, setOnlineStatus] = useState(0);
+
+    useEffect(()=>{
+        const appCheck = initializeAppCheck(FirebaseApp, {
+            provider: new ReCaptchaV3Provider(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY||""),
+            
+            // Optional argument. If true, the SDK automatically refreshes App Check
+            // tokens as needed.
+            isTokenAutoRefreshEnabled: true
+        });
+    },[])
 
     useEffect(() => {
         if (gameID && !gameFetchLock.current) {
