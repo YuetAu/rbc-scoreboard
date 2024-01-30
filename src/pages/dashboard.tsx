@@ -212,12 +212,14 @@ export default function Dashboard() {
         clockData.current = { stage: gameStage.current, elapsed: clockElapse.current, paused: false, timestamp: Date.now() };
         updateClockText();
         enqueueSnackbar("Clock Started", {variant: "success", preventDuplicate: true})
-        set(child(dbRef, `games/${gameID}/clock`), {
-            stage: gameStage.current,
-            timestamp: Date.now(),
-            elapsed: clockElapse.current,
-            paused: false
-        })
+        if (gameID != "") {
+            set(child(dbRef, `games/${gameID}/clock`), {
+                stage: gameStage.current,
+                timestamp: Date.now(),
+                elapsed: clockElapse.current,
+                paused: false
+            })
+        }
     }
 
     const stopClock = () => {
@@ -227,12 +229,14 @@ export default function Dashboard() {
         clockData.current = { stage: gameStage.current, elapsed: clockElapse.current, paused: true, timestamp: Date.now() };
         updateClockText();
         enqueueSnackbar("Clock Stopped", {variant: "success", preventDuplicate: true})
-        set(child(dbRef, `games/${gameID}/clock`), {
-            stage: gameStage.current,
-            timestamp: Date.now(),
-            elapsed: clockElapse.current,
-            paused: true
-        })
+        if (gameID != "") {
+            set(child(dbRef, `games/${gameID}/clock`), {
+                stage: gameStage.current,
+                timestamp: Date.now(),
+                elapsed: clockElapse.current,
+                paused: true
+            })
+        }
     }
 
     const toggleClock = () => {
@@ -252,12 +256,14 @@ export default function Dashboard() {
         clockData.current = { stage: gameStage.current, paused: true, elapsed: 0, timestamp: Date.now() };
         updateClockText();
         enqueueSnackbar(`Reset stage ${gameStage.current}`, {variant: "success", preventDuplicate: true});
-        set(child(dbRef, `games/${gameID}/clock`), {
-            stage: gameStage.current,
-            timestamp: Date.now(),
-            elapsed: 0,
-            paused: true
-        })
+        if (gameID != "") {
+            set(child(dbRef, `games/${gameID}/clock`), {
+                stage: gameStage.current,
+                timestamp: Date.now(),
+                elapsed: 0,
+                paused: true
+            })
+        }
     }
 
     const changeStage = (skipStage:number) => {
@@ -272,12 +278,14 @@ export default function Dashboard() {
         clockData.current = { stage: nextStage, timestamp: Date.now(), elapsed: 0, paused: remainingTime > 0 ? false : true };
         updateClockText();
         enqueueSnackbar(`Skip stage to ${gameStage.current}`, {variant: "success", preventDuplicate: true})
-        set(child(dbRef, `games/${gameID}/clock`), {
-            stage: nextStage,
-            timestamp: Date.now(),
-            elapsed: 0,
-            paused: remainingTime > 0 ? false : true
-        })
+        if (gameID != "") {
+            set(child(dbRef, `games/${gameID}/clock`), {
+                stage: nextStage,
+                timestamp: Date.now(),
+                elapsed: 0,
+                paused: remainingTime > 0 ? false : true
+            })
+        }
     }
 
     const gameIDInput = useRef<HTMLInputElement>(null);
@@ -318,12 +326,14 @@ export default function Dashboard() {
         gameStage.current = GAME_STAGES[0]
         clockData.current = { stage: gameStage.current, paused: true, elapsed: 0, timestamp: Date.now() };
         updateClockText();
-        set(child(dbRef, `games/${gameID}/clock`), {
-            stage: gameStage.current,
-            timestamp: Date.now(),
-            elapsed: 0,
-            paused: true
-        })
+        if (gameID != "") {
+            set(child(dbRef, `games/${gameID}/clock`), {
+                stage: gameStage.current,
+                timestamp: Date.now(),
+                elapsed: 0,
+                paused: true
+            })
+        }
     }
 
     // Game Teams
@@ -357,7 +367,9 @@ export default function Dashboard() {
         setGameProps({});
         history.current = [];
         greatVictory.current = false;
-        set(child(dbRef, `games/${gameID}/props`), {});
+        if (gameID != "") {
+            set(child(dbRef, `games/${gameID}/props`), {});
+        }
     }
 
     
@@ -372,14 +384,16 @@ export default function Dashboard() {
         setGameProps({});
         history.current = [];
         greatVictory.current = false;
-        set(child(dbRef, `games/${gameID}`), {
-            clock: {
-                stage: gameStage.current,
-                timestamp: Date.now(),
-                elapsed: 0,
-                paused: true
-            }
-        })
+        if (gameID != "") {
+            set(child(dbRef, `games/${gameID}`), {
+                clock: {
+                    stage: gameStage.current,
+                    timestamp: Date.now(),
+                    elapsed: 0,
+                    paused: true
+                }
+            })
+        }
     }
 
     useEffect(() => {
