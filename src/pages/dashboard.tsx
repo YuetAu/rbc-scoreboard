@@ -15,6 +15,7 @@ import { generateSlug } from "random-word-slugs";
 import { useEffect, useRef, useState } from "react";
 import Teams from "../props/dashboard/teams.json";
 import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
+import { Head } from "next/document";
 
 export default function Dashboard() {
 
@@ -613,6 +614,9 @@ export default function Dashboard() {
 
     return (
         <>
+        <Head>
+            <title>{"HKUST Robocon 2024 Scoreboard"}</title>
+        </Head>
         <Box style={{
             height: containerHeight,
             position: 'absolute',
