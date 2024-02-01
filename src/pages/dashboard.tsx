@@ -71,15 +71,23 @@ export default function Dashboard() {
                             updateClockText();
                         }
                     });
-                    if (gameData.props) setGameProps(gameData.props);
+
+                    if (gameData.props) {
+                        if (gameData.props.history.length > history.current.length) {
+                            history.current = gameData.props.history || [];
+                        }
+                        setGameProps(gameData.props);
+                    }
                     onValue(child(dbRef, `games/${gameID}/props`), (snapshot) => {
                         const newPropsData = snapshot.val();
-                        //console.log("New PROPS", newPropsData);
                         if (newPropsData) {
-                            history.current = newPropsData.history || [];
+                            if (newPropsData.history.length > history.current.length) {
+                                history.current = newPropsData.history || [];
+                            }
                             setGameProps(newPropsData);
                         } else {
                             setGameProps({});
+                            history.current = [];
                         }
                     });
 
