@@ -480,6 +480,7 @@ export default function Dashboard() {
                 siloHeight = index;
                 break;
             }
+            siloHeight = 2;
         }
 
         if (pos > siloHeight) pos = siloHeight;
