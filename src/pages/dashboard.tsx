@@ -293,6 +293,7 @@ export default function Dashboard() {
 
     const submitGameID = async () => {
         if (gameIDInput.current) {
+            if (gameIDInput.current.value == "") return;
             console.log("Game ID: "+gameIDInput.current.value);
             setDeviceID(generateSlug(2));
             setGameID(gameIDInput.current.value);
@@ -985,7 +986,7 @@ export default function Dashboard() {
                 <Button colorScheme='blue' mr={3} onClick={submitGameID}>
                 Submit
                 </Button>
-                <Button colorScheme='green' mr={3} onClick={()=>createGame(generateSlug(2))}>
+                <Button colorScheme='green' mr={3} onClick={()=>createGame(String(Math.floor(10000000 + Math.random() * 90000000)))}>
                 Create Game
                 </Button>
             </ModalFooter>
