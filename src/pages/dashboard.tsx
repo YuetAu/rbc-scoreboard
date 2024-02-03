@@ -720,7 +720,7 @@ export default function Dashboard() {
                     width: '100%',
                     zIndex: 1,
                 }}>
-                    <Image src="/GameField.png" alt="Logo" style={{
+                    <Image src="/GameField.webp" fallbackSrc="/GameField.png" alt="Logo" style={{
                         height: '100%',
                         width: '100%',
                         objectFit: 'contain',
@@ -985,6 +985,7 @@ export default function Dashboard() {
                     <Counter counter={gameProps.blueSeedling||0} setCounter={blueSeedlingAction} color={"blue"} />
                 </Box>
             </Box>
+            
         </Box>
         <Modal isOpen={gameIDModal} onClose={()=>{}} isCentered>
             <ModalOverlay />
