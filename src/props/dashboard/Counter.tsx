@@ -15,7 +15,7 @@ export function Counter(props: any) {
                 cursor: "pointer",
             }}
             onClick={(e)=>{e.preventDefault(); props.setCounter(props.counter+1); }}
-            onContextMenu={(e)=>{props.disableLeftClick ? e.preventDefault() : props.setCounter(props.counter-1>0?props.counter-1:0)}}
+            onContextMenu={(e)=>{props.disableLeftClick ? e.preventDefault() : e.preventDefault();props.setCounter(props.counter-1>0?props.counter-1:0);}}
             >
                 {props.counter}
             </Box>
