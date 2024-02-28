@@ -9,7 +9,7 @@ import { Box, Button, Image, Input, Modal, ModalBody, ModalContent, ModalFooter,
 import "@fontsource-variable/quicksand";
 import { faCircleDot } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { child, get, onValue, ref, set, update } from "firebase/database";
+import { child, get, onDisconnect, onValue, ref, set, update } from "firebase/database";
 import { useSnackbar } from "notistack";
 import { generateSlug } from "random-word-slugs";
 import { useEffect, useRef, useState } from "react";
@@ -33,15 +33,14 @@ export default function Dashboard() {
     const gameFetchLock = useRef(false);
     const clockElapse = useRef(0);
     const clockToggle = useRef(false);
+    const deviceList = useRef<any>({});
+    const deviceStatus = useRef<any>({});
 
     const [onlineStatus, setOnlineStatus] = useState(0);
 
     useEffect(()=>{
         const appCheck = initializeAppCheck(FirebaseApp, {
             provider: new ReCaptchaV3Provider(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY||""),
-            
-            // Optional argument. If true, the SDK automatically refreshes App Check
-            // tokens as needed.
             isTokenAutoRefreshEnabled: true
         });
     },[])
@@ -52,9 +51,20 @@ export default function Dashboard() {
             get(child(dbRef, `games/${gameID}`)).then((snapshot) => {
                 const gameData = snapshot.val();
                 if (gameData) {
+                    var role = "CONTROLLER"
+                    if (grandClock.current) role = "GRANDCLOCK";
                     update(child(dbRef, `games/${gameID}`), {
-                        device: { ...gameData.device, [deviceID]: "CONTROLLER" },
+                        device: { ...gameData.device, [deviceID]: role},
                     });
+
+                    onValue(child(dbRef, `games/${gameID}/device`), (snap) => {
+                        const tmpDeviceList = snap.val()
+                        deviceList.current = tmpDeviceList; 
+                        if (tmpDeviceList[deviceID] == "CONTROLLER") {
+                            grandClock.current = false;
+                        }
+                    });
+
                     console.log("Game Fetched");
                     enqueueSnackbar(`Game Loaded`, {variant: "success"})
                     gameStage.current = gameData.clock.stage;
@@ -103,11 +113,47 @@ export default function Dashboard() {
                     });
 
                     // Check user online
+                    const deviceStatusRef = child(dbRef, `games/${gameID}/device-status/${deviceID}`);
                     onValue(child(dbRef, ".info/connected"), (snap) => {
                         if (snap.val() === true) {
                             setOnlineStatus(1);
+                            onDisconnect(deviceStatusRef).set("OFFLINE")
+                            set(child(dbRef, `games/${gameID}/device-status/${deviceID}`), "ONLINE")
                         } else {
                             setOnlineStatus(0);
+                        }
+                    });
+
+                    onValue(child(dbRef, `games/${gameID}/device-status`), (snap) => {
+                        const tmpDeviceStatus = snap.val()
+                        deviceStatus.current = tmpDeviceStatus; 
+                        const grandClockDeviceID = Object.keys(deviceList.current).find((key) => deviceList.current[key] === "GRANDCLOCK");
+                        if (grandClockDeviceID) {
+                            const grandClockStatus = tmpDeviceStatus[grandClockDeviceID];
+                            if (grandClockStatus === "OFFLINE") {
+                                // Take Over.
+                                console.log("Grand Clock is dead.")
+                                const secondDevice = Object.keys(deviceList.current)
+                                    .filter((key) => deviceList.current[key] !== "GRANDCLOCK")
+                                    .sort((a, b) => a.charCodeAt(0) - b.charCodeAt(0))[1];
+
+                                if (secondDevice == deviceID) {
+                                    // I am going to take over.
+                                    console.log("I am the selected one. Trying to take over.")
+                                    set(child(dbRef, `games/${gameID}/device`), {
+                                        ...deviceList.current,
+                                        [grandClockDeviceID]: "CONTROLLER",
+                                        [deviceID]: "GRANDCLOCK"
+                                    });
+                                    grandClock.current = true;
+                                    console.log("I am the new Grand Clock. I am strong.")
+                                } else {
+                                    console.log("Not me this time.")
+                                }
+                            }
+                        } else {
+                            // Missing GrandClock? IDK how it happen.
+                            console.log("Game Session Broken. But I won't tell the user.")
                         }
                     });
 
@@ -131,17 +177,24 @@ export default function Dashboard() {
 
     
     const [countdownBeep, setCountdownBeep] = useState<any>(null);
+    const [countdownBeep10, setCountdownBeep10] = useState<any>(null);
     useEffect(() => {
         setCountdownBeep(new Audio("/sound/countdown.mp3"));
+        setCountdownBeep10(new Audio("/sound/countdown10.mp3"));
     }, [])
     
     const soundCheck = (stage: string, remainingTime: number) => {
         switch (stage) {
             case "PREP":
-                if (remainingTime <= 3000) {
+                if (remainingTime <= 3000 && countdownBeep.paused) {
                     countdownBeep.play();
                 }
-            break;
+                break;
+            case "GAME":
+                if (remainingTime <= 10000 && countdownBeep10.paused) {
+                    countdownBeep10.play();
+                }
+                break;
         }
     }
 
@@ -182,17 +235,20 @@ export default function Dashboard() {
                     gameStage.current = newGameStage;
                     clockToggle.current = remainingTime > 0 ? true : false;
                     clockElapse.current = 0;
-                    //console.log("BEFORE RESET", gameProps)
                     set(child(dbRef, `games/${gameID}/clock`), {
                         stage: newGameStage,
                         timestamp: Date.now(),
                         elapsed: 0,
                         paused: remainingTime > 0 ? false : true
                     })
-                    //console.log("AFTER RESET", gameProps)
                     if (newGameStage == "END") {
                         enqueueSnackbar(`Game END`, {variant: "success", preventDuplicate: true})
                         gameEndVictoryCalc();
+                    }
+                    // Game start wait judge approval
+                    if (newGameStage == "GAME") {
+                        stopClock();
+                        resetStage();
                     }
                 }
             }
