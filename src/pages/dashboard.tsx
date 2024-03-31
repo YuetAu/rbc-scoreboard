@@ -5,7 +5,7 @@ import { Counter } from "@/props/dashboard/Counter";
 import HistoryList from "@/props/dashboard/HistoryList";
 import { ScoreDisplay } from "@/props/dashboard/ScoreDisplay";
 import TimerBox from "@/props/dashboard/TimerBox";
-import { Box, Button, Image, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalOverlay } from "@chakra-ui/react";
+import { Box, Button, Flex, HStack, Image, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Switch } from "@chakra-ui/react";
 import "@fontsource-variable/quicksand";
 import { faCircleDot } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -16,8 +16,9 @@ import { useEffect, useRef, useState } from "react";
 import Teams from "../props/dashboard/teams.json";
 import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 import Head from 'next/head';
+import { GetStaticProps } from "next";
 
-export default function Dashboard() {
+export default function Dashboard(props: any) {
 
     const dbRef = ref(FirebaseDatabase);
 
@@ -37,6 +38,20 @@ export default function Dashboard() {
     const deviceStatus = useRef<any>({});
 
     const [onlineStatus, setOnlineStatus] = useState(0);
+
+    const isFirstReadSettings = useRef(false);
+    const [gameSettingsModal, setGameSettingsModal] = useState(false);
+    const [gameSettings, setGameSettings] = useState({ preGameCountdown: true, endGameCountdown: true, bgm: false });
+
+    useEffect(() => {
+        const localGameSettings = localStorage.getItem("gameSettings");
+        if (localGameSettings && !isFirstReadSettings.current) {
+            setGameSettings(JSON.parse(localGameSettings));
+            isFirstReadSettings.current = true;
+        } else {
+            localStorage.setItem("gameSettings", JSON.stringify(gameSettings));
+        }
+    }, [gameSettings]);
 
     useEffect(()=>{
         const appCheck = initializeAppCheck(FirebaseApp, {
@@ -186,12 +201,12 @@ export default function Dashboard() {
     const soundCheck = (stage: string, remainingTime: number) => {
         switch (stage) {
             case "PREP":
-                if (remainingTime <= 3000 && countdownBeep.paused) {
+                if (remainingTime <= 3000 && countdownBeep.paused && gameSettings.preGameCountdown) {
                     countdownBeep.play();
                 }
                 break;
             case "GAME":
-                if (remainingTime <= 10000 && countdownBeep10.paused) {
+                if (remainingTime <= 10000 && countdownBeep10.paused && gameSettings.endGameCountdown) {
                     countdownBeep10.play();
                 }
                 break;
@@ -708,12 +723,16 @@ export default function Dashboard() {
             </Box>
             <Box style={{
                 right: "1rem",
-                top: "2rem",
+                top: "2.5rem",
                 zIndex: 10,
                 position: 'absolute',
+                fontSize: '1.3rem',
                 color: onlineStatus==1?'lightgreen':onlineStatus==0?'lightcoral':'orange',
+                textAlign: 'right',
             }}>
-            <Button onClick={()=>navigator.clipboard.writeText(JSON.stringify({...gameProps, teams: currentTeam}))} colorScheme="blue" size={"sm"}>Copy Game Props</Button>
+                <Button onClick={()=>navigator.clipboard.writeText(JSON.stringify({...gameProps, teams: currentTeam}))} colorScheme="blue" size={"sm"}>Copy Game Props</Button>
+                <br />
+                <Button onClick={()=>{setGameSettingsModal(true)}} colorScheme="teal" size={"sm"}>Game Settings</Button>
             </Box>
             <Box style={{
                 height: '0%',
@@ -1061,6 +1080,28 @@ export default function Dashboard() {
             </ModalFooter>
             </ModalContent>
         </Modal>
+
+        <Modal isOpen={gameSettingsModal} onClose={()=>{setGameSettingsModal(false)}} isCentered>
+            <ModalOverlay />
+            <ModalContent>
+            <ModalHeader>Game Settings</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+                <Flex my="0.5rem"><Switch colorScheme='teal' size='md' isChecked={gameSettings.preGameCountdown} onChange={()=>{setGameSettings({...gameSettings, preGameCountdown: !gameSettings.preGameCountdown})}}/> <Box mt={"-0.2rem"} ml={"0.5rem"}>PreGame 3s Countdown Sound Effect</Box></Flex>
+                <Flex my="0.5rem"><Switch colorScheme='teal' size='md' isChecked={gameSettings.endGameCountdown} onChange={()=>{setGameSettings({...gameSettings, endGameCountdown: !gameSettings.endGameCountdown})}}/> <Box mt={"-0.2rem"} ml={"0.5rem"}>EndGame 10s Countdown Sound Effect</Box></Flex>
+                <Flex my="0.5rem"><Switch colorScheme='teal' size='md' isChecked={gameSettings.bgm} onChange={()=>{setGameSettings({...gameSettings, bgm: !gameSettings.bgm})}}/> <Box mt={"-0.2rem"} ml={"0.5rem"}>InGame Background Music</Box></Flex>
+            </ModalBody>
+
+            <ModalFooter>
+                {props.buildVersion ? <small>Version: {(props.buildVersion as string).substring(0,6)}</small> : <small>Version: Development</small>}
+            </ModalFooter>
+            </ModalContent>
+        </Modal>
         </>
     )
 }
+
+export const getStaticProps = (async () => {
+    const buildVersion = process.env.GITHUB_SHA
+    return { props: { buildVersion } }
+})
