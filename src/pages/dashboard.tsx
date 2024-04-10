@@ -101,10 +101,6 @@ export default function Dashboard(props: any) {
         setPattern([area2Pattern, area3Pattern]);
     }
 
-    useEffect(() => {
-        patternGenerator()
-    }, [])
-
     useEffect(()=>{
         const appCheck = initializeAppCheck(FirebaseApp, {
             provider: new ReCaptchaV3Provider(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY||""),
