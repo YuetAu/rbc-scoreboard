@@ -123,7 +123,7 @@ export default function Dashboard(props: any) {
                     onValue(child(dbRef, `games/${gameID}/device`), (snap) => {
                         const tmpDeviceList = snap.val()
                         deviceList.current = tmpDeviceList; 
-                        if (tmpDeviceList[deviceID] == "CONTROLLER") {
+                        if (tmpDeviceList && tmpDeviceList[deviceID] == "CONTROLLER") {
                             grandClock.current = false;
                         }
                     });
@@ -190,6 +190,7 @@ export default function Dashboard(props: any) {
                     onValue(child(dbRef, `games/${gameID}/device-status`), (snap) => {
                         const tmpDeviceStatus = snap.val()
                         deviceStatus.current = tmpDeviceStatus; 
+                        if (deviceList.current == null) return;
                         const grandClockDeviceID = Object.keys(deviceList.current).find((key) => deviceList.current[key] === "GRANDCLOCK");
                         if (grandClockDeviceID) {
                             const grandClockStatus = tmpDeviceStatus[grandClockDeviceID];
