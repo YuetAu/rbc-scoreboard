@@ -5,7 +5,7 @@ import { Counter } from "@/props/dashboard/Counter";
 import HistoryList from "@/props/dashboard/HistoryList";
 import { ScoreDisplay } from "@/props/dashboard/ScoreDisplay";
 import TimerBox from "@/props/dashboard/TimerBox";
-import { Box, Button, Flex, HStack, Image, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Switch } from "@chakra-ui/react";
+import { Box, Button, Flex, HStack, Image, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Switch, Text } from "@chakra-ui/react";
 import "@fontsource-variable/quicksand";
 import { faCircleDot } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -16,7 +16,6 @@ import { useEffect, useRef, useState } from "react";
 import Teams from "../props/dashboard/teams.json";
 import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 import Head from 'next/head';
-import { GetStaticProps } from "next";
 
 export default function Dashboard(props: any) {
 
@@ -1154,7 +1153,7 @@ export default function Dashboard(props: any) {
             </ModalBody>
 
             <ModalFooter>
-                {props.buildVersion ? <small>Version: {(props.buildVersion as string).substring(0,6)}</small> : <small>Version: Development</small>}
+                {props.buildVersion ? <Text fontSize={"0.75rem"}>Version: {(props.buildVersion as string).substring(0,6)}</Text> : <Text fontSize={"0.75rem"}>Version: Development</Text>}
             </ModalFooter>
             </ModalContent>
         </Modal>
@@ -1198,6 +1197,7 @@ export default function Dashboard(props: any) {
             </ModalBody>
 
             <ModalFooter>
+                <Text fontSize={"0.75rem"}>Idealogy by Starfall</Text>
             </ModalFooter>
             </ModalContent>
         </Modal>
