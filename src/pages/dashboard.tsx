@@ -101,6 +101,12 @@ export default function Dashboard(props: any) {
         setPattern([area2Pattern, area3Pattern]);
     }
 
+    useEffect(() => {
+        if (pattern[0].length == 0) {
+            patternGenerator();
+        }
+    }, [pattern])
+
     useEffect(()=>{
         const appCheck = initializeAppCheck(FirebaseApp, {
             provider: new ReCaptchaV3Provider(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY||""),
@@ -512,6 +518,7 @@ export default function Dashboard(props: any) {
         clockData.current = { stage: gameStage.current, paused: true, elapsed: 0, timestamp: Date.now() };
         updateClockText();
         setGameProps({});
+        patternGenerator();
         history.current = [];
         greatVictory.current = false;
         if (gameID != "") {
