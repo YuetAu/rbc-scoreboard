@@ -247,9 +247,11 @@ export default function Dashboard(props: any) {
     
     const [countdownBeep, setCountdownBeep] = useState<any>(null);
     const [countdownBeep10, setCountdownBeep10] = useState<any>(null);
+    const [bgm, setBGM] = useState<any>(null);
     useEffect(() => {
         setCountdownBeep(new Audio("/sound/countdown.mp3"));
         setCountdownBeep10(new Audio("/sound/countdown10.mp3"));
+        setBGM(new Audio("/sound/bgm.mp3"));
     }, [])
     
     const soundCheck = (stage: string, remainingTime: number) => {
@@ -260,10 +262,42 @@ export default function Dashboard(props: any) {
                 }
                 break;
             case "GAME":
+                if (remainingTime <= 179950 && !(remainingTime >= 1798000) && bgm.paused && gameSettings.bgm) {
+                    bgm.volume = 1.0;
+                    bgm.play();
+                }
                 if (remainingTime <= 10000 && countdownBeep10.paused && gameSettings.endGameCountdown) {
+                    bgm.volume = 0.7;
                     countdownBeep10.play();
                 }
                 break;
+        }
+    }
+
+    const stopSound = () => {
+        if (!countdownBeep.paused) {
+            countdownBeep.pause();
+        }
+        if (!countdownBeep10.paused) {
+            countdownBeep10.pause();
+        }
+        if (!bgm.paused) {
+            bgm.pause();
+        }
+    }
+
+    const forceStopSound = () => {
+        if (!countdownBeep.paused) {
+            countdownBeep.pause();
+            countdownBeep.currentTime = 0;
+        }
+        if (!countdownBeep10.paused) {
+            countdownBeep10.pause();
+            countdownBeep10.currentTime = 0;
+        }
+        if (!bgm.paused) {
+            bgm.pause();
+            bgm.currentTime = 0;
         }
     }
 
@@ -362,6 +396,7 @@ export default function Dashboard(props: any) {
         clockElapse.current += Date.now()-clockData.current.timestamp;
         clockData.current = { stage: gameStage.current, elapsed: clockElapse.current, paused: true, timestamp: Date.now() };
         updateClockText();
+        stopSound();
         enqueueSnackbar("Clock Stopped", {variant: "success", preventDuplicate: true})
         if (gameID != "") {
             set(child(dbRef, `games/${gameID}/clock`), {
@@ -518,6 +553,7 @@ export default function Dashboard(props: any) {
         updateClockText();
         setGameProps({});
         patternGenerator();
+        forceStopSound();
         history.current = [];
         greatVictory.current = false;
         if (gameID != "") {
