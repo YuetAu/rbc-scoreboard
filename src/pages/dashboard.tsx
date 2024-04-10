@@ -53,6 +53,58 @@ export default function Dashboard(props: any) {
         }
     }, [gameSettings]);
 
+    const [patternRandomGeneratorModal, setPatternRandomGeneratorModal] = useState(false);
+    const [pattern, setPattern] = useState<[string[][],string[][]]>([[],[]]);
+
+    const patternGenerator = () => {
+        const area2RedBall = 6;
+        const area2PurpleBall = 6;
+        const area3RedBall = 6;
+        const area3PurpleBall = 10;
+
+        // Area 2
+        var area2Pattern = [];
+        const redBalls2 = Array(area2RedBall).fill("red");
+        const purpleBalls2 = Array(area2PurpleBall).fill("purple");
+        const balls2 = [...redBalls2, ...purpleBalls2];
+        while (balls2.length > 0) {
+            const randomIndex = Math.floor(Math.random() * balls2.length);
+            const ball = balls2.splice(randomIndex, 1)[0];
+            area2Pattern.push(ball);
+        }
+
+        area2Pattern = [
+            area2Pattern.slice(0, 6),
+            area2Pattern.slice(6, 12),
+        ];
+
+        // Area 3
+        var area3Pattern = [];
+        const redBalls3 = Array(area3RedBall).fill("red");
+        const purpleBalls3 = Array(area3PurpleBall).fill("purple");
+        const balls3 = [...redBalls3, ...purpleBalls3];
+        while (balls3.length > 0) {
+            const randomIndex = Math.floor(Math.random() * balls3.length);
+            const ball = balls3.splice(randomIndex, 1)[0];
+            area3Pattern.push(ball);
+        }
+
+        area3Pattern = [
+            area3Pattern.slice(0, 4),
+            area3Pattern.slice(4, 8),
+            area3Pattern.slice(8, 12),
+            area3Pattern.slice(12, 16),
+        ];
+
+        console.log(area2Pattern, area3Pattern)
+        
+        setPattern([area2Pattern, area3Pattern]);
+    }
+
+    useEffect(() => {
+        patternGenerator()
+    }, [])
+
     useEffect(()=>{
         const appCheck = initializeAppCheck(FirebaseApp, {
             provider: new ReCaptchaV3Provider(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY||""),
@@ -733,6 +785,8 @@ export default function Dashboard(props: any) {
                 <Button onClick={()=>navigator.clipboard.writeText(JSON.stringify({...gameProps, teams: currentTeam}))} colorScheme="blue" size={"sm"}>Copy Game Props</Button>
                 <br />
                 <Button onClick={()=>{setGameSettingsModal(true)}} colorScheme="teal" size={"sm"}>Game Settings</Button>
+                <br />
+                <Button onClick={()=>{setPatternRandomGeneratorModal(true)}} colorScheme="teal" size={"sm"}>Pattern Generator</Button>
             </Box>
             <Box style={{
                 height: '0%',
@@ -1062,6 +1116,8 @@ export default function Dashboard(props: any) {
             </Box>
             
         </Box>
+
+
         <Modal isOpen={gameIDModal} onClose={()=>{}} isCentered>
             <ModalOverlay />
             <ModalContent>
@@ -1097,11 +1153,51 @@ export default function Dashboard(props: any) {
             </ModalFooter>
             </ModalContent>
         </Modal>
+
+        <Modal isOpen={patternRandomGeneratorModal} onClose={()=>{setPatternRandomGeneratorModal(false)}} isCentered>
+            <ModalOverlay />
+            <ModalContent>
+            <ModalHeader>Pattern Generator</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+                <Box>
+                    {pattern[1].map((row, rowIndex) => {
+                        return (
+                            <Box key={rowIndex} style={{display: "flex"}}>
+                                {row.map((cell, cellIndex) => {
+                                    return (
+                                        <Box key={cellIndex} style={{width: "2rem", height: "2rem", backgroundColor: cell=="red"?"red":cell=="purple"?"purple":"white", borderRadius: "50%"}}></Box>
+                                    )
+                                })}
+                            </Box>
+                        )
+                    })}
+                    <br />
+                    {pattern[0].map((row, rowIndex) => {
+                        return (
+                            <Box key={rowIndex} style={{display: "flex"}}>
+                                {row.map((cell, cellIndex) => {
+                                    return (
+                                        <Box key={cellIndex} style={{width: "2rem", height: "2rem", backgroundColor: cell=="red"?"red":cell=="purple"?"purple":"white", borderRadius: "50%"}}></Box>
+                                    )
+                                })}
+                            </Box>
+                        )
+                    })}
+                    <br />
+                    <Button onClick={patternGenerator} colorScheme="teal">Generate Random Pattern</Button>
+                </Box>
+            </ModalBody>
+
+            <ModalFooter>
+            </ModalFooter>
+            </ModalContent>
+        </Modal>
         </>
     )
 }
 
 export const getStaticProps = (async () => {
-    const buildVersion = process.env.GITHUB_SHA
+    const buildVersion = process.env.GITHUB_SHA || null;
     return { props: { buildVersion } }
 })
