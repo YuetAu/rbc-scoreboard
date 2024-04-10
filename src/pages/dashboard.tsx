@@ -758,7 +758,10 @@ export default function Dashboard(props: any) {
                 <br />
                 <Button onClick={()=>{navigator.clipboard.writeText(gameID).then(()=>enqueueSnackbar("GameID Copied!", {variant: "success", preventDuplicate: true}))}} colorScheme="blue" size={"sm"}>Copy GameID</Button>
                 <br />
+                <Button onClick={()=>navigator.clipboard.writeText(JSON.stringify({...gameProps, teams: currentTeam}))} colorScheme="blue" size={"sm"}>Copy Game Props</Button>
+                <br />
                 <Button onClick={()=>{forceReset();closeSnackbar();enqueueSnackbar("Props Reset!", {variant: "success", preventDuplicate: true})}} colorScheme="red" size={"sm"}>Force Reset</Button>
+                
             </Box>
             <Box style={{
                 fontSize: '1rem',
@@ -778,8 +781,6 @@ export default function Dashboard(props: any) {
                 color: onlineStatus==1?'lightgreen':onlineStatus==0?'lightcoral':'orange',
                 textAlign: 'right',
             }}>
-                <Button onClick={()=>navigator.clipboard.writeText(JSON.stringify({...gameProps, teams: currentTeam}))} colorScheme="blue" size={"sm"}>Copy Game Props</Button>
-                <br />
                 <Button onClick={()=>{setGameSettingsModal(true)}} colorScheme="teal" size={"sm"}>Game Settings</Button>
                 <br />
                 <Button onClick={()=>{setPatternRandomGeneratorModal(true)}} colorScheme="teal" size={"sm"}>Pattern Generator</Button>
