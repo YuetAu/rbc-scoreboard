@@ -1157,9 +1157,10 @@ export default function Dashboard(props: any) {
             <ModalCloseButton />
             <ModalBody>
                 <Box>
+                    <Box my="1rem" style={{transform: 'rotate(45deg)'}}>
                     {pattern[1].map((row, rowIndex) => {
                         return (
-                            <Box key={rowIndex} style={{display: "flex"}}>
+                            <Box key={rowIndex} style={{display: "flex", justifyContent: "center"}}>
                                 {row.map((cell, cellIndex) => {
                                     return (
                                         <Box key={cellIndex} style={{width: "2rem", height: "2rem", backgroundColor: cell=="red"?"red":cell=="purple"?"purple":"white", borderRadius: "50%"}}></Box>
@@ -1168,10 +1169,11 @@ export default function Dashboard(props: any) {
                             </Box>
                         )
                     })}
-                    <br />
+                    </Box>
+                    <Box mb="0.5rem" mt="4rem">
                     {pattern[0].map((row, rowIndex) => {
                         return (
-                            <Box key={rowIndex} style={{display: "flex"}}>
+                            <Box key={rowIndex} style={{display: "flex", justifyContent: "center"}}>
                                 {row.map((cell, cellIndex) => {
                                     return (
                                         <Box key={cellIndex} style={{width: "2rem", height: "2rem", backgroundColor: cell=="red"?"red":cell=="purple"?"purple":"white", borderRadius: "50%"}}></Box>
@@ -1180,6 +1182,7 @@ export default function Dashboard(props: any) {
                             </Box>
                         )
                     })}
+                    </Box>
                     <br />
                     <Button onClick={patternGenerator} colorScheme="teal">Generate Random Pattern</Button>
                 </Box>
