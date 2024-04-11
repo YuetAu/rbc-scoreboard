@@ -272,7 +272,11 @@ export default function Dashboard(props: any) {
                 }
                 break;
             case "END":
-                forceStopSound();
+                if (!bgm.paused) {
+                    bgm.pause();
+                    bgm.currentTime = 0;
+                }
+                break;
         }
     }
 
