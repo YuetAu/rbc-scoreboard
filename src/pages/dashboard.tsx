@@ -271,19 +271,15 @@ export default function Dashboard(props: any) {
                     countdownBeep10.play();
                 }
                 break;
+            case "END":
+                forceStopSound();
         }
     }
 
     const stopSound = () => {
-        if (!countdownBeep.paused) {
-            countdownBeep.pause();
-        }
-        if (!countdownBeep10.paused) {
-            countdownBeep10.pause();
-        }
-        if (!bgm.paused) {
-            bgm.pause();
-        }
+        countdownBeep.pause();
+        countdownBeep10.pause();
+        bgm.pause();
     }
 
     const forceStopSound = () => {
@@ -396,8 +392,8 @@ export default function Dashboard(props: any) {
         clockElapse.current += Date.now()-clockData.current.timestamp;
         clockData.current = { stage: gameStage.current, elapsed: clockElapse.current, paused: true, timestamp: Date.now() };
         updateClockText();
-        stopSound();
         enqueueSnackbar("Clock Stopped", {variant: "success", preventDuplicate: true})
+        setTimeout(() => {stopSound();}, 50);
         if (gameID != "") {
             set(child(dbRef, `games/${gameID}/clock`), {
                 stage: gameStage.current,
