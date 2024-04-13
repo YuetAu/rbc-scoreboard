@@ -58,5 +58,9 @@
     {
         "cname": "北科大 MEI",
         "ename": "USTB MEI"
+    },
+    {
+        "cname": "北航 BR",
+        "ename": "BUAA BR"
     }
 ]
