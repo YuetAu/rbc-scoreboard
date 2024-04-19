@@ -16,6 +16,8 @@ import { useEffect, useRef, useState } from "react";
 import Teams from "../props/dashboard/teams.json";
 import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 import Head from 'next/head';
+import * as Y from 'yjs'
+import { createYjsProvider } from '@y-sweet/client';
 
 export default function Dashboard(props: any) {
 
@@ -106,12 +108,12 @@ export default function Dashboard(props: any) {
         }
     }, [pattern])
 
-    useEffect(()=>{
+    /* useEffect(()=>{
         const appCheck = initializeAppCheck(FirebaseApp, {
             provider: new ReCaptchaV3Provider(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY||""),
             isTokenAutoRefreshEnabled: true
         });
-    },[])
+    },[]) */
 
     useEffect(() => {
         if (gameID && !gameFetchLock.current) {
@@ -177,59 +179,6 @@ export default function Dashboard(props: any) {
                         const newTeamData = snapshot.val();
                         if (newTeamData) {
                             setCurrentTeam(newTeamData);
-                        }
-                    });
-
-                    // Check user online
-                    const deviceStatusRef = child(dbRef, `games/${gameID}/device-status/${deviceID}`);
-                    onValue(child(dbRef, ".info/connected"), (snap) => {
-                        if (snap.val() === true) {
-                            setOnlineStatus(1);
-                            onDisconnect(deviceStatusRef).set("OFFLINE")
-                            set(child(dbRef, `games/${gameID}/device-status/${deviceID}`), "ONLINE")
-                        } else {
-                            setOnlineStatus(0);
-                        }
-                    });
-
-                    onValue(child(dbRef, `games/${gameID}/device-status`), (snap) => {
-                        const tmpDeviceStatus = snap.val()
-                        deviceStatus.current = tmpDeviceStatus; 
-                        if (deviceList.current == null) return;
-                        const grandClockDeviceID = Object.keys(deviceList.current).find((key) => deviceList.current[key] === "GRANDCLOCK");
-                        if (grandClockDeviceID) {
-                            const grandClockStatus = tmpDeviceStatus[grandClockDeviceID];
-                            if (grandClockStatus === "OFFLINE") {
-                                // Take Over.
-                                console.log("Grand Clock is dead.")
-                                const secondDevice = Object.keys(deviceList.current)
-                                    .filter((key) => deviceList.current[key] !== "GRANDCLOCK")
-                                    .sort((a, b) => a.charCodeAt(0) - b.charCodeAt(0))[1];
-
-                                if (secondDevice == deviceID) {
-                                    // I am going to take over.
-                                    console.log("I am the selected one. Trying to take over.")
-                                    set(child(dbRef, `games/${gameID}/device`), {
-                                        ...deviceList.current,
-                                        [grandClockDeviceID]: "CONTROLLER",
-                                        [deviceID]: "GRANDCLOCK"
-                                    });
-                                    grandClock.current = true;
-                                    console.log("I am the new Grand Clock. I am strong.")
-                                } else {
-                                    console.log("Not me this time.")
-                                }
-                            }
-                        } else {
-                            // Missing GrandClock? IDK how it happen.
-                            console.log("Game Session Broken. But I won't tell the user.")
-                        }
-                    });
-
-                    onValue(child(dbRef, ".info/serverTimeOffset"), (snap) => {
-                        const offset = snap.val();
-                        if (offset > 1000) {
-                            setOnlineStatus(2);
                         }
                     });
                 } else {
@@ -370,6 +319,19 @@ export default function Dashboard(props: any) {
             clock: { stage: "PREP", timestamp: 0, elapsed: 0, paused: true },
             props: {},
         });
+
+        const ydoc = new Y.Doc();
+        createYjsProvider(ydoc, props.clientToken);
+        console.log("YJS Provider Created");
+        ydoc.transact(() => {
+            ydoc.getText("createdAt").insert(0, Date.now().toString());
+            let yclock = ydoc.getMap("clock");
+            yclock.set("stage", "PREP");
+            yclock.set("timestamp", 0);
+            yclock.set("elapsed", 0);
+            yclock.set("paused", true);
+        })
+
         setGameID(newGameID);
         setGameIDModal(false);
     };
@@ -1240,8 +1202,3 @@ export default function Dashboard(props: any) {
         </>
     )
 }
-
-export const getStaticProps = (async () => {
-    const buildVersion = process.env.GITHUB_SHA || null;
-    return { props: { buildVersion } }
-})
