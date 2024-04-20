@@ -1,13 +1,22 @@
-import { useRouter } from "next/router"
-import { useEffect } from "react";
+import { YDocProvider } from '@y-sweet/react'
+import { getOrCreateDocAndToken } from '@y-sweet/sdk'
+import Dashboard from './dashboard'
 
-export default function Home() {
 
-  const router = useRouter();
-
-  useEffect(() => {
-    router.push("/dashboard");
-  })
-
-  return (<></>)
+export default function Home(props:any) {
+  return (
+    //<YDocProvider clientToken={props.clientToken} setQueryParam="doc">
+      <Dashboard />
+    //</YDocProvider>
+  )
 }
+
+/* export async function getServerSideProps({ query }: { query: any }) {
+  const clientToken = await getOrCreateDocAndToken("yss://K3qTlmAvIfD4UxfQkAk.AAAgkTRnVxsuMpmal4foxkri0aUsy1wW3teYLqL3FyNHkSY@y-sweet.net/p/ICTGyKs0J1lMB_vREXc/", query.doc)
+  return {
+    props: {
+      searchParams: query,
+      clientToken,
+    }
+  }
+} */

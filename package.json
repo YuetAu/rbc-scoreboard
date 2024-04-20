@@ -21,14 +21,18 @@
     "@fortawesome/free-solid-svg-icons": "^6.5.1",
     "@fortawesome/react-fontawesome": "^0.2.0",
     "@y-sweet/client": "^0.1.0",
+    "@y-sweet/react": "^0.1.0",
     "@y-sweet/sdk": "^0.1.0",
     "firebase": "^10.5.0",
     "framer-motion": "^10.16.4",
     "next": "13.5.6",
     "notistack": "^3.0.1",
+    "partykit": "^0.0.104",
     "random-word-slugs": "^0.1.7",
     "react": "^18",
     "react-dom": "^18",
+    "y-partykit": "^0.0.28",
+    "y-webrtc": "^10.3.0",
     "yjs": "^13.6.14"
   },
   "devDependencies": {
