@@ -20,8 +20,12 @@
         "ename": "Poly Crimson"
     },
     {
+        "cname": "理工 紅彗星1號",
+        "ename": "Poly PolyBotics"
+    },
+    {
         "cname": "城大 夢成真",
-        "ename": "City DreamComeTrue"
+        "ename": "City DreamDevelopment"
     },
     {
         "cname": "城大 夢一城",
@@ -32,28 +36,24 @@
         "ename": "HKU Virtus"
     },
     {
-        "cname": "嶺南 嶺南機動部隊",
-        "ename": "Lingnan Mobile Squad"
-    },
-    {
-        "cname": "理工 理機",
-        "ename": "Poly PolyBotics"
-    },
-    {
-        "cname": "中大 環掃千軍",
-        "ename": "CU The Lord of the Rings"
-    },
-    {
-        "cname": "教大 魯師",
-        "ename": "EdU The Architeacher"
-    },
-    {
         "cname": "港大 格物",
         "ename": "HKU Sapientia"
     },
     {
-        "cname": "中大 一發入環",
-        "ename": "CU Ring Slinger"
+        "cname": "嶺南 虎地特選3.6牛牛",
+        "ename": "Lingnan Team 1"
+    },
+    {
+        "cname": "中大 植搗黃農",
+        "ename": "CU Golden Farmer"
+    },
+    {
+        "cname": "中大 長驅植進",
+        "ename": "CU Wonder Seed"
+    },
+    {
+        "cname": "教大 魯師",
+        "ename": "EdU Architeacher"
     },
     {
         "cname": "北科大 MEI",
