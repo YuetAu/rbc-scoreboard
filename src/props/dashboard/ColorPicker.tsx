@@ -8,7 +8,7 @@ export function ColorPicker(props: any) {
                 fontSize: props.small? "1.7rem" : "2rem",
                 textAlign: "center",
                 lineHeight: props.small? "2rem" : "2.5rem",
-                backgroundColor: props.forceColor=="RED"?"#F56565":props.forceColor=="BLUE"?"#11B5E4":props.color=="RED"?"#F56565":props.color=="BLUE"?"#11B5E4":props.color=="gold"?"#F9A825":"grey",
+                backgroundColor: props.color=="RED"?"#F56565":props.color=="BLUE"?"#11B5E4":props.color=="gold"?"#F9A825":"grey",
                 color: "black",
                 width: props.counter >= 10 ? props.small ? "2.8rem" : "3.1rem" : props.small? "2rem": "2.5rem",
                 userSelect: "none",
