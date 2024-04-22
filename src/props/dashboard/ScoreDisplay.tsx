@@ -14,7 +14,7 @@ export function ScoreDisplay(props: any) {
                 lineHeight: "2.5rem",
                 backgroundColor: props.color=="red"?"#F56565":props.color=="blue"?"#11B5E4":"white",
                 color: "black",
-                width: "18rem",
+                width: "20rem",
             }}
             >   
                 {props.editable ?
@@ -24,7 +24,7 @@ export function ScoreDisplay(props: any) {
                         <br />
                         {props.team.ename}
                     </Box>
-                    {dropDownOpen && <TeamDropDownList teams={props.teams} setTeam={props.setTeam} currentTeam={props.team.ename} setOpen={setDropDownOpen}/>}
+                    {dropDownOpen && <TeamDropDownList teams={props.teams} setTeam={props.setTeam} teamColor={props.teamColor} currentTeam={props.team.ename} setOpen={setDropDownOpen}/>}
                     <Box my={"3rem"} style={{fontSize: "4rem"}}>
                         {props.score}
                     </Box>
@@ -70,7 +70,7 @@ function TeamDropDownList(props: any) {
                 fontWeight="500"
                 textTransform="capitalize"
                 onClick={() => {
-                    props.setTeam(item);
+                    props.setTeam(item, props.teamColor);
                     props.setOpen(false);
                 }}
                 style={{ transition: "all .125s ease" }}

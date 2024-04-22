@@ -1,476 +1,29 @@
+'use client'
+
 import { GAME_STAGES, GAME_STAGES_TIME } from "@/common/gameStages";
-import { FirebaseApp, FirebaseDatabase } from "@/firebase/config";
+import { patternGenerator } from "@/helpers/patternGenerator";
 import { ColorPicker } from "@/props/dashboard/ColorPicker";
 import { Counter } from "@/props/dashboard/Counter";
 import HistoryList from "@/props/dashboard/HistoryList";
 import { ScoreDisplay } from "@/props/dashboard/ScoreDisplay";
 import TimerBox from "@/props/dashboard/TimerBox";
-import { Box, Button, Flex, HStack, Image, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Switch, Text } from "@chakra-ui/react";
+import { YJsClient } from "@/yjsClient/yjsClient";
+import { Box, Button, Flex, Image, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Switch, Text, useToast } from "@chakra-ui/react";
 import "@fontsource-variable/quicksand";
-import { faCircleDot } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { child, get, onDisconnect, onValue, ref, set, update } from "firebase/database";
-import { useSnackbar } from "notistack";
-import { generateSlug } from "random-word-slugs";
-import { useEffect, useRef, useState } from "react";
-import Teams from "../props/dashboard/teams.json";
-import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 import Head from 'next/head';
+import { useCallback, useEffect, useRef, useState } from "react";
+import * as Y from "yjs";
+import Teams from "../props/dashboard/teams.json";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCircleDot } from '@fortawesome/free-solid-svg-icons';
+
 
 export default function Dashboard(props: any) {
 
-    const dbRef = ref(FirebaseDatabase);
+    // [Sys] Initiate Components
+    const toast = useToast();
 
-    const { enqueueSnackbar, closeSnackbar } = useSnackbar();
-
-    const [gameID, setGameID] = useState("");
-    const [deviceID, setDeviceID] = useState("");
-    const gameStage = useRef("PREP");
-    const clockData = useRef({ stage: "PREP", timestamp: 0, elapsed: 0, paused: true });
-    const [clockText, setClockText] = useState({ minutes: "00", seconds: "00", milliseconds: "000" });
-    const [elapsedText, setElapsedText] = useState({ minutes: "00", seconds: "00", milliseconds: "000" });
-    const grandClock = useRef(false);
-    const gameFetchLock = useRef(false);
-    const clockElapse = useRef(0);
-    const clockToggle = useRef(false);
-    const deviceList = useRef<any>({});
-    const deviceStatus = useRef<any>({});
-
-    const [onlineStatus, setOnlineStatus] = useState(0);
-
-    const isFirstReadSettings = useRef(false);
-    const [gameSettingsModal, setGameSettingsModal] = useState(false);
-    const [gameSettings, setGameSettings] = useState({ preGameCountdown: true, endGameCountdown: true, bgm: false });
-
-    useEffect(() => {
-        const localGameSettings = localStorage.getItem("gameSettings");
-        if (localGameSettings && !isFirstReadSettings.current) {
-            setGameSettings(JSON.parse(localGameSettings));
-            isFirstReadSettings.current = true;
-        } else {
-            localStorage.setItem("gameSettings", JSON.stringify(gameSettings));
-        }
-    }, [gameSettings]);
-
-    const [patternRandomGeneratorModal, setPatternRandomGeneratorModal] = useState(false);
-    const [pattern, setPattern] = useState<[string[][],string[][]]>([[],[]]);
-
-    const patternGenerator = () => {
-        const area2RedBall = 6;
-        const area2PurpleBall = 6;
-        const area3RedBall = 6;
-        const area3PurpleBall = 10;
-
-        // Area 2
-        var area2Pattern = [];
-        const redBalls2 = Array(area2RedBall).fill("red");
-        const purpleBalls2 = Array(area2PurpleBall).fill("purple");
-        const balls2 = [...redBalls2, ...purpleBalls2];
-        while (balls2.length > 0) {
-            const randomIndex = Math.floor(Math.random() * balls2.length);
-            const ball = balls2.splice(randomIndex, 1)[0];
-            area2Pattern.push(ball);
-        }
-
-        area2Pattern = [
-            area2Pattern.slice(0, 6),
-            area2Pattern.slice(6, 12),
-        ];
-
-        // Area 3
-        var area3Pattern = [];
-        const redBalls3 = Array(area3RedBall).fill("red");
-        const purpleBalls3 = Array(area3PurpleBall).fill("purple");
-        const balls3 = [...redBalls3, ...purpleBalls3];
-        while (balls3.length > 0) {
-            const randomIndex = Math.floor(Math.random() * balls3.length);
-            const ball = balls3.splice(randomIndex, 1)[0];
-            area3Pattern.push(ball);
-        }
-
-        area3Pattern = [
-            area3Pattern.slice(0, 4),
-            area3Pattern.slice(4, 8),
-            area3Pattern.slice(8, 12),
-            area3Pattern.slice(12, 16),
-        ];
-
-        console.log(area2Pattern, area3Pattern)
-        
-        setPattern([area2Pattern, area3Pattern]);
-    }
-
-    useEffect(() => {
-        if (pattern[0].length == 0) {
-            patternGenerator();
-        }
-    }, [pattern])
-
-    useEffect(()=>{
-        const appCheck = initializeAppCheck(FirebaseApp, {
-            provider: new ReCaptchaV3Provider(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY||""),
-            isTokenAutoRefreshEnabled: true
-        });
-    },[])
-
-    useEffect(() => {
-        if (gameID && !gameFetchLock.current) {
-            console.log("Fetching Game: "+gameID);
-            get(child(dbRef, `games/${gameID}`)).then((snapshot) => {
-                const gameData = snapshot.val();
-                if (gameData) {
-                    var role = "CONTROLLER"
-                    if (grandClock.current) role = "GRANDCLOCK";
-                    update(child(dbRef, `games/${gameID}`), {
-                        device: { ...gameData.device, [deviceID]: role},
-                    });
-
-                    onValue(child(dbRef, `games/${gameID}/device`), (snap) => {
-                        const tmpDeviceList = snap.val()
-                        deviceList.current = tmpDeviceList; 
-                        if (tmpDeviceList && tmpDeviceList[deviceID] == "CONTROLLER") {
-                            grandClock.current = false;
-                        }
-                    });
-
-                    console.log("Game Fetched");
-                    enqueueSnackbar(`Game Loaded`, {variant: "success"})
-                    gameStage.current = gameData.clock.stage;
-                    clockElapse.current = gameData.clock.elapsed;
-                    clockToggle.current = !gameData.clock.paused;
-                    clockData.current = gameData.clock;
-                    updateClockText();
-                    onValue(child(dbRef, `games/${gameID}/clock`), (snapshot) => {
-                        const newClockData = snapshot.val();
-                        if (newClockData) {
-                            gameStage.current = newClockData.stage;
-                            clockElapse.current = newClockData.elapsed;
-                            clockToggle.current = !newClockData.paused;
-                            clockData.current = newClockData;
-                            updateClockText();
-                        }
-                    });
-
-                    if (gameData.props) {
-                        if (gameData.props.history.length > history.current.length) {
-                            history.current = gameData.props.history || [];
-                        }
-                        setGameProps(gameData.props);
-                    }
-                    onValue(child(dbRef, `games/${gameID}/props`), (snapshot) => {
-                        const newPropsData = snapshot.val();
-                        if (newPropsData) {
-                            if (newPropsData.history.length > history.current.length) {
-                                history.current = newPropsData.history || [];
-                            }
-                            setGameProps(newPropsData);
-                        } else {
-                            setGameProps({});
-                            history.current = [];
-                        }
-                    });
-
-                    if (gameData.teams) {
-                        setCurrentTeam(gameData.teams);
-                    };
-                    onValue(child(dbRef, `games/${gameID}/team`), (snapshot) => {
-                        const newTeamData = snapshot.val();
-                        if (newTeamData) {
-                            setCurrentTeam(newTeamData);
-                        }
-                    });
-
-                    // Check user online
-                    const deviceStatusRef = child(dbRef, `games/${gameID}/device-status/${deviceID}`);
-                    onValue(child(dbRef, ".info/connected"), (snap) => {
-                        if (snap.val() === true) {
-                            setOnlineStatus(1);
-                            onDisconnect(deviceStatusRef).set("OFFLINE")
-                            set(child(dbRef, `games/${gameID}/device-status/${deviceID}`), "ONLINE")
-                        } else {
-                            setOnlineStatus(0);
-                        }
-                    });
-
-                    onValue(child(dbRef, `games/${gameID}/device-status`), (snap) => {
-                        const tmpDeviceStatus = snap.val()
-                        deviceStatus.current = tmpDeviceStatus; 
-                        if (deviceList.current == null) return;
-                        const grandClockDeviceID = Object.keys(deviceList.current).find((key) => deviceList.current[key] === "GRANDCLOCK");
-                        if (grandClockDeviceID) {
-                            const grandClockStatus = tmpDeviceStatus[grandClockDeviceID];
-                            if (grandClockStatus === "OFFLINE") {
-                                // Take Over.
-                                console.log("Grand Clock is dead.")
-                                const secondDevice = Object.keys(deviceList.current)
-                                    .filter((key) => deviceList.current[key] !== "GRANDCLOCK")
-                                    .sort((a, b) => a.charCodeAt(0) - b.charCodeAt(0))[1];
-
-                                if (secondDevice == deviceID) {
-                                    // I am going to take over.
-                                    console.log("I am the selected one. Trying to take over.")
-                                    set(child(dbRef, `games/${gameID}/device`), {
-                                        ...deviceList.current,
-                                        [grandClockDeviceID]: "CONTROLLER",
-                                        [deviceID]: "GRANDCLOCK"
-                                    });
-                                    grandClock.current = true;
-                                    console.log("I am the new Grand Clock. I am strong.")
-                                } else {
-                                    console.log("Not me this time.")
-                                }
-                            }
-                        } else {
-                            // Missing GrandClock? IDK how it happen.
-                            console.log("Game Session Broken. But I won't tell the user.")
-                        }
-                    });
-
-                    onValue(child(dbRef, ".info/serverTimeOffset"), (snap) => {
-                        const offset = snap.val();
-                        if (offset > 1000) {
-                            setOnlineStatus(2);
-                        }
-                    });
-                } else {
-                    console.log("Game does not exist");
-                    createGame(gameID);
-                }
-            }).catch((error) => {
-                console.error(error);
-            }).finally(() => {
-                gameFetchLock.current = false;
-            });
-        }
-    }, [gameID])
-
-    
-    const [countdownBeep, setCountdownBeep] = useState<any>(null);
-    const [countdownBeep10, setCountdownBeep10] = useState<any>(null);
-    const [bgm, setBGM] = useState<any>(null);
-    useEffect(() => {
-        setCountdownBeep(new Audio("/sound/countdown.mp3"));
-        setCountdownBeep10(new Audio("/sound/countdown10.mp3"));
-        setBGM(new Audio("/sound/bgm.mp3"));
-    }, [])
-    
-    const soundCheck = (stage: string, remainingTime: number) => {
-        switch (stage) {
-            case "PREP":
-                if (remainingTime <= 3000 && countdownBeep.paused && gameSettings.preGameCountdown) {
-                    countdownBeep.play();
-                }
-                break;
-            case "GAME":
-                if (remainingTime <= 179950 && !(remainingTime >= 1798000) && bgm.paused && gameSettings.bgm) {
-                    bgm.volume = 1.0;
-                    bgm.play();
-                }
-                if (remainingTime <= 10000 && countdownBeep10.paused && gameSettings.endGameCountdown) {
-                    bgm.volume = 0.7;
-                    countdownBeep10.play();
-                }
-                break;
-            case "END":
-                if (!bgm.paused) {
-                    bgm.pause();
-                    bgm.currentTime = 0;
-                }
-                break;
-        }
-    }
-
-    const stopSound = () => {
-        countdownBeep.pause();
-        countdownBeep10.pause();
-        bgm.pause();
-    }
-
-    const forceStopSound = () => {
-        if (!countdownBeep.paused) {
-            countdownBeep.pause();
-            countdownBeep.currentTime = 0;
-        }
-        if (!countdownBeep10.paused) {
-            countdownBeep10.pause();
-            countdownBeep10.currentTime = 0;
-        }
-        if (!bgm.paused) {
-            bgm.pause();
-            bgm.currentTime = 0;
-        }
-    }
-
-    const updateClockText = () => {
-        const elapsedTime = clockData.current.paused ? clockData.current.elapsed : clockData.current.elapsed+(Date.now()-clockData.current.timestamp);
-        const remainingTime = clockData.current.paused ? (GAME_STAGES_TIME[GAME_STAGES.indexOf(gameStage.current)]*1000)-clockData.current.elapsed : (GAME_STAGES_TIME[GAME_STAGES.indexOf(gameStage.current)]*1000)-clockData.current.elapsed-(Date.now()-clockData.current.timestamp);
-        if (remainingTime >= 0) { 
-            const remainingMinutes = Math.floor(remainingTime/60000)+"";
-            const remainingSeconds = Math.floor(remainingTime/1000%60)+"";
-            const remainingMilliseconds = remainingTime%1000+"";
-            setClockText({
-                minutes: remainingMinutes.length < 2 ? "0"+remainingMinutes : remainingMinutes,
-                seconds: remainingSeconds.length < 2 ? "0"+remainingSeconds : remainingSeconds,
-                milliseconds: remainingMilliseconds.length < 3 ? remainingMilliseconds.length < 2 ? "00"+remainingMilliseconds : "0"+remainingMilliseconds : remainingMilliseconds
-            })
-            const elapsedMinutes = Math.floor(elapsedTime/60000)+"";
-            const elapsedSeconds = Math.floor(elapsedTime/1000%60)+"";
-            const elapsedMilliseconds = elapsedTime%1000+"";
-            setElapsedText({
-                minutes: elapsedMinutes.length < 2 ? "0"+elapsedMinutes : elapsedMinutes,
-                seconds: elapsedSeconds.length < 2 ? "0"+elapsedSeconds : elapsedSeconds,
-                milliseconds: elapsedMilliseconds.length < 3 ? elapsedMilliseconds.length < 2 ? "00"+elapsedMilliseconds : "0"+elapsedMilliseconds : elapsedMilliseconds
-            })
-            soundCheck(gameStage.current, remainingTime);
-            if (clockToggle.current) {
-                setTimeout(() => {
-                    updateClockText();
-                }, 37);
-            }
-        } else {
-            if (grandClock.current) {
-                if (GAME_STAGES.indexOf(gameStage.current)+1 < GAME_STAGES.length) {
-                    const newGameStage = GAME_STAGES[GAME_STAGES.indexOf(gameStage.current)+1];
-                    console.log(`Resetting Timer for ${newGameStage}`);
-                    const remainingTime = GAME_STAGES_TIME[GAME_STAGES.indexOf(newGameStage)]*1000;
-                    clockData.current = { stage: newGameStage, timestamp: Date.now(), elapsed: 0, paused: remainingTime > 0 ? false : true };
-                    updateClockText();
-                    gameStage.current = newGameStage;
-                    clockToggle.current = remainingTime > 0 ? true : false;
-                    clockElapse.current = 0;
-                    set(child(dbRef, `games/${gameID}/clock`), {
-                        stage: newGameStage,
-                        timestamp: Date.now(),
-                        elapsed: 0,
-                        paused: remainingTime > 0 ? false : true
-                    })
-                    if (newGameStage == "END") {
-                        enqueueSnackbar(`Game END`, {variant: "success", preventDuplicate: true})
-                        gameEndVictoryCalc();
-                    }
-                    // Game start wait judge approval
-                    if (newGameStage == "GAME") {
-                        stopClock();
-                        resetStage();
-                    }
-                }
-            }
-        }
-    }
-
-
-    const createGame = (gameID: string) => {
-        const newGameID = gameID;
-        grandClock.current = true;
-        const newDeviceID = generateSlug(2);
-        setDeviceID(newDeviceID);
-        set(child(dbRef, `games/${newGameID}`), {
-            createdAt: Date.now(),
-            device: {},
-            clock: { stage: "PREP", timestamp: 0, elapsed: 0, paused: true },
-            props: {},
-        });
-        setGameID(newGameID);
-        setGameIDModal(false);
-    };
-
-    const startClock = () => {
-        console.log("Clock Started")
-        clockToggle.current = true;
-        clockData.current = { stage: gameStage.current, elapsed: clockElapse.current, paused: false, timestamp: Date.now() };
-        updateClockText();
-        enqueueSnackbar("Clock Started", {variant: "success", preventDuplicate: true})
-        if (gameID != "") {
-            set(child(dbRef, `games/${gameID}/clock`), {
-                stage: gameStage.current,
-                timestamp: Date.now(),
-                elapsed: clockElapse.current,
-                paused: false
-            })
-        }
-    }
-
-    const stopClock = () => {
-        console.log("Clock Stopped")
-        clockToggle.current = false;
-        clockElapse.current += Date.now()-clockData.current.timestamp;
-        clockData.current = { stage: gameStage.current, elapsed: clockElapse.current, paused: true, timestamp: Date.now() };
-        updateClockText();
-        enqueueSnackbar("Clock Stopped", {variant: "success", preventDuplicate: true})
-        setTimeout(() => {stopSound();}, 50);
-        if (gameID != "") {
-            set(child(dbRef, `games/${gameID}/clock`), {
-                stage: gameStage.current,
-                timestamp: Date.now(),
-                elapsed: clockElapse.current,
-                paused: true
-            })
-        }
-    }
-
-    const toggleClock = () => {
-        if (clockToggle.current) {
-            stopClock();
-        } else {
-            startClock();
-        }
-    }
-
-    const resetStage = () => {
-        stopClock();
-        closeSnackbar();
-        console.log("Reset Stage Time")
-        clockToggle.current = false;
-        clockElapse.current = 0;
-        clockData.current = { stage: gameStage.current, paused: true, elapsed: 0, timestamp: Date.now() };
-        updateClockText();
-        enqueueSnackbar(`Reset stage ${gameStage.current}`, {variant: "success", preventDuplicate: true});
-        if (gameID != "") {
-            set(child(dbRef, `games/${gameID}/clock`), {
-                stage: gameStage.current,
-                timestamp: Date.now(),
-                elapsed: 0,
-                paused: true
-            })
-        }
-    }
-
-    const changeStage = (skipStage:number) => {
-        if (GAME_STAGES.indexOf(gameStage.current)+skipStage < 0 ) {stopClock(); return;}
-        if (GAME_STAGES.indexOf(gameStage.current)+skipStage > GAME_STAGES.length-1 ) {stopClock(); return;}
-        const index = GAME_STAGES.indexOf(gameStage.current);
-        const nextStage = GAME_STAGES[index+skipStage];
-        const remainingTime = GAME_STAGES_TIME[index+skipStage]*1000;
-        gameStage.current = nextStage;
-        clockToggle.current = remainingTime > 0 ? true : false;
-        clockElapse.current = 0;
-        clockData.current = { stage: nextStage, timestamp: Date.now(), elapsed: 0, paused: remainingTime > 0 ? false : true };
-        updateClockText();
-        enqueueSnackbar(`Skip stage to ${gameStage.current}`, {variant: "success", preventDuplicate: true})
-        if (gameID != "") {
-            set(child(dbRef, `games/${gameID}/clock`), {
-                stage: nextStage,
-                timestamp: Date.now(),
-                elapsed: 0,
-                paused: remainingTime > 0 ? false : true
-            })
-        }
-    }
-
-    const gameIDInput = useRef<HTMLInputElement>(null);
-    const [gameIDModal, setGameIDModal] = useState(true);
-
-    const submitGameID = async () => {
-        if (gameIDInput.current) {
-            if (gameIDInput.current.value == "") return;
-            console.log("Game ID: "+gameIDInput.current.value);
-            setDeviceID(generateSlug(2));
-            setGameID(gameIDInput.current.value);
-            setGameIDModal(false);
-            updateClockText();
-        }
-    }
-
+    // [Sys] ContinerHeight Helper Functions and States
     const [containerHeight, setContainerHeight] = useState(0);
     const heightEventListner = useRef(false);
 
@@ -488,182 +41,344 @@ export default function Dashboard(props: any) {
         }
     }, [])
 
-    const resetClock = () => {
-        stopClock();
-        console.log("Reset Clock")
-        clockToggle.current = false;
-        clockElapse.current = 0;
-        gameStage.current = GAME_STAGES[0]
-        clockData.current = { stage: gameStage.current, paused: true, elapsed: 0, timestamp: Date.now() };
-        updateClockText();
-        if (gameID != "") {
-            set(child(dbRef, `games/${gameID}/clock`), {
-                stage: gameStage.current,
-                timestamp: Date.now(),
-                elapsed: 0,
-                paused: true
-            })
+
+    // [Core] GameID Functions and States
+    const [gameID, setGameID] = useState("");
+    const [gameIDModal, setGameIDModal] = useState(true);
+    const gameIDInput = useRef<HTMLInputElement>(null);
+    const [ydoc, setYDoc] = useState<Y.Doc>(new Y.Doc());
+    const [onlineStatus, setOnlineStatus] = useState(0);
+
+    const submitGameID = (gameID?: string) => {
+        if (gameID) {
+            const yJsClient = new YJsClient(gameID);
+            setGameID(gameID);
+            setYDoc(yJsClient.getYDoc());
+            setClockData(yJsClient.getYDoc().getMap("clockData") as Y.Map<any>);
+            setGameProps(yJsClient.getYDoc().getMap("gameProps") as Y.Map<any>);
+            setGameIDModal(false);
+            yJsClient.getYPartyProvider().on("status", connectionEventHandler);
         }
     }
 
-    // Game Teams
+    const connectionEventHandler = (event: any) => {
+        if (event.status == "connected") {
+            setOnlineStatus(1);
+        } else {
+            setOnlineStatus(0);
+        }
+    }
 
-    const [currentTeam, setCurrentTeam] = useState({"redTeam": {"cname": "征龍", "ename": "War Dragon"}, "blueTeam": {"cname": "火之龍", "ename": "Fiery Dragon"}});
+    // [Features] GameSetting Functions and States
+    const isFirstReadSettings = useRef(false);
+    const [gameSettingsModal, setGameSettingsModal] = useState(false);
+    const [gameSettings, setGameSettings] = useState({ preGameCountdown: true, endGameCountdown: true, bgm: false });
 
     useEffect(() => {
-        console.log("Updating Teams")
-
-        if (gameID == "") return;
-
-        set(child(dbRef, `games/${gameID}/team`), currentTeam);
-    }, [currentTeam])
-
-    const redUpdateTeam = (value: any) => {
-        setCurrentTeam({...currentTeam, redTeam: value});
-    }
-
-    const blueUpdateTeam = (value: any) => {
-        setCurrentTeam({...currentTeam, blueTeam: value});
-    }
-
-    // Game Props
-    const lastGameProps = useRef<any>("");
-    const greatVictory = useRef<boolean>(false);
-    const [gameProps, setGameProps] = useState<any>({});
-    const history = useRef<any[]>([]);
-
-
-    const resetProps = () => {
-        setGameProps({});
-        history.current = [];
-        greatVictory.current = false;
-        if (gameID != "") {
-            set(child(dbRef, `games/${gameID}/props`), {});
+        const localGameSettings = localStorage.getItem("gameSettings");
+        if (localGameSettings && !isFirstReadSettings.current) {
+            setGameSettings(JSON.parse(localGameSettings));
+            isFirstReadSettings.current = true;
+        } else {
+            localStorage.setItem("gameSettings", JSON.stringify(gameSettings));
         }
-    }
+    }, [gameSettings]);
 
+
+    // [Features] Start of Sound Functions
+    const [countdownBeep, setCountdownBeep] = useState<any>(null);
+    const [countdownBeep10, setCountdownBeep10] = useState<any>(null);
+    const [bgm, setBGM] = useState<any>(null);
+    useEffect(() => {
+        setCountdownBeep(new Audio("/sound/countdown.mp3"));
+        setCountdownBeep10(new Audio("/sound/countdown10.mp3"));
+        setBGM(new Audio("/sound/bgm.mp3"));
+    }, [])
     
-    const forceReset = () => {
-        stopClock();
-        console.log("Reset Clock")
-        clockToggle.current = false;
-        clockElapse.current = 0;
-        gameStage.current = GAME_STAGES[0]
-        clockData.current = { stage: gameStage.current, paused: true, elapsed: 0, timestamp: Date.now() };
-        updateClockText();
-        setGameProps({});
-        patternGenerator();
-        forceStopSound();
-        history.current = [];
-        greatVictory.current = false;
-        if (gameID != "") {
-            set(child(dbRef, `games/${gameID}`), {
-                clock: {
-                    stage: gameStage.current,
-                    timestamp: Date.now(),
-                    elapsed: 0,
-                    paused: true
+    const soundCheck = (stage: string, remainingTime: number) => {
+        switch (stage) {
+            case "PREP":
+                if (remainingTime <= 3000 && countdownBeep && countdownBeep.paused && gameSettings.preGameCountdown) {
+                    countdownBeep.play();
                 }
+                break;
+            case "GAME":
+                if (remainingTime <= 179950 && !(remainingTime >= 1798000) && bgm && bgm.paused && gameSettings.bgm) {
+                    bgm.volume = 1.0;
+                    bgm.play();
+                }
+                if (remainingTime <= 10000 && countdownBeep10 && countdownBeep10.paused && gameSettings.endGameCountdown) {
+                    bgm.volume = 0.7;
+                    countdownBeep10.play();
+                }
+                break;
+            case "END":
+                if (bgm && !bgm.paused) {
+                    bgm.pause();
+                    bgm.currentTime = 0;
+                }
+                break;
+        }
+    }
+
+    const stopSound = () => {
+        countdownBeep && countdownBeep.pause();
+        countdownBeep10 && countdownBeep10.pause();
+        bgm && bgm.pause();
+    }
+
+    const forceStopSound = () => {
+        if (countdownBeep && !countdownBeep.paused) {
+            countdownBeep.pause();
+            countdownBeep.currentTime = 0;
+        }
+        if (countdownBeep10 && !countdownBeep10.paused) {
+            countdownBeep10.pause();
+            countdownBeep10.currentTime = 0;
+        }
+        if (bgm && !bgm.paused) {
+            bgm.pause();
+            bgm.currentTime = 0;
+        }
+    }
+
+    // [Features] End of Sound Functions
+
+
+    // [Core] Start of Clock Functions and States
+    const [clockData, setClockData] = useState(ydoc.getMap("clockData") as Y.Map<any>);
+    useEffect(() => {
+        if (clockData.get("init") == undefined) {
+            console.log("Initializing Clock Data")
+            ydoc.transact((_y) => {
+                clockData.set("stage", "PREP")
+                clockData.set("timestamp", 0)
+                clockData.set("elapsed", 0)
+                clockData.set("paused", true)
+                clockData.set("init", true)
             })
         }
-    }
+    }, [clockData]);
+    const [clockText, setClockText] = useState({ minutes: "00", seconds: "00", milliseconds: "000" });
+    const [elapsedText, setElapsedText] = useState({ minutes: "00", seconds: "00", milliseconds: "000" });
 
-    useEffect(() => {
-        if (gameID == "") return;
+    // Hydration Issue, just for good practice ヽ(･∀･)ﾉ
+    const [clockStage, setClockStage] = useState("PREP" as string);
+    const [clockPaused, setClockPaused] = useState(true);
 
-        if (lastGameProps.current == JSON.stringify(gameProps)) return;
-        lastGameProps.current = JSON.stringify(gameProps);
+    // [Core] Clock Main Function
+    const updateClockText = () => {
 
-        if (greatVictory.current) return;
+        // Hydration Issue, just for good practice ヽ(･∀･)ﾉ
+        setClockStage(clockData.get("stage") as string);
+        setClockPaused(clockData.get("paused") as boolean);
 
-        if (gameStage.current === "PREP") {
-            resetProps();
-            enqueueSnackbar("No editing in PREP stage.", {variant: "error"})
-            return;
-        }
+        // Calculate elapsedTime and remainingTime based on clock paused or not
+        // To ensure every clock show the same time when stopped
+        const elapsedTime = clockData.get("paused") ? clockData.get("elapsed") as number : (clockData.get("elapsed") as number) + (Date.now() - (clockData.get("timestamp") as number));
+        const remainingTime = clockData.get("paused") ? (GAME_STAGES_TIME[GAME_STAGES.indexOf(clockData.get("stage") as string)] * 1000) - (clockData.get("elapsed") as number) : (GAME_STAGES_TIME[GAME_STAGES.indexOf(clockData.get("stage") as string)] * 1000) - (clockData.get("elapsed") as number) - (Date.now() - (clockData.get("timestamp") as number));
+        // Check if still have remaining time in the current stage
+        if (remainingTime >= 0) { 
+            // Calculate remainingTime from seconds to human-readable text
+            // For On-screen clock display
+            const remainingMinutes = Math.floor(remainingTime/60000)+"";
+            const remainingSeconds = Math.floor(remainingTime/1000%60)+"";
+            const remainingMilliseconds = remainingTime%1000+"";
+            setClockText({
+                minutes: remainingMinutes.length < 2 ? "0"+remainingMinutes : remainingMinutes,
+                seconds: remainingSeconds.length < 2 ? "0"+remainingSeconds : remainingSeconds,
+                milliseconds: remainingMilliseconds.length < 3 ? remainingMilliseconds.length < 2 ? "00"+remainingMilliseconds : "0"+remainingMilliseconds : remainingMilliseconds
+            })
 
-        //console.log("UPDATE", gameProps);
-        
-        console.log("Updating Props");
-        
-        const scores = scoreCalculation();
+            // Calculate elapsedTime from seconds to human-readable text
+            // For history entries
+            const elapsedMinutes = Math.floor(elapsedTime/60000)+"";
+            const elapsedSeconds = Math.floor(elapsedTime/1000%60)+"";
+            const elapsedMilliseconds = elapsedTime%1000+"";
+            setElapsedText({
+                minutes: elapsedMinutes.length < 2 ? "0"+elapsedMinutes : elapsedMinutes,
+                seconds: elapsedSeconds.length < 2 ? "0"+elapsedSeconds : elapsedSeconds,
+                milliseconds: elapsedMilliseconds.length < 3 ? elapsedMilliseconds.length < 2 ? "00"+elapsedMilliseconds : "0"+elapsedMilliseconds : elapsedMilliseconds
+            })
 
-        set(child(dbRef, `games/${gameID}/props`), {...gameProps, scores, history: history.current});
-    }, [gameProps])
+            // After-math function
+            // That has to check constantly
+            soundCheck((clockData.get("stage") as string), remainingTime);
 
-    const redStorageZoneAction = (value: number) => {
-        // Validation
-        if (value > (gameProps.redSeedling || 0)) {
-            enqueueSnackbar("Storage Zone exceeded placed Seedling!", {variant: "error", preventDuplicate: true})
-            return;
-        }
-
-        history.current.push({action: `RED Storage Zone ${value}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "RED"})
-        setGameProps({...gameProps, redStorageZone: value });
-        
-    }
-
-    const redSeedlingAction = (value: number) => {
-        // Validation
-        if (value > 12) {
-            enqueueSnackbar("Seedling exceeded!", {variant: "error"})
-            return;
-        }
-
-        history.current.push({action: `RED Seedling ${value}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "RED"})
-        setGameProps({...gameProps, redSeedling: value});
-        
-    }
-
-    const blueStorageZoneAction = (value: number) => {
-        // Validation
-        if (value > (gameProps.blueSeedling || 0)) {
-            enqueueSnackbar("Storage Zone exceeded placed Seedling!", {variant: "error", anchorOrigin: {vertical: "bottom", horizontal: "right"}, preventDuplicate: true})
-            return;
-        }
-
-        history.current.push({action: `BLUE Storage Zone ${value}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "BLUE"})
-        setGameProps({...gameProps, blueStorageZone: value });
-        
-    }
-
-    const blueSeedlingAction = (value: number) => {
-        // Validation
-        if (value > 12) {
-            enqueueSnackbar("Seedling exceeded!", {variant: "error", anchorOrigin: {vertical: "bottom", horizontal: "right"}, preventDuplicate: true})
-            return;
-        }
-
-        history.current.push({action: `BLUE Seedling ${value}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "BLUE"})
-        setGameProps({...gameProps, blueSeedling: value });
-        
-    }
-
-    const [siloForceColor, setSiloForceColor] = useState<any>([["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"]]);
-
-    const siloAction = (silo: number, pos: number, color: String) => {
-        //console.log("Silo Action", gameProps)
-        let tmpSilos = gameProps.silos?[...gameProps.silos]:[["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"]];
-
-        let siloHeight = 0;
-        for (let index = 0; index < tmpSilos[silo].length; index++) {
-            const val = tmpSilos[silo][index];
-            if (val === "NONE") {
-                siloHeight = index;
-                break;
+            // Recall itself 37 milliseconds after
+            // Yes, it isn't real-time, but it seems ones.
+            // The site will crash if you make it real-time. ¯\_(ツ)_/¯
+            if (!(clockData.get("paused") as boolean)) {
+                setTimeout(() => {
+                    updateClockText();
+                }, 37);
             }
-            siloHeight = 2;
-        }
+        } else {
+            // There is no remaining time in current stage
+            // Continue to next stage
 
-        if (pos > siloHeight) pos = siloHeight;
-        tmpSilos[silo][pos] = color;
-        history.current.push({action: `Silo ${silo} ${pos} ${color}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: color=="RED"?"RED":"BLUE"})
-        setGameProps({...gameProps, silos: [...tmpSilos]});
+            // Check if still have stage
+            if (GAME_STAGES.indexOf(clockData.get("stage") as string)+1 < GAME_STAGES.length) {
+                // Get the new stage name and remaining time
+                const newGameStage = GAME_STAGES[GAME_STAGES.indexOf(clockData.get("stage") as string)+1];
+                console.log(`Resetting Timer for ${newGameStage}`);
+                const remainingTime = GAME_STAGES_TIME[GAME_STAGES.indexOf(newGameStage)]*1000;
+                ydoc.transact((_y) => {
+                    clockData.set("stage", newGameStage);
+                    clockData.set("timestamp", Date.now());
+                    clockData.set("elapsed", 0);
+                    clockData.set("paused", remainingTime > 0 ? false : true);
+                })
+
+                if (newGameStage == "END") {
+                    toast({
+                        title: "Game END",
+                        status: 'success',
+                        duration: 5000,
+                    })
+                    //gameEndVictoryCalc();
+                }
+                // Game start wait judge approval
+                if (newGameStage == "GAME") {
+                    stopClock();
+                    resetStage();
+                }
+            }
+        }
     }
 
-    const scoresRef = useRef<any>({red: 0, blue: 0});
+    // [Core] Clock Listener
+    // It will trigger everytime clockData has changed locally or from remote
+    clockData.observeDeep(updateClockText);
 
-    const scoreCalculation = () => {
+    // [Core] Start of Clock Helper Function
+    const startClock = () => {
+        console.log("Clock Started")
+        ydoc.transact((_y) => {
+            clockData.set("stage", clockData.get("stage") as string);
+            clockData.set("timestamp", Date.now());
+            clockData.set("elapsed", clockData.get("elapsed") as number);
+            clockData.set("paused", false);
+        })
+        toast({
+            title: "Clock Started",
+            status: 'success',
+            duration: 1000,
+        })
+    }
+
+    const stopClock = () => {
+        console.log("Clock Stopped")
+        const elapsed = (Date.now()-(clockData.get("timestamp") as number)) + (clockData.get("elapsed") as number)
+        ydoc.transact((_y) => {
+            clockData.set("stage", clockData.get("stage") as string);
+            clockData.set("timestamp", Date.now());
+            clockData.set("elapsed", elapsed);
+            clockData.set("paused", true);
+        })
+        toast({
+            title: "Clock Stopped",
+            status: 'success',
+            duration: 1000,
+        })
+        // Delay 50ms to prevent updateClockText start the sound again
+        setTimeout(() => {stopSound();}, 50);
+    }
+
+    const toggleClock = () => {
+        if (clockData.get("paused") as boolean) {
+            startClock();
+        } else {
+            stopClock();
+        }
+    }
+
+    const resetStage = () => {
+        console.log("Reset Stage Time")
+        ydoc.transact((_y) => {
+            clockData.set("stage", clockData.get("stage") as string);
+            clockData.set("timestamp", Date.now());
+            clockData.set("elapsed", 0);
+            clockData.set("paused", true);
+        })
+        toast({
+            title: `Reset stage ${clockData.get("stage") as string}`,
+            status: 'success',
+            duration: 1000,
+        })
+    }
+
+    const changeStage = (skipStage:number) => {
+        const index = GAME_STAGES.indexOf(clockData.get("stage") as string);
+        if (index+skipStage < 0 ) {stopClock(); return;}
+        if (index+skipStage > GAME_STAGES.length-1 ) {stopClock(); return;}
+        const nextStage = GAME_STAGES[index+skipStage];
+        const remainingTime = GAME_STAGES_TIME[index+skipStage]*1000;
+        console.log(`Skip stage to ${nextStage}`);
+        ydoc.transact((_y) => {
+            clockData.set("stage", nextStage);
+            clockData.set("timestamp", Date.now());
+            clockData.set("elapsed", 0);
+            clockData.set("paused", remainingTime > 0 ? false : true);
+        })
+        toast({
+            title: `Skip stage ${clockData.get("stage") as string}`,
+            status: 'success',
+            duration: 1000,
+        })
+    }
+    
+    // [Core] End of Clock Helper Function
+    // [Core] End of Clock Functions and States
+
+
+    // [Core] Start of GameProps Functions and States
+    const [gameProps, setGameProps] = useState(ydoc.getMap("gameProps") as Y.Map<any>);
+    if (gameProps.get("init") == undefined) {
+        console.log("Initializing GameProps Data")
+        ydoc.transact((_y) => {
+            gameProps.set("teams", {"redTeam": {"cname": "征龍", "ename": "War Dragon"}, "blueTeam": {"cname": "火之龍", "ename": "Fiery Dragon"}})
+
+            const gameHistory = new Y.Array();
+            gameProps.set("history", gameHistory)
+
+            const gamePropsSilos = new Y.Array() as Y.Array<string[]>;
+            gamePropsSilos.insert(0, [["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"]])
+            gameProps.set("silos", gamePropsSilos)
+
+            const gamePropsItems = new Y.Map() as Y.Map<number>;
+            gamePropsItems.set("redStorageZone", 0);
+            gamePropsItems.set("redSeedling", 0);
+            gamePropsItems.set("blueStorageZone", 0);
+            gamePropsItems.set("blueSeedling", 0);
+            gameProps.set("items", gamePropsItems)
+
+            gameProps.set("init", true)
+        })
+    }
+
+    // Hydration Issue, just for good practice ヽ(･∀･)ﾉ
+    const [siloState, setSiloState] = useState([["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"]]);
+    const [historyState, setHistoryState] = useState<any[]>([]);
+    const [itemsState, setItemsState] = useState<any>({
+        redStorageZone: 0,
+        redSeedling: 0,
+        blueStorageZone: 0,
+        blueSeedling: 0
+    });
+    const [teamState, setTeamState] = useState<{ redTeam: { cname: string; ename: string; }; blueTeam: { cname: string; ename: string; }; }>({
+        redTeam: { cname: "征龍", ename: "War Dragon" },
+        blueTeam: { cname: "火之龍", ename: "Fiery Dragon" }
+    });
+
+    // GameProps Main Scoring Function
+    const [scores, setScores] = useState({redPoints: 0, bluePoints: 0});
+    const greateVictoryRef = useRef<boolean>(false);
+
+    const scoreCalculation = useCallback(() => {
+        const historyYArray = gameProps.get("history") as Y.Array<{ action: string; time: string; team: string }>;
+        const silosYArray = gameProps.get("silos") as Y.Array<string[]>;
+        const itemsYMap = gameProps.get("items") as Y.Map<number>;
         /*
         The score is calculated as follows:
         (a) Robots successfully plant 01 (one) Seedling: 10 points.
@@ -677,19 +392,18 @@ export default function Dashboard(props: any) {
         let redPoints = 0;
         let bluePoints = 0;
 
-        redPoints += (gameProps.redSeedling || 0) * 10;
-        bluePoints += (gameProps.blueSeedling || 0) * 10;
+        redPoints += (itemsYMap.get("redSeedling") || 0) * 10;
+        bluePoints += (itemsYMap.get("blueSeedling") || 0) * 10;
 
-        redPoints += (gameProps.redStorageZone || 0) * 10;
-        bluePoints += (gameProps.blueStorageZone || 0) * 10;
+        redPoints += (itemsYMap.get("redStorageZone") || 0) * 10;
+        bluePoints += (itemsYMap.get("blueStorageZone") || 0) * 10;
 
-        gameProps.silos?.forEach((silo: String[]) => {
-            silo.forEach((color: String) => {
+        silosYArray?.forEach((silo: string[]) => {
+            silo.forEach((color: string) => {
                 if (color == "RED") redPoints += 30;
                 if (color == "BLUE") bluePoints += 30;
             })
         });
-        //console.log("SCORE", gameProps.silos)
 
         /*
         ‘V Goal’ “Mùa Vàng” (Harvest Glory) is achieved when 3 Silos
@@ -700,12 +414,10 @@ export default function Dashboard(props: any) {
         The team wins at the moment when Mua Vang is achieved.
         */
 
-        if (greatVictory.current) return;
-
         let redOccoupiedSilos = 0;
         let blueOccoupiedSilos = 0;
 
-        gameProps.silos?.forEach((silo: String[]) => {
+        silosYArray?.forEach((silo: string[]) => {
             const siloArray = silo;
             const lastElement = siloArray[siloArray.length - 1];
 
@@ -716,63 +428,292 @@ export default function Dashboard(props: any) {
             }
         })
 
-        let greatVictoryObject = {}
-
-        if (redOccoupiedSilos >= 3) {
-            let greatVictoryTimestamp = (GAME_STAGES_TIME[GAME_STAGES.indexOf(gameStage.current)]*1000)-clockData.current.elapsed-(Date.now()-clockData.current.timestamp);
-            enqueueSnackbar(`RED GREAT VICTORY`, {variant: "success", autoHideDuration: 10000, preventDuplicate: true});
-            stopClock();
-            if (grandClock.current) history.current.push({action: `RED GREAT VICTORY`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "RED"});
-            greatVictory.current = true;
-            greatVictoryObject = {redGreatVictory: true, greatVictoryTimestamp}
-        } else if (blueOccoupiedSilos >= 3) {
-            let greatVictoryTimestamp = (GAME_STAGES_TIME[GAME_STAGES.indexOf(gameStage.current)]*1000)-clockData.current.elapsed-(Date.now()-clockData.current.timestamp);
-            enqueueSnackbar(`BLUE GREAT VICTORY`, {variant: "success", anchorOrigin: { horizontal: "right", vertical: "bottom" }, autoHideDuration: 10000, preventDuplicate:true});
-            stopClock();
-            if (grandClock.current) history.current.push({action: `BLUE GREAT VICTORY`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "BLUE"});
-            greatVictory.current = true;
-            greatVictoryObject = {blueGreatVictory: true, greatVictoryTimestamp}
+        if (greateVictoryRef.current) {
+            setScores({redPoints, bluePoints});
+            return {redPoints, bluePoints, redGreatVictory: false, blueGreatVictory: false, greatVictoryTimestamp: 0}
         }
 
-        scoresRef.current = {redPoints, bluePoints}
+        let greatVictoryObject = {redGreatVictory: false, blueGreatVictory: false, greatVictoryTimestamp: 0}
+
+        if (redOccoupiedSilos >= 3) {
+            let greatVictoryTimestamp = (GAME_STAGES_TIME[GAME_STAGES.indexOf(clockData.get("stage") as string)]*1000)- (clockData.get("elapsed") as number) -(Date.now()-(clockData.get("timestamp") as number));
+            const elapsedTime = (clockData.get("elapsed") as number) + (Date.now() - (clockData.get("timestamp") as number));
+            const elapsedMinutes = Math.floor(elapsedTime/60000)+"";
+            const elapsedSeconds = Math.floor(elapsedTime/1000%60)+"";
+            const elapsedMilliseconds = elapsedTime%1000+"";
+            const elapsedText = {
+                minutes: elapsedMinutes.length < 2 ? "0"+elapsedMinutes : elapsedMinutes,
+                seconds: elapsedSeconds.length < 2 ? "0"+elapsedSeconds : elapsedSeconds,
+                milliseconds: elapsedMilliseconds.length < 3 ? elapsedMilliseconds.length < 2 ? "00"+elapsedMilliseconds : "0"+elapsedMilliseconds : elapsedMilliseconds
+            }
+            toast({
+                title: "RED GREAT VICTORY",
+                status: 'success',
+                position: 'bottom-left',
+                duration: 5000,
+            })
+            greateVictoryRef.current = true;
+            if (historyYArray.get(historyYArray.length-1)?.action !== `RED Great Victory`) historyYArray.push([{action: `RED Great Victory`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "RED"}]);
+            greatVictoryObject = {redGreatVictory: true, blueGreatVictory: false, greatVictoryTimestamp}
+            stopClock();
+        } else if (blueOccoupiedSilos >= 3) {
+            let greatVictoryTimestamp = (GAME_STAGES_TIME[GAME_STAGES.indexOf(clockData.get("stage") as string)]*1000)- (clockData.get("elapsed") as number) -(Date.now()-(clockData.get("timestamp") as number));
+            const elapsedTime = (clockData.get("elapsed") as number) + (Date.now() - (clockData.get("timestamp") as number));
+            const elapsedMinutes = Math.floor(elapsedTime/60000)+"";
+            const elapsedSeconds = Math.floor(elapsedTime/1000%60)+"";
+            const elapsedMilliseconds = elapsedTime%1000+"";
+            const elapsedText = {
+                minutes: elapsedMinutes.length < 2 ? "0"+elapsedMinutes : elapsedMinutes,
+                seconds: elapsedSeconds.length < 2 ? "0"+elapsedSeconds : elapsedSeconds,
+                milliseconds: elapsedMilliseconds.length < 3 ? elapsedMilliseconds.length < 2 ? "00"+elapsedMilliseconds : "0"+elapsedMilliseconds : elapsedMilliseconds
+            }
+            toast({
+                title: "BLUE GREAT VICTORY",
+                status: 'success',
+                position: 'bottom-right',
+                duration: 5000,
+            })
+            greateVictoryRef.current = true;
+            if (historyYArray.get(historyYArray.length-1)?.action !== `BLUE Great Victory`) historyYArray.push([{action: `BLUE Great Victory`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "BLUE"}])
+            greatVictoryObject = {redGreatVictory: true,blueGreatVictory: true, greatVictoryTimestamp}
+            stopClock();
+        }
+
+        setScores({redPoints, bluePoints});
         return {redPoints, bluePoints, ...greatVictoryObject}
+    }, [])
+
+    
+    // Hydration Issue, just for good practice ヽ(･∀･)ﾉ
+    gameProps.observeDeep(() => {
+
+        const teamYMap = gameProps.get("teams") as { redTeam: { cname: string; ename: string; }; blueTeam: { cname: string; ename: string; }; };
+        const historyYArray = gameProps.get("history") as Y.Array<{ action: string; time: string; team: string }>;
+        const silosYArray = gameProps.get("silos") as Y.Array<string[]>;
+        const itemsYMap = gameProps.get("items") as Y.Map<number>;
+        setTeamState(teamYMap);
+        setHistoryState(historyYArray.toJSON());
+        setSiloState(silosYArray.toJSON());
+        setItemsState(itemsYMap.toJSON());
+
+        scoreCalculation();
+    });
+
+    const updateTeam = (value: any, side: string): void => {
+        const teamYMap = gameProps.get("teams") as { redTeam: { cname: string; ename: string; }; blueTeam: { cname: string; ename: string; }; };
+        let teams: { [key: string]: any } = teamYMap;
+        teams[side] = value;
+        gameProps.set("teams", teams);
     }
 
-    const gameEndVictoryCalc = () => {
-        /*
-        3.7 Deciding the Winner
-        A Winning Team is determined as follows:
-        1) The team that achieves absolute victory, the “Mùa Vàng”
-        2) The team with a higher total score.
-        3) In case 2 teams have the same scores:
-        (a) The team with a higher total score of the stored Paddy Rice in Area 3.
-        (b) The team with a higher total score of the harvested balls.
-        (c) The team with a higher total score of planting in Area 1.
-        (d) The team gains score of planting in advance in Area 1.
-        (e) Determination by The Judge Committee.
-        */
+    const siloAction = (x: number, y: number, color: string): void => {
+        // Validation
+        if (clockData.get("stage") as string === "PREP") {
+            toast({
+                title: "No editing in PREP stage.",
+                status: 'error',
+                duration: 500,
+            })
+            return;
+        }
 
-        //console.log("gameEndVictoryCalc", gameProps)
+        const silosYArray = gameProps.get("silos") as Y.Array<string[]>;
+        const historyYArray = gameProps.get("history") as Y.Array<{ action: string; time: string; team: string }>;
+        let silo = silosYArray.get(x);
+        
+        // Physics Engine \ō͡≡o˞̶ \ō͡≡o˞̶ \ō͡≡o˞̶
+        let siloHeight = 0;
+        for (let index = 0; index < silo.length; index++) {
+            const val = silo[index];
+            if (val === "NONE") {
+                siloHeight = index;
+                break;
+            }
+            siloHeight = 2;
+        }
 
-        let redPoints = scoresRef.current.redPoints;
-        let bluePoints = scoresRef.current.bluePoints;
-        //console.log(redPoints, bluePoints)
+        if (y > siloHeight) y = siloHeight;
 
-        if (redPoints > bluePoints) {
-            enqueueSnackbar(`RED WINS`, {variant: "success", autoHideDuration: 10000, preventDuplicate: true});
-            //stopClock();
-            //greatVictory.current = true;
-            //history.current.push({action: `RED WINS`, time: "03:00:00", team: "RED"});
-            //setGameProps({...gameProps, scores: {...gameProps.scores, redVictory: true}});
-        } else if (bluePoints > redPoints) {
-            enqueueSnackbar(`BLUE WINS`, {variant: "success", autoHideDuration: 10000, preventDuplicate: true});
-            //stopClock();
-            //greatVictory.current = true;
-            //history.current.push({action: `BLUE WINS`, time: "03:00:00", team: "BLUE"});
-            //setGameProps({...gameProps, scores: {...gameProps.scores, blueVictory: true}});
-        } 
-        // Dun want to write
+        console.log(`Silo Action: ${x} ${y} ${color}`);
+
+        historyYArray.push([{action: `Silo ${x} ${y} ${color}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: color}])
+        
+        ydoc.transact((_y) => {
+            silo[y] = color;
+            silosYArray.delete(x, 1);
+            silosYArray.insert(x, [silo]);
+        })
     }
+
+    
+    const redStorageZoneAction = (value: number) => {
+        const itemsYMap = gameProps.get("items") as Y.Map<number>;
+        const historyYArray = gameProps.get("history") as Y.Array<{ action: string; time: string; team: string }>;
+        // Validation
+        if (clockData.get("stage") as string === "PREP") {
+            toast({
+                title: "No editing in PREP stage.",
+                status: 'error',
+                duration: 500,
+            })
+            return;
+        }
+        if (value > (itemsYMap.get("redSeedling") as number || 0)) {
+            toast({
+                title: "Storage Zone exceeded placed Seedling!",
+                status: 'error',
+                position: 'bottom-left',
+                duration: 500,
+            })
+            return;
+        }
+
+        historyYArray.push([{action: `RED Storage Zone ${value}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "RED"}])
+        itemsYMap.set("redStorageZone", value);
+    }
+
+    const redSeedlingAction = (value: number) => {
+        const itemsYMap = gameProps.get("items") as Y.Map<number>;
+        const historyYArray = gameProps.get("history") as Y.Array<{ action: string; time: string; team: string }>;
+        // Validation
+        if (clockData.get("stage") as string === "PREP") {
+            toast({
+                title: "No editing in PREP stage.",
+                status: 'error',
+                duration: 500,
+            })
+            return;
+        }
+        if (value > 12) {
+            toast({
+                title: "Seedling exceeded!",
+                status: 'error',
+                position: 'bottom-left',
+                duration: 500,
+            })
+            return;
+        }
+
+        historyYArray.push([{action: `RED Seedling ${value}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "RED"}])
+        itemsYMap.set("redSeedling", value);
+    }
+
+    const blueStorageZoneAction = (value: number) => {
+        const itemsYMap = gameProps.get("items") as Y.Map<number>;
+        const historyYArray = gameProps.get("history") as Y.Array<{ action: string; time: string; team: string }>;
+        // Validation
+        if (clockData.get("stage") as string === "PREP") {
+            toast({
+                title: "No editing in PREP stage.",
+                status: 'error',
+                duration: 500,
+            })
+            return;
+        }
+        if (value > (itemsYMap.get("blueSeedling") as number || 0)) {
+            toast({
+                title: "Storage Zone exceeded placed Seedling!",
+                status: 'error',
+                position: 'bottom-right',
+                duration: 500,
+            })
+            return;
+        }
+
+        historyYArray.push([{action: `BLUE Storage Zone ${value}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "BLUE"}])
+        itemsYMap.set("blueStorageZone", value);
+    }
+
+    const blueSeedlingAction = (value: number) => {
+        const itemsYMap = gameProps.get("items") as Y.Map<number>;
+        const historyYArray = gameProps.get("history") as Y.Array<{ action: string; time: string; team: string }>;
+        // Validation
+        if (clockData.get("stage") as string === "PREP") {
+            toast({
+                title: "No editing in PREP stage.",
+                status: 'error',
+                duration: 500,
+            })
+            return;
+        }
+        if (value > 12) {
+            toast({
+                title: "Seedling exceeded!",
+                status: 'error',
+                position: 'bottom-right',
+                duration: 500,
+            })
+            return;
+        }
+
+        historyYArray.push([{action: `BLUE Seedling ${value}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "BLUE"}])
+        itemsYMap.set("blueSeedling", value);
+    }
+
+    const resetProps = () => {
+        ydoc.transact((_y) => {
+            const gamePropsSilos = new Y.Array() as Y.Array<string[]>;
+            gamePropsSilos.insert(0, [["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"]])
+            gameProps.set("silos", gamePropsSilos)
+
+            const gamePropsItems = new Y.Map() as Y.Map<number>;
+            gamePropsItems.set("redStorageZone", 0);
+            gamePropsItems.set("redSeedling", 0);
+            gamePropsItems.set("blueStorageZone", 0);
+            gamePropsItems.set("blueSeedling", 0);
+            gameProps.set("items", gamePropsItems)
+
+            gameProps.set("init", true)
+        })
+    }
+
+    // [Core] End of GameProps Functions and States
+
+
+    // [Core] Start of Helper Functions and States
+    const forceReset = () => {
+        forceStopSound();
+        setScores({redPoints: 0, bluePoints: 0});
+        greateVictoryRef.current = false;
+
+        setPattern(patternGenerator() as [string[][], string[][]]);
+        
+        ydoc.transact((_y) => {
+            clockData.set("stage", "PREP")
+            clockData.set("timestamp", 0)
+            clockData.set("elapsed", 0)
+            clockData.set("paused", true)
+            clockData.set("init", true)
+
+            gameProps.set("teams", {"redTeam": {"cname": "征龍", "ename": "War Dragon"}, "blueTeam": {"cname": "火之龍", "ename": "Fiery Dragon"}})
+            
+            const gameHistory = new Y.Array();
+            gameProps.set("history", gameHistory)
+
+            const gamePropsSilos = new Y.Array() as Y.Array<string[]>;
+            gamePropsSilos.insert(0, [["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"]])
+            gameProps.set("silos", gamePropsSilos)
+
+            const gamePropsItems = new Y.Map() as Y.Map<number>;
+            gamePropsItems.set("redStorageZone", 0);
+            gamePropsItems.set("redSeedling", 0);
+            gamePropsItems.set("blueStorageZone", 0);
+            gamePropsItems.set("blueSeedling", 0);
+            gameProps.set("items", gamePropsItems)
+
+            gameProps.set("init", true)
+        })
+    }
+    // [Core] End of Helper Functions and States
+
+
+    // [Features] PatternGenerator Functions and States
+    const [patternRandomGeneratorModal, setPatternRandomGeneratorModal] = useState(false);
+    const [pattern, setPattern] = useState<[string[][],string[][]]>([[],[]]);
+
+    useEffect(() => {
+        if (pattern[0].length === 0) setPattern((patternGenerator() as [string[][], string[][]]));
+    }, [pattern])
 
     return (
         <>
@@ -799,11 +740,11 @@ export default function Dashboard(props: any) {
             }}>
                 GameID: {gameID}
                 <br />
-                <Button onClick={()=>{navigator.clipboard.writeText(gameID).then(()=>enqueueSnackbar("GameID Copied!", {variant: "success", preventDuplicate: true}))}} colorScheme="blue" size={"sm"}>Copy GameID</Button>
+                <Button onClick={()=>{navigator.clipboard.writeText(gameID).then(()=>toast({title: "GameID Copied!", status: "success", duration: 1000}))}} colorScheme="blue" size={"sm"}>Copy GameID</Button>
                 <br />
-                <Button onClick={()=>navigator.clipboard.writeText(JSON.stringify({...gameProps, teams: currentTeam}))} colorScheme="blue" size={"sm"}>Copy Game Props</Button>
-                <br />
-                <Button onClick={()=>{forceReset();closeSnackbar();enqueueSnackbar("Props Reset!", {variant: "success", preventDuplicate: true})}} colorScheme="red" size={"sm"}>Force Reset</Button>
+                <Button onClick={()=>{navigator.clipboard.writeText(JSON.stringify(gameProps.toJSON())).then(()=>toast({title: "GameProps Copied!", status: "success", duration: 1000}))}} colorScheme="blue" size={"sm"}>Copy Game Props</Button>
+                <br /> 
+                <Button onClick={()=>{forceReset();toast.closeAll();toast({title: "Props Reset!", status: "success", duration: 1000})}} colorScheme="red" size={"sm"}>Force Reset</Button>
                 
             </Box>
             <Box style={{
@@ -821,7 +762,6 @@ export default function Dashboard(props: any) {
                 zIndex: 10,
                 position: 'absolute',
                 fontSize: '1.3rem',
-                color: onlineStatus==1?'lightgreen':onlineStatus==0?'lightcoral':'orange',
                 textAlign: 'right',
             }}>
                 <Button onClick={()=>{setGameSettingsModal(true)}} colorScheme="teal" size={"sm"}>Game Settings</Button>
@@ -837,8 +777,8 @@ export default function Dashboard(props: any) {
                 {/** Clock Box */}
                 <TimerBox 
                     timeText={clockText} 
-                    gameStage={gameStage.current} 
-                    clockToggle={clockToggle.current}
+                    gameStage={clockStage} 
+                    clockToggle={!clockPaused}
                     hidden={false} 
                     shorthand={true}
                     toggleClock={toggleClock} 
@@ -853,20 +793,20 @@ export default function Dashboard(props: any) {
                 position: 'absolute',
             }}>
                 <Box style={{
-                    left: '7%',
+                    left: '6%',
                     top: '-5%',
                     position: 'absolute',
                     zIndex: 10,
                 }}>
-                    <ScoreDisplay color={"red"} team={currentTeam.redTeam} editable={true} score={gameProps.scores?.redPoints||0} teams={Teams} setTeam={redUpdateTeam} />
+                    <ScoreDisplay color={"red"} team={teamState.redTeam} editable={true} score={scores.redPoints} teams={Teams} setTeam={updateTeam} teamColor={"redTeam"} />
                 </Box>
                 <Box style={{
-                    right: '7%',
+                    right: '6%',
                     top: '-5%',
                     position: 'absolute',
                     zIndex: 10,
                 }}>
-                    <ScoreDisplay color={"blue"} team={currentTeam.blueTeam} editable={true} score={gameProps.scores?.bluePoints||0} teams={Teams} setTeam={blueUpdateTeam} />
+                    <ScoreDisplay color={"blue"} team={teamState.blueTeam} editable={true} score={scores.bluePoints} teams={Teams} setTeam={updateTeam} teamColor={"blueTeam"} />
                 </Box>
                 <Box style={{
                     left: '4%',
@@ -874,7 +814,7 @@ export default function Dashboard(props: any) {
                     position: 'absolute',
                     zIndex: 10,
                 }}>
-                    <HistoryList history={gameProps.history || []} team="RED" color={"red"} />
+                    <HistoryList history={historyState} team="RED" color={"red"} />
                 </Box>
                 <Box style={{
                     right: '4%',
@@ -882,7 +822,7 @@ export default function Dashboard(props: any) {
                     position: 'absolute',
                     zIndex: 10,
                 }}>
-                    <HistoryList history={gameProps.history || []} team="BLUE" color={"blue"} />
+                    <HistoryList history={historyState} team="BLUE" color={"blue"} />
                 </Box>
                 <Box style={{
                     height: '95%',
@@ -920,7 +860,7 @@ export default function Dashboard(props: any) {
                         position: 'absolute',
                         zIndex: 10,
                     }}>
-                        <ColorPicker forceColor={siloForceColor[0][0]} color={gameProps.silos&&gameProps.silos[0][0]||"NONE"} setPicker={siloAction} pos={[0,0]}/>
+                        <ColorPicker color={siloState[0][0]} setPicker={siloAction} pos={[0,0]}/>
                     </Box>
                     <Box style={{
                         left: '10%',
@@ -928,7 +868,7 @@ export default function Dashboard(props: any) {
                         position: 'absolute',
                         zIndex: 10,
                     }}>
-                        <ColorPicker forceColor={siloForceColor[0][1]} color={gameProps.silos&&gameProps.silos[0][1]||"NONE"} setPicker={siloAction} pos={[0,1]}/>
+                        <ColorPicker color={siloState[0][1]} setPicker={siloAction} pos={[0,1]}/>
                     </Box>
                     <Box style={{
                         left: '10%',
@@ -936,7 +876,7 @@ export default function Dashboard(props: any) {
                         position: 'absolute',
                         zIndex: 10,
                     }}>
-                        <ColorPicker forceColor={siloForceColor[0][2]} color={gameProps.silos&&gameProps.silos[0][2]||"NONE"} setPicker={siloAction} pos={[0,2]}/>
+                        <ColorPicker color={siloState[0][2]} setPicker={siloAction} pos={[0,2]}/>
                     </Box>
 
                     <Box style={{
@@ -945,7 +885,7 @@ export default function Dashboard(props: any) {
                         position: 'absolute',
                         zIndex: 10,
                     }}>
-                        <ColorPicker forceColor={siloForceColor[1][0]} color={gameProps.silos&&gameProps.silos[1][0]||"NONE"} setPicker={siloAction} pos={[1,0]}/>
+                        <ColorPicker color={siloState[1][0]} setPicker={siloAction} pos={[1,0]}/>
                     </Box>
                     <Box style={{
                         left: '27%',
@@ -953,7 +893,7 @@ export default function Dashboard(props: any) {
                         position: 'absolute',
                         zIndex: 10,
                     }}>
-                        <ColorPicker forceColor={siloForceColor[1][1]} color={gameProps.silos&&gameProps.silos[1][1]||"NONE"} setPicker={siloAction} pos={[1,1]}/>
+                        <ColorPicker color={siloState[1][1]} setPicker={siloAction} pos={[1,1]}/>
                     </Box>
                     <Box style={{
                         left: '27%',
@@ -961,7 +901,7 @@ export default function Dashboard(props: any) {
                         position: 'absolute',
                         zIndex: 10,
                     }}>
-                        <ColorPicker forceColor={siloForceColor[1][2]} color={gameProps.silos&&gameProps.silos[1][2]||"NONE"} setPicker={siloAction} pos={[1,2]}/>
+                        <ColorPicker color={siloState[1][2]} setPicker={siloAction} pos={[1,2]}/>
                     </Box>
 
                     <Box style={{
@@ -970,7 +910,7 @@ export default function Dashboard(props: any) {
                         position: 'absolute',
                         zIndex: 10,
                     }}>
-                        <ColorPicker forceColor={siloForceColor[2][0]} color={gameProps.silos&&gameProps.silos[2][0]||"NONE"} setPicker={siloAction} pos={[2,0]}/>
+                        <ColorPicker color={siloState[2][0]} setPicker={siloAction} pos={[2,0]}/>
                     </Box>
                     <Box style={{
                         left: '43.5%',
@@ -978,7 +918,7 @@ export default function Dashboard(props: any) {
                         position: 'absolute',
                         zIndex: 10,
                     }}>
-                        <ColorPicker forceColor={siloForceColor[2][1]} color={gameProps.silos&&gameProps.silos[2][1]||"NONE"} setPicker={siloAction} pos={[2,1]}/>
+                        <ColorPicker color={siloState[2][1]} setPicker={siloAction} pos={[2,1]}/>
                     </Box>
                     <Box style={{
                         left: '43.5%',
@@ -986,7 +926,7 @@ export default function Dashboard(props: any) {
                         position: 'absolute',
                         zIndex: 10,
                     }}>
-                        <ColorPicker forceColor={siloForceColor[2][2]} color={gameProps.silos&&gameProps.silos[2][2]||"NONE"} setPicker={siloAction} pos={[2,2]}/>
+                        <ColorPicker color={siloState[2][2]} setPicker={siloAction} pos={[2,2]}/>
                     </Box>
 
                     <Box style={{
@@ -995,7 +935,7 @@ export default function Dashboard(props: any) {
                         position: 'absolute',
                         zIndex: 10,
                     }}>
-                        <ColorPicker forceColor={siloForceColor[3][0]} color={gameProps.silos&&gameProps.silos[3][0]||"NONE"} setPicker={siloAction} pos={[3,0]}/>
+                        <ColorPicker color={siloState[3][0]} setPicker={siloAction} pos={[3,0]}/>
                     </Box>
                     <Box style={{
                         left: '60%',
@@ -1003,7 +943,7 @@ export default function Dashboard(props: any) {
                         position: 'absolute',
                         zIndex: 10,
                     }}>
-                        <ColorPicker forceColor={siloForceColor[3][1]} color={gameProps.silos&&gameProps.silos[3][1]||"NONE"} setPicker={siloAction} pos={[3,1]}/>
+                        <ColorPicker color={siloState[3][1]} setPicker={siloAction} pos={[3,1]}/>
                     </Box>
                     <Box style={{
                         left: '60%',
@@ -1011,7 +951,7 @@ export default function Dashboard(props: any) {
                         position: 'absolute',
                         zIndex: 10,
                     }}>
-                        <ColorPicker forceColor={siloForceColor[3][2]} color={gameProps.silos&&gameProps.silos[3][2]||"NONE"} setPicker={siloAction} pos={[3,2]}/>
+                        <ColorPicker color={siloState[3][2]} setPicker={siloAction} pos={[3,2]}/>
                     </Box>
 
                     <Box style={{
@@ -1020,7 +960,7 @@ export default function Dashboard(props: any) {
                         position: 'absolute',
                         zIndex: 10,
                     }}>
-                        <ColorPicker forceColor={siloForceColor[4][0]} color={gameProps.silos&&gameProps.silos[4][0]||"NONE"} setPicker={siloAction} pos={[4,0]}/>
+                        <ColorPicker color={siloState[4][0]} setPicker={siloAction} pos={[4,0]}/>
                     </Box>
                     <Box style={{
                         left: '76.5%',
@@ -1028,7 +968,7 @@ export default function Dashboard(props: any) {
                         position: 'absolute',
                         zIndex: 10,
                     }}>
-                        <ColorPicker forceColor={siloForceColor[4][1]} color={gameProps.silos&&gameProps.silos[4][1]||"NONE"} setPicker={siloAction} pos={[4,1]}/>
+                        <ColorPicker color={siloState[4][1]} setPicker={siloAction} pos={[4,1]}/>
                     </Box>
                     <Box style={{
                         left: '76.5%',
@@ -1036,98 +976,18 @@ export default function Dashboard(props: any) {
                         position: 'absolute',
                         zIndex: 10,
                     }}>
-                        <ColorPicker forceColor={siloForceColor[4][2]} color={gameProps.silos&&gameProps.silos[4][2]||"NONE"} setPicker={siloAction} pos={[4,2]}/>
+                        <ColorPicker color={siloState[4][2]} setPicker={siloAction} pos={[4,2]}/>
                     </Box>
                     
                 </Box>
 
-                {/* <Box style={{
-                    left: '47%',
-                    top: '1%',
-                    position: 'absolute',
-                    zIndex: 10,
-                }}>
-                    <Counter counter={gameProps.redFirstSilo||0} setCounter={redFirstSiloAction} color={"red"} small={true} disableLeftClick={true} />
-                </Box>
-                <Box style={{
-                    left: '50.8%',
-                    top: '1%',
-                    position: 'absolute',
-                    zIndex: 10,
-                }}>
-                    <Counter counter={gameProps.blueFirstSilo||0} setCounter={blueFirstSiloAction} color={"blue"} small={true} disableLeftClick={true} />
-                </Box> 
-                <Box style={{
-                    left: '47%',
-                    top: '7%',
-                    position: 'absolute',
-                    zIndex: 10,
-                }}>
-                    <Counter counter={gameProps.redSecondSilo||0} setCounter={redSecondSiloAction} color={"red"} small={true} disableLeftClick={true} />
-                </Box>
-                <Box style={{
-                    left: '50.8%',
-                    top: '7%',
-                    position: 'absolute',
-                    zIndex: 10,
-                }}>
-                    <Counter counter={gameProps.blueSecondSilo||0} setCounter={blueSecondSiloAction} color={"blue"} small={true} disableLeftClick={true} />
-                </Box>
-                <Box style={{
-                    left: '47%',
-                    top: '13.1%',
-                    position: 'absolute',
-                    zIndex: 10,
-                }}>
-                    <Counter counter={gameProps.redThirdSilo||0} setCounter={redThirdSiloAction} color={"red"} small={true} disableLeftClick={true} />
-                </Box>
-                <Box style={{
-                    left: '50.8%',
-                    top: '13.1%',
-                    position: 'absolute',
-                    zIndex: 10,
-                }}>
-                    <Counter counter={gameProps.blueThirdSilo||0} setCounter={blueThirdSiloAction} color={"blue"} small={true} disableLeftClick={true} />
-                </Box>
-                <Box style={{
-                    left: '47%',
-                    top: '19.1%',
-                    position: 'absolute',
-                    zIndex: 10,
-                }}>
-                    <Counter counter={gameProps.redFourthSilo||0} setCounter={redFourthSiloAction} color={"red"} small={true} disableLeftClick={true} />
-                </Box>
-                <Box style={{
-                    left: '50.8%',
-                    top: '19.1%',
-                    position: 'absolute',
-                    zIndex: 10,
-                }}>
-                    <Counter counter={gameProps.blueFourthSilo||0} setCounter={blueFourthSiloAction} color={"blue"} small={true} disableLeftClick={true} />
-                </Box>
-                <Box style={{
-                    left: '47%',
-                    top: '25.2%',
-                    position: 'absolute',
-                    zIndex: 10,
-                }}>
-                    <Counter counter={gameProps.redFifthSilo||0} setCounter={redFifthSiloAction} color={"red"} small={true} disableLeftClick={true} />
-                </Box>
-                <Box style={{
-                    left: '50.8%',
-                    top: '25.2%',
-                    position: 'absolute',
-                    zIndex: 10,
-                }}>
-                    <Counter counter={gameProps.blueFifthSilo||0} setCounter={blueFifthSiloAction} color={"blue"} small={true} disableLeftClick={true} />
-                </Box> */}
-                <Box style={{
+               <Box style={{
                     left: '34.7%',
                     top: '12.5%',
                     position: 'absolute',
                     zIndex: 10,
                 }}>
-                    <Counter counter={gameProps.redStorageZone||0} setCounter={redStorageZoneAction} color={"red"} />
+                    <Counter counter={itemsState.redStorageZone} setCounter={redStorageZoneAction} color={"red"} />
                 </Box>
                 <Box style={{
                     left: '62.7%',
@@ -1135,7 +995,7 @@ export default function Dashboard(props: any) {
                     position: 'absolute',
                     zIndex: 10,
                 }}>
-                    <Counter counter={gameProps.blueStorageZone||0} setCounter={blueStorageZoneAction} color={"blue"} />
+                    <Counter counter={itemsState.blueStorageZone} setCounter={blueStorageZoneAction} color={"blue"} />
                 </Box>
                 <Box style={{
                     left: '42%',
@@ -1143,7 +1003,7 @@ export default function Dashboard(props: any) {
                     position: 'absolute',
                     zIndex: 10,
                 }}>
-                    <Counter counter={gameProps.redSeedling||0} setCounter={redSeedlingAction} color={"red"} />
+                    <Counter counter={itemsState.redSeedling} setCounter={redSeedlingAction} color={"red"} />
                 </Box>
                 <Box style={{
                     left: '55.3%',
@@ -1151,7 +1011,7 @@ export default function Dashboard(props: any) {
                     position: 'absolute',
                     zIndex: 10,
                 }}>
-                    <Counter counter={gameProps.blueSeedling||0} setCounter={blueSeedlingAction} color={"blue"} />
+                    <Counter counter={itemsState.blueSeedling} setCounter={blueSeedlingAction} color={"blue"} />
                 </Box>
             </Box>
             
@@ -1167,10 +1027,10 @@ export default function Dashboard(props: any) {
             </ModalBody>
 
             <ModalFooter>
-                <Button colorScheme='blue' mr={3} onClick={submitGameID}>
+                <Button colorScheme='blue' mr={3} onClick={()=>submitGameID(gameIDInput.current?.value)}>
                 Submit
                 </Button>
-                <Button colorScheme='green' mr={3} onClick={()=>createGame(String(Math.floor(10000000 + Math.random() * 90000000)))}>
+                <Button colorScheme='green' mr={3} onClick={()=>submitGameID(String(Math.floor(10000000 + Math.random() * 90000000)))}>
                 Create Game
                 </Button>
             </ModalFooter>
@@ -1228,7 +1088,7 @@ export default function Dashboard(props: any) {
                     })}
                     </Box>
                     <br />
-                    <Button onClick={patternGenerator} colorScheme="teal">Generate Random Pattern</Button>
+                    <Button onClick={()=>{setPattern((patternGenerator() as [string[][], string[][]]))}} colorScheme="teal">Generate Random Pattern</Button>
                 </Box>
             </ModalBody>
 
