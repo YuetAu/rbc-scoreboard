@@ -550,6 +550,14 @@ export default function Dashboard(props: any) {
         const itemsYMap = gameProps.get("items") as Y.Map<number>;
         const historyYArray = gameProps.get("history") as Y.Array<{ action: string; time: string; team: string }>;
         // Validation
+        if (clockData.get("stage") as string === "PREP") {
+            toast({
+                title: "No editing in PREP stage.",
+                status: 'error',
+                duration: 500,
+            })
+            return;
+        }
         if (value > (itemsYMap.get("redSeedling") as number || 0)) {
             toast({
                 title: "Storage Zone exceeded placed Seedling!",
@@ -568,19 +576,19 @@ export default function Dashboard(props: any) {
         const itemsYMap = gameProps.get("items") as Y.Map<number>;
         const historyYArray = gameProps.get("history") as Y.Array<{ action: string; time: string; team: string }>;
         // Validation
+        if (clockData.get("stage") as string === "PREP") {
+            toast({
+                title: "No editing in PREP stage.",
+                status: 'error',
+                duration: 500,
+            })
+            return;
+        }
         if (value > 12) {
             toast({
                 title: "Seedling exceeded!",
                 status: 'error',
                 position: 'bottom-left',
-                duration: 500,
-            })
-            return;
-        }
-        if (clockData.get("stage") as string === "PREP") {
-            toast({
-                title: "No editing in PREP stage.",
-                status: 'error',
                 duration: 500,
             })
             return;
@@ -594,19 +602,19 @@ export default function Dashboard(props: any) {
         const itemsYMap = gameProps.get("items") as Y.Map<number>;
         const historyYArray = gameProps.get("history") as Y.Array<{ action: string; time: string; team: string }>;
         // Validation
+        if (clockData.get("stage") as string === "PREP") {
+            toast({
+                title: "No editing in PREP stage.",
+                status: 'error',
+                duration: 500,
+            })
+            return;
+        }
         if (value > (itemsYMap.get("blueSeedling") as number || 0)) {
             toast({
                 title: "Storage Zone exceeded placed Seedling!",
                 status: 'error',
                 position: 'bottom-right',
-                duration: 500,
-            })
-            return;
-        }
-        if (clockData.get("stage") as string === "PREP") {
-            toast({
-                title: "No editing in PREP stage.",
-                status: 'error',
                 duration: 500,
             })
             return;
@@ -620,19 +628,19 @@ export default function Dashboard(props: any) {
         const itemsYMap = gameProps.get("items") as Y.Map<number>;
         const historyYArray = gameProps.get("history") as Y.Array<{ action: string; time: string; team: string }>;
         // Validation
+        if (clockData.get("stage") as string === "PREP") {
+            toast({
+                title: "No editing in PREP stage.",
+                status: 'error',
+                duration: 500,
+            })
+            return;
+        }
         if (value > 12) {
             toast({
                 title: "Seedling exceeded!",
                 status: 'error',
                 position: 'bottom-right',
-                duration: 500,
-            })
-            return;
-        }
-        if (clockData.get("stage") as string === "PREP") {
-            toast({
-                title: "No editing in PREP stage.",
-                status: 'error',
                 duration: 500,
             })
             return;
