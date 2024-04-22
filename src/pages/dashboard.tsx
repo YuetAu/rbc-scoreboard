@@ -7,23 +7,21 @@ import { Counter } from "@/props/dashboard/Counter";
 import HistoryList from "@/props/dashboard/HistoryList";
 import { ScoreDisplay } from "@/props/dashboard/ScoreDisplay";
 import TimerBox from "@/props/dashboard/TimerBox";
-import { Box, Button, Flex, Image, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Switch, Text, useToast } from "@chakra-ui/react";
+import { YJsClient } from "@/yjsClient/yjsClient";
+import { Box, Button, Flex, Image, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Switch, Text, useToast } from "@chakra-ui/react";
 import "@fontsource-variable/quicksand";
 import Head from 'next/head';
 import { useCallback, useEffect, useRef, useState } from "react";
-import YPartyKitProvider from "y-partykit/provider";
 import * as Y from "yjs";
 import Teams from "../props/dashboard/teams.json";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCircleDot } from '@fortawesome/free-solid-svg-icons';
 
-
-const ydoc = new Y.Doc();
-const provider = new YPartyKitProvider("https://rt-scoreboard-party.yuetau.partykit.dev", "test", ydoc);
 
 export default function Dashboard(props: any) {
 
     // [Sys] Initiate Components
     const toast = useToast();
-
 
     // [Sys] ContinerHeight Helper Functions and States
     const [containerHeight, setContainerHeight] = useState(0);
@@ -44,6 +42,32 @@ export default function Dashboard(props: any) {
     }, [])
 
 
+    // [Core] GameID Functions and States
+    const [gameID, setGameID] = useState("");
+    const [gameIDModal, setGameIDModal] = useState(true);
+    const gameIDInput = useRef<HTMLInputElement>(null);
+    const [ydoc, setYDoc] = useState<Y.Doc>(new Y.Doc());
+    const [onlineStatus, setOnlineStatus] = useState(0);
+
+    const submitGameID = (gameID?: string) => {
+        if (gameID) {
+            const yJsClient = new YJsClient(gameID);
+            setGameID(gameID);
+            setYDoc(yJsClient.getYDoc());
+            setClockData(yJsClient.getYDoc().getMap("clockData") as Y.Map<any>);
+            setGameProps(yJsClient.getYDoc().getMap("gameProps") as Y.Map<any>);
+            setGameIDModal(false);
+            yJsClient.getYPartyProvider().on("status", connectionEventHandler);
+        }
+    }
+
+    const connectionEventHandler = (event: any) => {
+        if (event.status == "connected") {
+            setOnlineStatus(1);
+        } else {
+            setOnlineStatus(0);
+        }
+    }
 
     // [Features] GameSetting Functions and States
     const isFirstReadSettings = useRef(false);
@@ -122,17 +146,19 @@ export default function Dashboard(props: any) {
 
 
     // [Core] Start of Clock Functions and States
-    const clockData = ydoc.getMap("clockData");
-    if (clockData.get("init") == undefined) {
-        console.log("Initializing Clock Data")
-        ydoc.transact((_y) => {
-            clockData.set("stage", "PREP")
-            clockData.set("timestamp", 0)
-            clockData.set("elapsed", 0)
-            clockData.set("paused", true)
-            clockData.set("init", true)
-        })
-    }
+    const [clockData, setClockData] = useState(ydoc.getMap("clockData") as Y.Map<any>);
+    useEffect(() => {
+        if (clockData.get("init") == undefined) {
+            console.log("Initializing Clock Data")
+            ydoc.transact((_y) => {
+                clockData.set("stage", "PREP")
+                clockData.set("timestamp", 0)
+                clockData.set("elapsed", 0)
+                clockData.set("paused", true)
+                clockData.set("init", true)
+            })
+        }
+    }, [clockData]);
     const [clockText, setClockText] = useState({ minutes: "00", seconds: "00", milliseconds: "000" });
     const [elapsedText, setElapsedText] = useState({ minutes: "00", seconds: "00", milliseconds: "000" });
 
@@ -307,12 +333,13 @@ export default function Dashboard(props: any) {
 
 
     // [Core] Start of GameProps Functions and States
-    const gameProps = ydoc.getMap("gameProps");
-    const gameHistory = new Y.Array() as Y.Array<Object>;
+    const [gameProps, setGameProps] = useState(ydoc.getMap("gameProps") as Y.Map<any>);
     if (gameProps.get("init") == undefined) {
         console.log("Initializing GameProps Data")
         ydoc.transact((_y) => {
             gameProps.set("teams", {"redTeam": {"cname": "征龍", "ename": "War Dragon"}, "blueTeam": {"cname": "火之龍", "ename": "Fiery Dragon"}})
+
+            const gameHistory = new Y.Array();
             gameProps.set("history", gameHistory)
 
             const gamePropsSilos = new Y.Array() as Y.Array<string[]>;
@@ -651,6 +678,8 @@ export default function Dashboard(props: any) {
             clockData.set("init", true)
 
             gameProps.set("teams", {"redTeam": {"cname": "征龍", "ename": "War Dragon"}, "blueTeam": {"cname": "火之龍", "ename": "Fiery Dragon"}})
+            
+            const gameHistory = new Y.Array();
             gameProps.set("history", gameHistory)
 
             const gamePropsSilos = new Y.Array() as Y.Array<string[]>;
@@ -701,16 +730,16 @@ export default function Dashboard(props: any) {
                 margin: '1rem',
                 zIndex: 10
             }}>
-                GameID: 
+                GameID: {gameID}
                 <br />
-                {/* <Button onClick={()=>{navigator.clipboard.writeText(gameID).then(()=>enqueueSnackbar("GameID Copied!", {variant: "success", preventDuplicate: true}))}} colorScheme="blue" size={"sm"}>Copy GameID</Button>
+                <Button onClick={()=>{navigator.clipboard.writeText(gameID).then(()=>toast({title: "GameID Copied!", status: "success", duration: 1000}))}} colorScheme="blue" size={"sm"}>Copy GameID</Button>
                 <br />
-                <Button onClick={()=>navigator.clipboard.writeText(JSON.stringify({...gameProps, teams: currentTeam}))} colorScheme="blue" size={"sm"}>Copy Game Props</Button>
-                <br />  */}
+                <Button onClick={()=>{navigator.clipboard.writeText(JSON.stringify(gameProps.toJSON())).then(()=>toast({title: "GameProps Copied!", status: "success", duration: 1000}))}} colorScheme="blue" size={"sm"}>Copy Game Props</Button>
+                <br /> 
                 <Button onClick={()=>{forceReset();toast.closeAll();toast({title: "Props Reset!", status: "success", duration: 1000})}} colorScheme="red" size={"sm"}>Force Reset</Button>
                 
             </Box>
-            {/* <Box style={{
+            <Box style={{
                 fontSize: '1rem',
                 margin: '1rem',
                 zIndex: 10,
@@ -718,7 +747,7 @@ export default function Dashboard(props: any) {
             }}>
                 {onlineStatus==1 ? "Connected" : onlineStatus==0 ? "Disconnected": "Large Time Diff"} <FontAwesomeIcon icon={faCircleDot} />
                 <br />
-            </Box> */}
+            </Box>
             <Box style={{
                 right: "1rem",
                 top: "2.5rem",
@@ -981,7 +1010,7 @@ export default function Dashboard(props: any) {
         </Box>
 
 
-        {/* <Modal isOpen={gameIDModal} onClose={()=>{}} isCentered>
+        <Modal isOpen={gameIDModal} onClose={()=>{}} isCentered>
             <ModalOverlay />
             <ModalContent>
             <ModalHeader>Connect to Game Room</ModalHeader>
@@ -990,15 +1019,15 @@ export default function Dashboard(props: any) {
             </ModalBody>
 
             <ModalFooter>
-                <Button colorScheme='blue' mr={3} onClick={submitGameID}>
+                <Button colorScheme='blue' mr={3} onClick={()=>submitGameID(gameIDInput.current?.value)}>
                 Submit
                 </Button>
-                <Button colorScheme='green' mr={3} onClick={()=>createGame(String(Math.floor(10000000 + Math.random() * 90000000)))}>
+                <Button colorScheme='green' mr={3} onClick={()=>submitGameID(String(Math.floor(10000000 + Math.random() * 90000000)))}>
                 Create Game
                 </Button>
             </ModalFooter>
             </ModalContent>
-        </Modal> */}
+        </Modal>
 
         <Modal isOpen={gameSettingsModal} onClose={()=>{setGameSettingsModal(false)}} isCentered>
             <ModalOverlay />
