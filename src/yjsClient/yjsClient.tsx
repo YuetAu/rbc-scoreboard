@@ -13,7 +13,7 @@ export class YJsClient {
         this.gameID = gameID;
         this.ydoc = new Y.Doc();
         this.yPartyProvider = new YPartyKitProvider("https://rt-scoreboard-party.yuetau.partykit.dev", this.gameID, this.ydoc);
-        this.webrtcProvider = location.protocol == 'https:' ? new WebrtcProvider(this.gameID, this.ydoc, {password: "RT-ScoreBoardIsGreat"}) : undefined;
+        this.webrtcProvider = location.protocol == 'https:' ? new WebrtcProvider(this.gameID, this.ydoc, {password: "RT-ScoreBoardIsGreat", signaling: ["wss://wrtc.ustrobocon.win"]}) : undefined;
     }
 
     getYDoc() {
