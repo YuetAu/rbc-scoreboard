@@ -1092,3 +1092,8 @@ export default function Dashboard(props: any) {
         </>
     )
 }
+
+export const getStaticProps = (async () => {
+    const buildVersion = process.env.GITHUB_SHA || null;
+    return { props: { buildVersion } }
+})
