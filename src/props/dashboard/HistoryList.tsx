@@ -40,7 +40,7 @@ export default function HistoryList(props: any) {
                             {props.history.slice(0).reverse().map((item: any) => {
                                 if (item.team === props.team) {
                                     return (
-                                        <Tr key={`${Date.now()}${item.action}${item.time}`}>
+                                        <Tr key={`${Date.now()}${item.action}${item.time}${String(Math.floor(10000000 + Math.random() * 90000000))}`}>
                                             <Td>{item.action}</Td>
                                             <Td>{item.time}</Td>
                                         </Tr>

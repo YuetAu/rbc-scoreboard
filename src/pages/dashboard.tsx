@@ -1,27 +1,20 @@
 'use client'
 
 import { GAME_STAGES, GAME_STAGES_TIME } from "@/common/gameStages";
-import { FirebaseApp, FirebaseDatabase } from "@/firebase/config";
+import { patternGenerator } from "@/helpers/patternGenerator";
 import { ColorPicker } from "@/props/dashboard/ColorPicker";
 import { Counter } from "@/props/dashboard/Counter";
 import HistoryList from "@/props/dashboard/HistoryList";
 import { ScoreDisplay } from "@/props/dashboard/ScoreDisplay";
 import TimerBox from "@/props/dashboard/TimerBox";
-import { Box, Button, Flex, HStack, Image, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Switch, Text, useToast } from "@chakra-ui/react";
+import { Box, Button, Flex, Image, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Switch, Text, useToast } from "@chakra-ui/react";
 import "@fontsource-variable/quicksand";
-import { faCircleDot } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { child, get, onDisconnect, onValue, ref, set, update } from "firebase/database";
-import { useSnackbar } from "notistack";
-import { generateSlug } from "random-word-slugs";
-import { useEffect, useRef, useState } from "react";
-import Teams from "../props/dashboard/teams.json";
 import Head from 'next/head';
-import { useArray, useMap, useYDoc, useYjsProvider } from "@y-sweet/react";
-import { WebrtcProvider } from 'y-webrtc'
+import { useCallback, useEffect, useRef, useState } from "react";
 import YPartyKitProvider from "y-partykit/provider";
 import * as Y from "yjs";
-import { patternGenerator } from "@/helpers/PatternGenerator";
+import Teams from "../props/dashboard/teams.json";
+
 
 const ydoc = new Y.Doc();
 const provider = new YPartyKitProvider("https://rt-scoreboard-party.yuetau.partykit.dev", "test", ydoc);
@@ -30,7 +23,6 @@ export default function Dashboard(props: any) {
 
     // [Sys] Initiate Components
     const toast = useToast();
-
 
 
     // [Sys] ContinerHeight Helper Functions and States
@@ -68,6 +60,65 @@ export default function Dashboard(props: any) {
         }
     }, [gameSettings]);
 
+
+    // [Features] Start of Sound Functions
+    const [countdownBeep, setCountdownBeep] = useState<any>(null);
+    const [countdownBeep10, setCountdownBeep10] = useState<any>(null);
+    const [bgm, setBGM] = useState<any>(null);
+    useEffect(() => {
+        setCountdownBeep(new Audio("/sound/countdown.mp3"));
+        setCountdownBeep10(new Audio("/sound/countdown10.mp3"));
+        setBGM(new Audio("/sound/bgm.mp3"));
+    }, [])
+    
+    const soundCheck = (stage: string, remainingTime: number) => {
+        switch (stage) {
+            case "PREP":
+                if (remainingTime <= 3000 && countdownBeep && countdownBeep.paused && gameSettings.preGameCountdown) {
+                    countdownBeep.play();
+                }
+                break;
+            case "GAME":
+                if (remainingTime <= 179950 && !(remainingTime >= 1798000) && bgm && bgm.paused && gameSettings.bgm) {
+                    bgm.volume = 1.0;
+                    bgm.play();
+                }
+                if (remainingTime <= 10000 && countdownBeep10 && countdownBeep10.paused && gameSettings.endGameCountdown) {
+                    bgm.volume = 0.7;
+                    countdownBeep10.play();
+                }
+                break;
+            case "END":
+                if (bgm && !bgm.paused) {
+                    bgm.pause();
+                    bgm.currentTime = 0;
+                }
+                break;
+        }
+    }
+
+    const stopSound = () => {
+        countdownBeep && countdownBeep.pause();
+        countdownBeep10 && countdownBeep10.pause();
+        bgm && bgm.pause();
+    }
+
+    const forceStopSound = () => {
+        if (countdownBeep && !countdownBeep.paused) {
+            countdownBeep.pause();
+            countdownBeep.currentTime = 0;
+        }
+        if (countdownBeep10 && !countdownBeep10.paused) {
+            countdownBeep10.pause();
+            countdownBeep10.currentTime = 0;
+        }
+        if (bgm && !bgm.paused) {
+            bgm.pause();
+            bgm.currentTime = 0;
+        }
+    }
+
+    // [Features] End of Sound Functions
 
 
     // [Core] Start of Clock Functions and States
@@ -156,7 +207,8 @@ export default function Dashboard(props: any) {
                 if (newGameStage == "END") {
                     toast({
                         title: "Game END",
-                        status: 'success'
+                        status: 'success',
+                        duration: 5000,
                     })
                     //gameEndVictoryCalc();
                 }
@@ -184,7 +236,8 @@ export default function Dashboard(props: any) {
         })
         toast({
             title: "Clock Started",
-            status: 'success'
+            status: 'success',
+            duration: 1000,
         })
     }
 
@@ -199,9 +252,11 @@ export default function Dashboard(props: any) {
         })
         toast({
             title: "Clock Stopped",
-            status: 'success'
+            status: 'success',
+            duration: 1000,
         })
-        //setTimeout(() => {stopSound();}, 50);
+        // Delay 50ms to prevent updateClockText start the sound again
+        setTimeout(() => {stopSound();}, 50);
     }
 
     const toggleClock = () => {
@@ -222,7 +277,8 @@ export default function Dashboard(props: any) {
         })
         toast({
             title: `Reset stage ${clockData.get("stage") as string}`,
-            status: 'success'
+            status: 'success',
+            duration: 1000,
         })
     }
 
@@ -241,7 +297,8 @@ export default function Dashboard(props: any) {
         })
         toast({
             title: `Skip stage ${clockData.get("stage") as string}`,
-            status: 'success'
+            status: 'success',
+            duration: 1000,
         })
     }
     
@@ -251,7 +308,7 @@ export default function Dashboard(props: any) {
 
     // [Core] Start of GameProps Functions and States
     const gameProps = ydoc.getMap("gameProps");
-    const gameHistory = new Y.Array() as Y.Array<string>;
+    const gameHistory = new Y.Array() as Y.Array<Object>;
     if (gameProps.get("init") == undefined) {
         console.log("Initializing GameProps Data")
         ydoc.transact((_y) => {
@@ -260,6 +317,14 @@ export default function Dashboard(props: any) {
 
             const gamePropsSilos = new Y.Array() as Y.Array<string[]>;
             gamePropsSilos.insert(0, [["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"]])
+            gameProps.set("silos", gamePropsSilos)
+
+            const gamePropsItems = new Y.Map() as Y.Map<number>;
+            gamePropsItems.set("redStorageZone", 0);
+            gamePropsItems.set("redSeedling", 0);
+            gamePropsItems.set("blueStorageZone", 0);
+            gamePropsItems.set("blueSeedling", 0);
+            gameProps.set("items", gamePropsItems)
 
             gameProps.set("init", true)
         })
@@ -267,41 +332,317 @@ export default function Dashboard(props: any) {
 
     // Hydration Issue, just for good practice ヽ(･∀･)ﾉ
     const [siloState, setSiloState] = useState([["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"]]);
+    const [historyState, setHistoryState] = useState<any[]>([]);
+    const [itemsState, setItemsState] = useState<any>({
+        redStorageZone: 0,
+        redSeedling: 0,
+        blueStorageZone: 0,
+        blueSeedling: 0
+    });
     const [teamState, setTeamState] = useState<{ redTeam: { cname: string; ename: string; }; blueTeam: { cname: string; ename: string; }; }>({
         redTeam: { cname: "征龍", ename: "War Dragon" },
         blueTeam: { cname: "火之龍", ename: "Fiery Dragon" }
     });
 
+    // GameProps Main Scoring Function
+    const [scores, setScores] = useState({redPoints: 0, bluePoints: 0});
+    const greateVictoryRef = useRef<boolean>(false);
+
+    const scoreCalculation = useCallback(() => {
+        const historyYArray = gameProps.get("history") as Y.Array<{ action: string; time: string; team: string }>;
+        const silosYArray = gameProps.get("silos") as Y.Array<string[]>;
+        const itemsYMap = gameProps.get("items") as Y.Map<number>;
+        /*
+        The score is calculated as follows:
+        (a) Robots successfully plant 01 (one) Seedling: 10 points.
+        (b) Robots successfully harvest 01 (one) Paddy Rice in the Storage Zone: 10
+        points.
+        (c) Robots successfully harvest 01 (one) Empty Grain in the Storage Zone: 10
+        points.
+        (d) The Robot 2 successfully stores 01 (one) Paddy Rice in a Silo: 30 points. 
+        */
+
+        let redPoints = 0;
+        let bluePoints = 0;
+
+        redPoints += (itemsYMap.get("redSeedling") || 0) * 10;
+        bluePoints += (itemsYMap.get("blueSeedling") || 0) * 10;
+
+        redPoints += (itemsYMap.get("redStorageZone") || 0) * 10;
+        bluePoints += (itemsYMap.get("blueStorageZone") || 0) * 10;
+
+        silosYArray?.forEach((silo: string[]) => {
+            silo.forEach((color: string) => {
+                if (color == "RED") redPoints += 30;
+                if (color == "BLUE") bluePoints += 30;
+            })
+        });
+
+        /*
+        ‘V Goal’ “Mùa Vàng” (Harvest Glory) is achieved when 3 Silos
+        meeting following conditions.
+        + A Silo is full (3) and contains a minimum of 2 own team color’s
+        Paddy Rice.
+        + The top Paddy Rice is of the team’s colour.
+        The team wins at the moment when Mua Vang is achieved.
+        */
+
+        let redOccoupiedSilos = 0;
+        let blueOccoupiedSilos = 0;
+
+        silosYArray?.forEach((silo: string[]) => {
+            const siloArray = silo;
+            const lastElement = siloArray[siloArray.length - 1];
+
+            if (lastElement === "RED" && siloArray.filter((color: String) => color === "RED").length >= 2 && siloArray.length == 3) {
+                redOccoupiedSilos++;
+            } else if (lastElement === "BLUE" && siloArray.filter((color: String) => color === "BLUE").length >= 2 && siloArray.length == 3) {
+                blueOccoupiedSilos++;
+            }
+        })
+
+        if (greateVictoryRef.current) {
+            setScores({redPoints, bluePoints});
+            return {redPoints, bluePoints, redGreatVictory: false, blueGreatVictory: false, greatVictoryTimestamp: 0}
+        }
+
+        let greatVictoryObject = {redGreatVictory: false, blueGreatVictory: false, greatVictoryTimestamp: 0}
+
+        if (redOccoupiedSilos >= 3) {
+            let greatVictoryTimestamp = (GAME_STAGES_TIME[GAME_STAGES.indexOf(clockData.get("stage") as string)]*1000)- (clockData.get("elapsed") as number) -(Date.now()-(clockData.get("timestamp") as number));
+            const elapsedTime = (clockData.get("elapsed") as number) + (Date.now() - (clockData.get("timestamp") as number));
+            const elapsedMinutes = Math.floor(elapsedTime/60000)+"";
+            const elapsedSeconds = Math.floor(elapsedTime/1000%60)+"";
+            const elapsedMilliseconds = elapsedTime%1000+"";
+            const elapsedText = {
+                minutes: elapsedMinutes.length < 2 ? "0"+elapsedMinutes : elapsedMinutes,
+                seconds: elapsedSeconds.length < 2 ? "0"+elapsedSeconds : elapsedSeconds,
+                milliseconds: elapsedMilliseconds.length < 3 ? elapsedMilliseconds.length < 2 ? "00"+elapsedMilliseconds : "0"+elapsedMilliseconds : elapsedMilliseconds
+            }
+            toast({
+                title: "RED GREAT VICTORY",
+                status: 'success',
+                position: 'bottom-left',
+                duration: 5000,
+            })
+            greateVictoryRef.current = true;
+            if (historyYArray.get(historyYArray.length-1)?.action !== `RED Great Victory`) historyYArray.push([{action: `RED Great Victory`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "RED"}]);
+            greatVictoryObject = {redGreatVictory: true, blueGreatVictory: false, greatVictoryTimestamp}
+            stopClock();
+        } else if (blueOccoupiedSilos >= 3) {
+            let greatVictoryTimestamp = (GAME_STAGES_TIME[GAME_STAGES.indexOf(clockData.get("stage") as string)]*1000)- (clockData.get("elapsed") as number) -(Date.now()-(clockData.get("timestamp") as number));
+            const elapsedTime = (clockData.get("elapsed") as number) + (Date.now() - (clockData.get("timestamp") as number));
+            const elapsedMinutes = Math.floor(elapsedTime/60000)+"";
+            const elapsedSeconds = Math.floor(elapsedTime/1000%60)+"";
+            const elapsedMilliseconds = elapsedTime%1000+"";
+            const elapsedText = {
+                minutes: elapsedMinutes.length < 2 ? "0"+elapsedMinutes : elapsedMinutes,
+                seconds: elapsedSeconds.length < 2 ? "0"+elapsedSeconds : elapsedSeconds,
+                milliseconds: elapsedMilliseconds.length < 3 ? elapsedMilliseconds.length < 2 ? "00"+elapsedMilliseconds : "0"+elapsedMilliseconds : elapsedMilliseconds
+            }
+            toast({
+                title: "BLUE GREAT VICTORY",
+                status: 'success',
+                position: 'bottom-right',
+                duration: 5000,
+            })
+            greateVictoryRef.current = true;
+            if (historyYArray.get(historyYArray.length-1)?.action !== `BLUE Great Victory`) historyYArray.push([{action: `BLUE Great Victory`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "BLUE"}])
+            greatVictoryObject = {redGreatVictory: true,blueGreatVictory: true, greatVictoryTimestamp}
+            stopClock();
+        }
+
+        setScores({redPoints, bluePoints});
+        return {redPoints, bluePoints, ...greatVictoryObject}
+    }, [])
+
+    
     // Hydration Issue, just for good practice ヽ(･∀･)ﾉ
     gameProps.observeDeep(() => {
-        setTeamState(gameProps.get("teams") as SetStateAction<{ redTeam: { cname: string; ename: string; }; blueTeam: { cname: string; ename: string; }; }>);
-        const silos = gameProps.get("silos") as Y.Array<Y.Array<string>>;
-        // Me fucking lazy. (｀□′)╯┴┴
-        setSiloState([
-            silos.get(0).toArray(),
-            silos.get(1).toArray(),
-            silos.get(2).toArray(),
-            silos.get(3).toArray(),
-            silos.get(4).toArray(),
-        ]);
+
+        const teamYMap = gameProps.get("teams") as { redTeam: { cname: string; ename: string; }; blueTeam: { cname: string; ename: string; }; };
+        const historyYArray = gameProps.get("history") as Y.Array<{ action: string; time: string; team: string }>;
+        const silosYArray = gameProps.get("silos") as Y.Array<string[]>;
+        const itemsYMap = gameProps.get("items") as Y.Map<number>;
+        setTeamState(teamYMap);
+        setHistoryState(historyYArray.toJSON());
+        setSiloState(silosYArray.toJSON());
+        setItemsState(itemsYMap.toJSON());
+
+        scoreCalculation();
     });
 
     const updateTeam = (value: any, side: string): void => {
-        let teams: { [key: string]: any } = gameProps.get("teams") as { [key: string]: any };
+        const teamYMap = gameProps.get("teams") as { redTeam: { cname: string; ename: string; }; blueTeam: { cname: string; ename: string; }; };
+        let teams: { [key: string]: any } = teamYMap;
         teams[side] = value;
         gameProps.set("teams", teams);
     }
 
     const siloAction = (x: number, y: number, color: string): void => {
-        let silo = (gameProps.get("silos") as Y.Array<Y.Array<string>>).get(x);
-        console.log(`Silo Action: ${x} ${y} ${color} Silo Height ${silo.length}`);
-        if (y >= silo.length) {y = silo.length} else {silo.delete(y, 1)};
-        silo.insert(y, [color]);
+        // Validation
+        if (clockData.get("stage") as string === "PREP") {
+            toast({
+                title: "No editing in PREP stage.",
+                status: 'error',
+                duration: 500,
+            })
+            return;
+        }
+
+        const silosYArray = gameProps.get("silos") as Y.Array<string[]>;
+        const historyYArray = gameProps.get("history") as Y.Array<{ action: string; time: string; team: string }>;
+        let silo = silosYArray.get(x);
+        
+        // Physics Engine \ō͡≡o˞̶ \ō͡≡o˞̶ \ō͡≡o˞̶
+        let siloHeight = 0;
+        for (let index = 0; index < silo.length; index++) {
+            const val = silo[index];
+            if (val === "NONE") {
+                siloHeight = index;
+                break;
+            }
+            siloHeight = 2;
+        }
+
+        if (y > siloHeight) y = siloHeight;
+
+        console.log(`Silo Action: ${x} ${y} ${color}`);
+
+        historyYArray.push([{action: `Silo ${x} ${y} ${color}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: color}])
+        
+        ydoc.transact((_y) => {
+            silo[y] = color;
+            silosYArray.delete(x, 1);
+            silosYArray.insert(x, [silo]);
+        })
     }
 
+    
+    const redStorageZoneAction = (value: number) => {
+        const itemsYMap = gameProps.get("items") as Y.Map<number>;
+        const historyYArray = gameProps.get("history") as Y.Array<{ action: string; time: string; team: string }>;
+        // Validation
+        if (value > (itemsYMap.get("redSeedling") as number || 0)) {
+            toast({
+                title: "Storage Zone exceeded placed Seedling!",
+                status: 'error',
+                position: 'bottom-left',
+                duration: 500,
+            })
+            return;
+        }
 
-    // [Core] Helper Functions and States
+        historyYArray.push([{action: `RED Storage Zone ${value}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "RED"}])
+        itemsYMap.set("redStorageZone", value);
+    }
+
+    const redSeedlingAction = (value: number) => {
+        const itemsYMap = gameProps.get("items") as Y.Map<number>;
+        const historyYArray = gameProps.get("history") as Y.Array<{ action: string; time: string; team: string }>;
+        // Validation
+        if (value > 12) {
+            toast({
+                title: "Seedling exceeded!",
+                status: 'error',
+                position: 'bottom-left',
+                duration: 500,
+            })
+            return;
+        }
+        if (clockData.get("stage") as string === "PREP") {
+            toast({
+                title: "No editing in PREP stage.",
+                status: 'error',
+                duration: 500,
+            })
+            return;
+        }
+
+        historyYArray.push([{action: `RED Seedling ${value}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "RED"}])
+        itemsYMap.set("redSeedling", value);
+    }
+
+    const blueStorageZoneAction = (value: number) => {
+        const itemsYMap = gameProps.get("items") as Y.Map<number>;
+        const historyYArray = gameProps.get("history") as Y.Array<{ action: string; time: string; team: string }>;
+        // Validation
+        if (value > (itemsYMap.get("blueSeedling") as number || 0)) {
+            toast({
+                title: "Storage Zone exceeded placed Seedling!",
+                status: 'error',
+                position: 'bottom-right',
+                duration: 500,
+            })
+            return;
+        }
+        if (clockData.get("stage") as string === "PREP") {
+            toast({
+                title: "No editing in PREP stage.",
+                status: 'error',
+                duration: 500,
+            })
+            return;
+        }
+
+        historyYArray.push([{action: `BLUE Storage Zone ${value}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "BLUE"}])
+        itemsYMap.set("blueStorageZone", value);
+    }
+
+    const blueSeedlingAction = (value: number) => {
+        const itemsYMap = gameProps.get("items") as Y.Map<number>;
+        const historyYArray = gameProps.get("history") as Y.Array<{ action: string; time: string; team: string }>;
+        // Validation
+        if (value > 12) {
+            toast({
+                title: "Seedling exceeded!",
+                status: 'error',
+                position: 'bottom-right',
+                duration: 500,
+            })
+            return;
+        }
+        if (clockData.get("stage") as string === "PREP") {
+            toast({
+                title: "No editing in PREP stage.",
+                status: 'error',
+                duration: 500,
+            })
+            return;
+        }
+
+        historyYArray.push([{action: `BLUE Seedling ${value}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: "BLUE"}])
+        itemsYMap.set("blueSeedling", value);
+    }
+
+    const resetProps = () => {
+        ydoc.transact((_y) => {
+            const gamePropsSilos = new Y.Array() as Y.Array<string[]>;
+            gamePropsSilos.insert(0, [["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"]])
+            gameProps.set("silos", gamePropsSilos)
+
+            const gamePropsItems = new Y.Map() as Y.Map<number>;
+            gamePropsItems.set("redStorageZone", 0);
+            gamePropsItems.set("redSeedling", 0);
+            gamePropsItems.set("blueStorageZone", 0);
+            gamePropsItems.set("blueSeedling", 0);
+            gameProps.set("items", gamePropsItems)
+
+            gameProps.set("init", true)
+        })
+    }
+
+    // [Core] End of GameProps Functions and States
+
+
+    // [Core] Start of Helper Functions and States
     const forceReset = () => {
+        forceStopSound();
+        setScores({redPoints: 0, bluePoints: 0});
+        greateVictoryRef.current = false;
+
+        setPattern(patternGenerator() as [string[][], string[][]]);
+        
         ydoc.transact((_y) => {
             clockData.set("stage", "PREP")
             clockData.set("timestamp", 0)
@@ -312,76 +653,21 @@ export default function Dashboard(props: any) {
             gameProps.set("teams", {"redTeam": {"cname": "征龍", "ename": "War Dragon"}, "blueTeam": {"cname": "火之龍", "ename": "Fiery Dragon"}})
             gameProps.set("history", gameHistory)
 
-            const silos = gameProps.get("silos") as Y.Array<Y.Array<string>>;
-            silos.get(0).delete(0, silos.get(0).length);
-            silos.get(1).delete(0, silos.get(1).length);
-            silos.get(2).delete(0, silos.get(2).length);
-            silos.get(3).delete(0, silos.get(3).length);
-            silos.get(4).delete(0, silos.get(4).length);
+            const gamePropsSilos = new Y.Array() as Y.Array<string[]>;
+            gamePropsSilos.insert(0, [["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"]])
+            gameProps.set("silos", gamePropsSilos)
+
+            const gamePropsItems = new Y.Map() as Y.Map<number>;
+            gamePropsItems.set("redStorageZone", 0);
+            gamePropsItems.set("redSeedling", 0);
+            gamePropsItems.set("blueStorageZone", 0);
+            gamePropsItems.set("blueSeedling", 0);
+            gameProps.set("items", gamePropsItems)
 
             gameProps.set("init", true)
         })
     }
-
-
-    // [Features] Start of Sound Functions
-    const [countdownBeep, setCountdownBeep] = useState<any>(null);
-    const [countdownBeep10, setCountdownBeep10] = useState<any>(null);
-    const [bgm, setBGM] = useState<any>(null);
-    useEffect(() => {
-        setCountdownBeep(new Audio("/sound/countdown.mp3"));
-        setCountdownBeep10(new Audio("/sound/countdown10.mp3"));
-        setBGM(new Audio("/sound/bgm.mp3"));
-    }, [])
-    
-    const soundCheck = (stage: string, remainingTime: number) => {
-        switch (stage) {
-            case "PREP":
-                if (remainingTime <= 3000 && countdownBeep && countdownBeep.paused && gameSettings.preGameCountdown) {
-                    countdownBeep.play();
-                }
-                break;
-            case "GAME":
-                if (remainingTime <= 179950 && !(remainingTime >= 1798000) && bgm && bgm.paused && gameSettings.bgm) {
-                    bgm.volume = 1.0;
-                    bgm.play();
-                }
-                if (remainingTime <= 10000 && countdownBeep10 && countdownBeep10.paused && gameSettings.endGameCountdown) {
-                    bgm.volume = 0.7;
-                    countdownBeep10.play();
-                }
-                break;
-            case "END":
-                if (!bgm.paused) {
-                    bgm.pause();
-                    bgm.currentTime = 0;
-                }
-                break;
-        }
-    }
-
-    const stopSound = () => {
-        countdownBeep.pause();
-        countdownBeep10.pause();
-        bgm.pause();
-    }
-
-    const forceStopSound = () => {
-        if (!countdownBeep.paused) {
-            countdownBeep.pause();
-            countdownBeep.currentTime = 0;
-        }
-        if (!countdownBeep10.paused) {
-            countdownBeep10.pause();
-            countdownBeep10.currentTime = 0;
-        }
-        if (!bgm.paused) {
-            bgm.pause();
-            bgm.currentTime = 0;
-        }
-    }
-
-    // [Features] End of Sound Functions
+    // [Core] End of Helper Functions and States
 
 
     // [Features] PatternGenerator Functions and States
@@ -421,7 +707,7 @@ export default function Dashboard(props: any) {
                 <br />
                 <Button onClick={()=>navigator.clipboard.writeText(JSON.stringify({...gameProps, teams: currentTeam}))} colorScheme="blue" size={"sm"}>Copy Game Props</Button>
                 <br />  */}
-                <Button onClick={()=>{forceReset();toast.closeAll();toast({title: "Props Reset!", status: "success"})}} colorScheme="red" size={"sm"}>Force Reset</Button>
+                <Button onClick={()=>{forceReset();toast.closeAll();toast({title: "Props Reset!", status: "success", duration: 1000})}} colorScheme="red" size={"sm"}>Force Reset</Button>
                 
             </Box>
             {/* <Box style={{
@@ -470,20 +756,20 @@ export default function Dashboard(props: any) {
                 position: 'absolute',
             }}>
                 <Box style={{
-                    left: '7%',
+                    left: '6%',
                     top: '-5%',
                     position: 'absolute',
                     zIndex: 10,
                 }}>
-                    <ScoreDisplay color={"red"} team={teamState.redTeam} editable={true} score={0} teams={Teams} setTeam={updateTeam} teamColor={"redTeam"} />
+                    <ScoreDisplay color={"red"} team={teamState.redTeam} editable={true} score={scores.redPoints} teams={Teams} setTeam={updateTeam} teamColor={"redTeam"} />
                 </Box>
                 <Box style={{
-                    right: '7%',
+                    right: '6%',
                     top: '-5%',
                     position: 'absolute',
                     zIndex: 10,
                 }}>
-                    <ScoreDisplay color={"blue"} team={teamState.blueTeam} editable={true} score={0} teams={Teams} setTeam={updateTeam} teamColor={"blueTeam"} />
+                    <ScoreDisplay color={"blue"} team={teamState.blueTeam} editable={true} score={scores.bluePoints} teams={Teams} setTeam={updateTeam} teamColor={"blueTeam"} />
                 </Box>
                 <Box style={{
                     left: '4%',
@@ -491,7 +777,7 @@ export default function Dashboard(props: any) {
                     position: 'absolute',
                     zIndex: 10,
                 }}>
-                    <HistoryList history={(gameProps.get("history") as Y.Array<string>).toArray() || []} team="RED" color={"red"} />
+                    <HistoryList history={historyState} team="RED" color={"red"} />
                 </Box>
                 <Box style={{
                     right: '4%',
@@ -499,7 +785,7 @@ export default function Dashboard(props: any) {
                     position: 'absolute',
                     zIndex: 10,
                 }}>
-                    <HistoryList history={(gameProps.get("history") as Y.Array<string>).toArray() || []} team="BLUE" color={"blue"} />
+                    <HistoryList history={historyState} team="BLUE" color={"blue"} />
                 </Box>
                 <Box style={{
                     height: '95%',
@@ -658,13 +944,13 @@ export default function Dashboard(props: any) {
                     
                 </Box>
 
-               {/*  <Box style={{
+               <Box style={{
                     left: '34.7%',
                     top: '12.5%',
                     position: 'absolute',
                     zIndex: 10,
                 }}>
-                    <Counter counter={gameProps.redStorageZone||0} setCounter={redStorageZoneAction} color={"red"} />
+                    <Counter counter={itemsState.redStorageZone} setCounter={redStorageZoneAction} color={"red"} />
                 </Box>
                 <Box style={{
                     left: '62.7%',
@@ -672,7 +958,7 @@ export default function Dashboard(props: any) {
                     position: 'absolute',
                     zIndex: 10,
                 }}>
-                    <Counter counter={gameProps.blueStorageZone||0} setCounter={blueStorageZoneAction} color={"blue"} />
+                    <Counter counter={itemsState.blueStorageZone} setCounter={blueStorageZoneAction} color={"blue"} />
                 </Box>
                 <Box style={{
                     left: '42%',
@@ -680,7 +966,7 @@ export default function Dashboard(props: any) {
                     position: 'absolute',
                     zIndex: 10,
                 }}>
-                    <Counter counter={gameProps.redSeedling||0} setCounter={redSeedlingAction} color={"red"} />
+                    <Counter counter={itemsState.redSeedling} setCounter={redSeedlingAction} color={"red"} />
                 </Box>
                 <Box style={{
                     left: '55.3%',
@@ -688,8 +974,8 @@ export default function Dashboard(props: any) {
                     position: 'absolute',
                     zIndex: 10,
                 }}>
-                    <Counter counter={gameProps.blueSeedling||0} setCounter={blueSeedlingAction} color={"blue"} />
-                </Box> */}
+                    <Counter counter={itemsState.blueSeedling} setCounter={blueSeedlingAction} color={"blue"} />
+                </Box>
             </Box>
             
         </Box>

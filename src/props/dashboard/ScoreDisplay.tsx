@@ -14,7 +14,7 @@ export function ScoreDisplay(props: any) {
                 lineHeight: "2.5rem",
                 backgroundColor: props.color=="red"?"#F56565":props.color=="blue"?"#11B5E4":"white",
                 color: "black",
-                width: "18rem",
+                width: "20rem",
             }}
             >   
                 {props.editable ?
