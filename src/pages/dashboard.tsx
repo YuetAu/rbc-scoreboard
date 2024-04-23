@@ -375,7 +375,7 @@ export default function Dashboard(props: any) {
     const [scores, setScores] = useState({redPoints: 0, bluePoints: 0});
     const greateVictoryRef = useRef<boolean>(false);
 
-    const scoreCalculation = useCallback(() => {
+    const scoreCalculation = () => {
         const historyYArray = gameProps.get("history") as Y.Array<{ action: string; time: string; team: string }>;
         const silosYArray = gameProps.get("silos") as Y.Array<string[]>;
         const itemsYMap = gameProps.get("items") as Y.Map<number>;
@@ -481,7 +481,7 @@ export default function Dashboard(props: any) {
 
         setScores({redPoints, bluePoints});
         return {redPoints, bluePoints, ...greatVictoryObject}
-    }, [])
+    }
 
     
     // Hydration Issue, just for good practice ヽ(･∀･)ﾉ
@@ -1102,6 +1102,6 @@ export default function Dashboard(props: any) {
 }
 
 export const getStaticProps = (async () => {
-    const buildVersion = process.env.GITHUB_SHA || null;
+    const buildVersion = process.env.CF_PAGES_COMMIT_SHA || null;
     return { props: { buildVersion } }
 })
