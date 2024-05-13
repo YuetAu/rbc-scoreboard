@@ -162,6 +162,8 @@ export default function Dashboard(props: any) {
     const [clockText, setClockText] = useState({ minutes: "00", seconds: "00", milliseconds: "000" });
     const [elapsedText, setElapsedText] = useState({ minutes: "00", seconds: "00", milliseconds: "000" });
 
+    const clockInterval = useRef<any>(null);
+
     // Hydration Issue, just for good practice ヽ(･∀･)ﾉ
     const [clockStage, setClockStage] = useState("PREP" as string);
     const [clockPaused, setClockPaused] = useState(true);
@@ -209,9 +211,13 @@ export default function Dashboard(props: any) {
             // Yes, it isn't real-time, but it seems ones.
             // The site will crash if you make it real-time. ¯\_(ツ)_/¯
             if (!(clockData.get("paused") as boolean)) {
-                setTimeout(() => {
-                    updateClockText();
-                }, 37);
+                if (clockInterval.current == null) {
+                    const tmpClockInterval = setInterval(updateClockText, 57);
+                    clockInterval.current = tmpClockInterval;
+                }
+            } else {
+                clearInterval(clockInterval.current);
+                clockInterval.current = null;
             }
         } else {
             // There is no remaining time in current stage
@@ -534,8 +540,6 @@ export default function Dashboard(props: any) {
 
         if (y > siloHeight) y = siloHeight;
 
-        console.log(`Silo Action: ${x} ${y} ${color}`);
-
         historyYArray.push([{action: `Silo ${x} ${y} ${color}`, time: elapsedText.minutes+":"+elapsedText.seconds+"."+elapsedText.milliseconds, team: color}])
         
         ydoc.transact((_y) => {
@@ -652,6 +656,10 @@ export default function Dashboard(props: any) {
 
     const resetProps = () => {
         ydoc.transact((_y) => {
+            gameProps.clear()
+        });
+
+        ydoc.transact((_y) => {
             const gamePropsSilos = new Y.Array() as Y.Array<string[]>;
             gamePropsSilos.insert(0, [["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"],["NONE","NONE","NONE"]])
             gameProps.set("silos", gamePropsSilos)
@@ -677,8 +685,12 @@ export default function Dashboard(props: any) {
         greateVictoryRef.current = false;
 
         setPattern(patternGenerator() as [string[][], string[][]]);
+
         
         ydoc.transact((_y) => {
+            clockData.clear()
+            gameProps.clear()
+
             clockData.set("stage", "PREP")
             clockData.set("timestamp", 0)
             clockData.set("elapsed", 0)

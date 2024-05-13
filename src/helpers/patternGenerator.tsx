@@ -37,8 +37,6 @@ export const patternGenerator = () => {
         area3Pattern.slice(8, 12),
         area3Pattern.slice(12, 16),
     ];
-
-    console.log(area2Pattern, area3Pattern)
     
     return [area2Pattern, area3Pattern];
 }
