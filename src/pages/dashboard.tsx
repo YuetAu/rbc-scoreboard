@@ -122,7 +122,7 @@ export default function Dashboard(props: any) {
     }
 
     const stopSound = () => {
-        countdownBeep && countdownBeep.pause();
+        //countdownBeep && countdownBeep.pause(); // Ignore countdownBeep to passthough last second beep
         countdownBeep10 && countdownBeep10.pause();
         bgm && bgm.pause();
     }
@@ -207,15 +207,17 @@ export default function Dashboard(props: any) {
             // That has to check constantly
             soundCheck((clockData.get("stage") as string), remainingTime);
 
-            // Recall itself 37 milliseconds after
+            // Recall itself 57 milliseconds after
             // Yes, it isn't real-time, but it seems ones.
             // The site will crash if you make it real-time. ¯\_(ツ)_/¯
             if (!(clockData.get("paused") as boolean)) {
                 if (clockInterval.current == null) {
+                    // Direct callback instead of wrapping another anomyous function to prevent memory leak ٩(´•⌢•｀ )۶⁼³₌₃
                     const tmpClockInterval = setInterval(updateClockText, 57);
                     clockInterval.current = tmpClockInterval;
                 }
             } else {
+                // Clear interval if paused
                 clearInterval(clockInterval.current);
                 clockInterval.current = null;
             }
@@ -688,6 +690,7 @@ export default function Dashboard(props: any) {
 
         
         ydoc.transact((_y) => {
+            // Clearing the map helps prevent memory leak due to removed past history ٩(´•⌢•｀ )۶⁼³₌₃
             clockData.clear()
             gameProps.clear()
 
