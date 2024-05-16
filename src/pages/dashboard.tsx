@@ -211,6 +211,9 @@ export default function Dashboard(props: any) {
             // Yes, it isn't real-time, but it seems ones.
             // The site will crash if you make it real-time. ¯\_(ツ)_/¯
             if (!(clockData.get("paused") as boolean)) {
+            // Clock start and stop interval written here due to remote client may start and stop 
+            // Which updateClockText will trigger everytime clockData has changed locally or from remote
+            // e.g. clockData.observeDeep(updateClockText);
                 if (clockInterval.current == null) {
                     // Direct callback instead of wrapping another anomyous function to prevent memory leak ٩(´•⌢•｀ )۶⁼³₌₃
                     const tmpClockInterval = setInterval(updateClockText, 57);
@@ -273,6 +276,12 @@ export default function Dashboard(props: any) {
             status: 'success',
             duration: 1000,
         })
+
+        if (clockInterval.current == null) {
+            // Direct callback instead of wrapping another anomyous function to prevent memory leak ٩(´•⌢•｀ )۶⁼³₌₃
+            const tmpClockInterval = setInterval(updateClockText, 57);
+            clockInterval.current = tmpClockInterval;
+        }
     }
 
     const stopClock = () => {
@@ -291,6 +300,10 @@ export default function Dashboard(props: any) {
         })
         // Delay 50ms to prevent updateClockText start the sound again
         setTimeout(() => {stopSound();}, 50);
+
+        // Clear interval if paused
+        clearInterval(clockInterval.current);
+        clockInterval.current = null;
     }
 
     const toggleClock = () => {
