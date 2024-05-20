@@ -1,12 +1,5 @@
 ## Getting Started
 
-Create a Project at Firebase (Locating at Singapore)
-[https://console.firebase.google.com/](https://console.firebase.google.com/)
-
-Create a Web Application at Firebase
-
-Copy credentials to .env.local from env.example
-
 Install dependencies
 `yarn install`
 
