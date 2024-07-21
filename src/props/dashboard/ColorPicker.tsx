@@ -1,5 +1,13 @@
 import { Box, Flex } from "@chakra-ui/react";
 
+const clickHandler = (e: any, props: any) => {
+    e.preventDefault(); 
+    if (e.shiftKey) {
+        props.setPicker(props.pos[0],props.pos[1],"NONE");
+    } else {
+        props.setPicker(props.pos[0],props.pos[1],"RED");
+    }
+}
 
 export function ColorPicker(props: any) {
     return (
@@ -14,7 +22,7 @@ export function ColorPicker(props: any) {
                 userSelect: "none",
                 cursor: "pointer",
             }}
-            onClick={(e)=>{e.preventDefault(); props.setPicker(props.pos[0],props.pos[1],"RED"); }}
+            onClick={(e)=>{clickHandler(e,props)}}
             onContextMenu={(e)=>{e.preventDefault(); props.setPicker(props.pos[0],props.pos[1],"BLUE")}}
             >
                 &nbsp;

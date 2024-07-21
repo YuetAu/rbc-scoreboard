@@ -25,3 +25,9 @@ body {
     )
     rgb(var(--background-start-rgb));
 }
+
+
+@keyframes colorChange {
+  from { color: #FF7276 }
+  to { color: #FFFFFF }
+}

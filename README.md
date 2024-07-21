@@ -1,16 +1,14 @@
 ## Getting Started
 
-Install dependencies
-`yarn install`
+Install dependencies `yarn install`
 
-Run the development server
-`yarn dev`
+Run the development server `yarn dev`
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
+Open [http://localhost:3000](http://localhost:3000) with your browser.
 
 ## Synced Timer
 
 Timer is now synced by starting timestamp.
 
-Please keep your device have the correct time by enabling NTP service to `stdtime.gov.hk` or `time.cloudflare.com`.
+Please keep your device have the correct time by enabling NTP service to
+`stdtime.gov.hk` or `time.cloudflare.com`.

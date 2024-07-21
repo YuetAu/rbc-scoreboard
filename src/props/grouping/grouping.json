@@ -1,0 +1,86 @@
+[
+    {
+        "cname": "科大 火之龍",
+        "ename": "UST Fiery Dragon",
+        "group": "C",
+        "pos": 0
+    },
+    {
+        "cname": "科大 征龍",
+        "ename": "UST War Dragon",
+        "group": "E",
+        "pos": 0
+    },
+    {
+        "cname": "IVE 逆境傳奇",
+        "ename": "IVE Adversity Saga",
+        "group": "E",
+        "pos": 1
+    },
+    {
+        "cname": "IVE 神機妙算",
+        "ename": "IVE Autobots Fighter",
+        "group": "A",
+        "pos": 2
+    },
+    {
+        "cname": "理工 赤影",
+        "ename": "Poly Crimson",
+        "group": "C",
+        "pos": 1
+    },
+    {
+        "cname": "理工 紅彗星1號",
+        "ename": "Poly PolyBotics",
+        "group": "B",
+        "pos": 0
+    },
+    {
+        "cname": "城大 夢成真",
+        "ename": "City DreamDevelopment",
+        "group": "B",
+        "pos": 1
+    },
+    {
+        "cname": "城大 夢一城",
+        "ename": "City DreamWalk",
+        "group": "D",
+        "pos": 2
+    },
+    {
+        "cname": "港大 明德",
+        "ename": "HKU Virtus",
+        "group": "B",
+        "pos": 2
+    },
+    {
+        "cname": "港大 格物",
+        "ename": "HKU Sapientia",
+        "group": "D",
+        "pos": 1
+    },
+    {
+        "cname": "嶺南 虎地特選3.6牛牛",
+        "ename": "Lingnan Team 1",
+        "group": "A",
+        "pos": 0
+    },
+    {
+        "cname": "中大 植搗黃農",
+        "ename": "CU Golden Farmer",
+        "group": "D",
+        "pos": 0
+    },
+    {
+        "cname": "中大 長驅植進",
+        "ename": "CU Wonder Seed",
+        "group": "A",
+        "pos": 1
+    },
+    {
+        "cname": "教大 魯師",
+        "ename": "EdU Architeacher",
+        "group": "C",
+        "pos": 2
+    }
+]
