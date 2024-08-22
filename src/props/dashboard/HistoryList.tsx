@@ -3,8 +3,7 @@ import { Box, Flex, Table, Thead, Tbody, Tr, Th, Td, TableCaption, TableContaine
 export default function HistoryList(props: any) {
 
     return (
-        <Flex>
-            
+        <Flex width={"100%"} alignItems={"center"} justifyContent={"center"}>
             <Box
                 shadow="lg"
                 rounded="md"
@@ -14,7 +13,7 @@ export default function HistoryList(props: any) {
                     lineHeight: "2.5rem",
                     backgroundColor: "white",
                     color: "black",
-                    width: "23.5rem",
+                    width: "100%",
                     height: "18rem",
                     overflow: "hidden",
                 }}
@@ -38,7 +37,7 @@ export default function HistoryList(props: any) {
                     <Table variant="striped" size="sm" colorScheme={props.color || "teal"}>
                         <Tbody>
                             {props.history.slice(0).reverse().map((item: any) => {
-                                if (item.team === props.team) {
+                                if (item.team === props.color.toUpperCase()) {
                                     return (
                                         <Tr key={`${Date.now()}${item.action}${item.time}${String(Math.floor(10000000 + Math.random() * 90000000))}`}>
                                             <Td>{item.action}</Td>
@@ -49,8 +48,8 @@ export default function HistoryList(props: any) {
                             })}
                             {props.history.filter((item: any) => item.team === props.team).length >= 8 && (
                                 <>
-                                <Tr><Td></Td></Tr>
-                                <Tr><Td></Td></Tr>
+                                    <Tr><Td></Td></Tr>
+                                    <Tr><Td></Td></Tr>
                                 </>
                             )}
                         </Tbody>
