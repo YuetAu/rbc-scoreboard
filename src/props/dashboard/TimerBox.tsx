@@ -8,31 +8,30 @@ export default function TimerBox(props: any) {
         <>
             <Box style={{
                 position: "relative",
-                top: props.hidden ? "-2rem" : "-0.2rem",
-                bottom: "-0.5rem",
                 fontSize: props.hidden ? "3.5rem" : "2rem",
                 textAlign: "center",
-                height: "1rem",
+                height: "1.5rem",
+                lineHeight: props.hidden ? "2rem" : "1rem",
             }}>
                 {props.shorthand ? props.gameStage : GAME_STAGES_TEXT[GAME_STAGES.indexOf(props.gameStage)]}
             </Box>
             <Box style={{
                 position: "relative",
-                top: props.hidden ? "1rem" : "-0.5rem",
-                bottom: "-0.5rem",
                 fontSize: "5rem",
                 textAlign: "center",
-                height: "6rem",
+                height: "4.5rem",
+                margin: "0",
+                padding: "0",
                 fontFamily: "'Source Code Pro Variable', sans-serif",
                 fontWeight: "600",
+                lineHeight: props.hidden ? "1rem" : "4.5rem",
             }}>
                 {time.minutes}:{time.seconds}.{time.milliseconds}
             </Box>
             <Box hidden={props.hidden} style={{
                 position: "relative",
-                top: "-0.5rem",
+                height: "4rem",
                 textAlign: "center",
-                margin: "0"
             }}>
                 <ButtonGroup spacing='2'>
                     <Button onClick={() => props.changeStage(-1)}>{"<<"}Prev</Button>

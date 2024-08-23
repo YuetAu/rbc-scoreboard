@@ -25,7 +25,7 @@ export function ScoreDisplay(props: any) {
               <br />
               {props.team.ename}
             </Box>
-            {dropDownOpen && <TeamDropDownList teams={props.teams} setTeam={props.setTeam} teamColor={props.teamColor} currentTeam={props.team.ename} setOpen={setDropDownOpen} parent={scoreDisplayRef} />}
+            {dropDownOpen && <TeamDropDownList teams={props.teams} setTeam={props.setTeam} color={props.color} currentTeam={props.team.ename} setOpen={setDropDownOpen} parent={scoreDisplayRef} />}
             <Box my={"3rem"} style={{ fontSize: "4rem" }}>
               {props.score}
             </Box>
@@ -73,6 +73,8 @@ function TeamDropDownList(props: any) {
             color="#ACB9C4"
             cursor="pointer"
             fontWeight="500"
+            fontSize="1.5rem"
+            lineHeight="1.5rem"
             textTransform="capitalize"
             onClick={() => {
               props.setTeam(item, props.color);
@@ -82,7 +84,7 @@ function TeamDropDownList(props: any) {
             _hover={{ bg: "gray.50", color: "#396070" }}
             sx={
               item?.ename === props.currentTeam
-                ? { backgroundColor: "gray.50", color: "#396070" }
+                ? { backgroundColor: "gray.100", color: "#396070" }
                 : {}
             }
           >
