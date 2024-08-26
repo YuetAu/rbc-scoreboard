@@ -15,6 +15,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useEffect, useRef, useState } from "react";
 import * as Y from "yjs";
 import Teams from "../props/dashboard/teams.json";
+import Link from "next/link";
 
 
 export default function Dashboard(props: any) {
@@ -347,6 +348,7 @@ export default function Dashboard(props: any) {
     }
 
     const toggleClock = () => {
+        if (!possessionClockData.get("paused") as boolean) { return; }
         if (clockData.get("paused") as boolean) {
             startClock();
         } else {
@@ -373,7 +375,12 @@ export default function Dashboard(props: any) {
 
             possessionClockData.set("timestamp", Date.now());
             possessionClockData.set("elapsed", 0);
+            possessionClockData.set("firstPossession", true);
             possessionClockData.set("paused", true);
+
+            possessionData.set("currentPossession", "possession");
+            possessionData.set("nextPossession", "red");
+
         })
         toast({
             title: `Reset stage ${clockData.get("stage") as string}`,
@@ -997,6 +1004,8 @@ export default function Dashboard(props: any) {
     // [Core] End of Helper Functions and States
 
 
+    const [warningModal, setWarningModal] = useState(false);
+
     return (
         <>
             <Head>
@@ -1251,8 +1260,29 @@ export default function Dashboard(props: any) {
                     </ModalBody>
 
                     <ModalFooter>
-                        <Button colorScheme='blue' mr={3} onClick={() => submitGameID(gameIDInput.current?.value || String(Math.floor(10000000 + Math.random() * 90000000)))}>
+                        <Button colorScheme='blue' mr={3} onClick={() => { submitGameID(gameIDInput.current?.value || String(Math.floor(10000000 + Math.random() * 90000000))); setWarningModal(true) }}>
                             Submit
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
+
+            <Modal isOpen={warningModal} onClose={() => { }} isCentered>
+                <ModalOverlay />
+                <ModalContent>
+                    <ModalHeader>⚠️WARNING!⚠️</ModalHeader>
+                    <ModalBody>
+                        <Text width={"100%"}>
+                            Scoreboard is still on beta! Changes to layout and interaction are expected.
+                            <br />
+                            This is uncharted territory, please report any bugs or issues to the developer.
+                            <br />
+                            You have been warned.
+                        </Text>
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button colorScheme='red' mr={3} onClick={() => { setWarningModal(false) }}>
+                            Close
                         </Button>
                     </ModalFooter>
                 </ModalContent>
