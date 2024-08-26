@@ -12,6 +12,7 @@ export default function TimerBox(props: any) {
                 textAlign: "center",
                 height: "1.5rem",
                 lineHeight: props.hidden ? "2rem" : "1rem",
+                userSelect: "none",
             }}>
                 {props.shorthand ? props.gameStage : GAME_STAGES_TEXT[GAME_STAGES.indexOf(props.gameStage)]}
             </Box>
@@ -25,6 +26,7 @@ export default function TimerBox(props: any) {
                 fontFamily: "'Source Code Pro Variable', sans-serif",
                 fontWeight: "600",
                 lineHeight: props.hidden ? "1rem" : "4.5rem",
+                userSelect: "none",
             }}>
                 {time.minutes}:{time.seconds}.{time.milliseconds}
             </Box>

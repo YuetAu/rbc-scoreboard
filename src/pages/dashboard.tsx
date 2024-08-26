@@ -1,21 +1,20 @@
 'use client'
 
-import { GAME_STAGES, GAME_STAGES_TIME } from "@/common/gameStages";
-import { ColorPicker } from "@/props/dashboard/ColorPicker";
+import { FIRST_POSSESSION, GAME_STAGES, GAME_STAGES_TIME, POSSESSION, SHOTCLOCK } from "@/common/gameStages";
 import { Counter } from "@/props/dashboard/Counter";
 import HistoryList from "@/props/dashboard/HistoryList";
 import { ScoreDisplay } from "@/props/dashboard/ScoreDisplay";
+import { PossessionClock, ShotClock } from "@/props/dashboard/ShotClock";
 import TimerBox from "@/props/dashboard/TimerBox";
 import { YJsClient } from "@/yjsClient/yjsClient";
 import { Box, Button, Flex, Grid, GridItem, Image, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Radio, RadioGroup, Stack, Switch, Table, TableContainer, Tbody, Td, Text, Textarea, Th, Thead, Tr, useToast } from "@chakra-ui/react";
 import "@fontsource-variable/quicksand";
+import Head from 'next/head';
 import { faCircleDot, faVideoCamera } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import Head from 'next/head';
 import { useEffect, useRef, useState } from "react";
 import * as Y from "yjs";
 import Teams from "../props/dashboard/teams.json";
-import { ShotClock } from "@/props/dashboard/ShotClock";
 
 
 export default function Dashboard(props: any) {
@@ -56,6 +55,10 @@ export default function Dashboard(props: any) {
             setYDoc(yJsClient.getYDoc());
             setClockData(yJsClient.getYDoc().getMap("clockData") as Y.Map<any>);
             setGameProps(yJsClient.getYDoc().getMap("gameProps") as Y.Map<any>);
+            setRedShotClockData(yJsClient.getYDoc().getMap("redShotClockData") as Y.Map<any>);
+            setBlueShotClockData(yJsClient.getYDoc().getMap("blueShotClockData") as Y.Map<any>);
+            setPossessionClockData(yJsClient.getYDoc().getMap("possessionClockData") as Y.Map<any>);
+            setPossessionData(yJsClient.getYDoc().getMap("possessionData") as Y.Map<any>);
             setGameIDModal(false);
             yJsClient.getYPartyProvider().on("status", connectionEventHandler);
         }
@@ -83,151 +86,6 @@ export default function Dashboard(props: any) {
             localStorage.setItem("gameSettings", JSON.stringify(gameSettings));
         }
     }, [gameSettings]);
-
-
-    // [Features] Replay Game Session
-
-    const [replayGameModal, setReplayGameModal] = useState(false);
-    const replayGameModalTextArea = useRef<HTMLTextAreaElement>(null);
-    const [replayGameInputOption, setReplayGameInputOption] = useState('ALL');
-    const [replayGameHistory, setReplayGameHistory] = useState<any[]>([]);
-    const replayHistory = useRef<{ timestamp: number; action: string; time: string; team: string; }[]>([]);
-
-    const parseHistory = (historyJSON: string, replayGameInputOption: string) => {
-        try {
-            var history = (JSON.parse(historyJSON)).history as any[];
-            console.log(history)
-            history.forEach((entry) => {
-                try {
-                    let timeText = entry.time.split(":");
-                    let minutes = parseInt(timeText[0]);
-                    let seconds = parseFloat(timeText[1]);
-                    entry.timestamp = (minutes * 60 + seconds) * 1000;
-                } catch (error) {
-                    throw new Error("Unable to parse time");
-                }
-            });
-            if (replayGameInputOption != "ALL") {
-                history = history.filter((entry) => {
-                    return entry.team == replayGameInputOption;
-                })
-            }
-            setReplayGameHistory([...history]);
-            replayHistory.current = [...history];
-            setReplayGameModal(false);
-            toast({
-                title: "Success",
-                description: "Game history loaded successfully",
-                status: "success",
-                duration: 5000,
-                isClosable: true,
-            })
-        } catch (error) {
-            toast({
-                title: "Error",
-                description: "Unable to parse game history",
-                status: "error",
-                duration: 5000,
-                isClosable: true,
-            })
-        }
-    }
-
-    const replayHistoryHandler = (stage: string, elapsedTime: number) => {
-        if (stage === "GAME") {
-            if (replayHistory.current[0] && elapsedTime > replayHistory.current[0].timestamp) {
-                const team = replayHistory.current[0].team;
-                const action = replayHistory.current[0].action.split(" ");
-                const keyword = action[0];
-                switch (keyword) {
-                    case "Seedling":
-                        if (team === "RED") {
-                            redSeedlingAction(parseInt(action[1]), replayHistory.current[0].time);
-                        } else {
-                            blueSeedlingAction(parseInt(action[1]), replayHistory.current[0].time);
-                        }
-                        if (pop) { pop.currentTime = 0; pop.play(); }
-                        break;
-                    case "StorageZone":
-                        if (team === "RED") {
-                            redStorageZoneAction(parseInt(action[1]), replayHistory.current[0].time);
-                        } else {
-                            blueStorageZoneAction(parseInt(action[1]), replayHistory.current[0].time);
-                        }
-                        if (pop) { pop.currentTime = 0; pop.play(); }
-                        break;
-                }
-                replayHistory.current.shift();
-            }
-        }
-    }
-
-
-    // [Features] Game Save and Load Functions
-
-    const isFirstReadGameSave = useRef(false);
-    const [gameSaveModal, setGameSaveModal] = useState(false);
-    const [gameSaveDictionary, setGameSaveDictionary] = useState<any>({});
-    useEffect(() => {
-        const localGameSaves = localStorage.getItem("gameSaves");
-        if (localGameSaves && !isFirstReadGameSave.current) {
-            setGameSaveDictionary(JSON.parse(localGameSaves));
-            isFirstReadGameSave.current = true;
-        } else {
-            localStorage.setItem("gameSaves", JSON.stringify(gameSaveDictionary));
-        }
-    }, [gameSaveDictionary]);
-
-    const saveCurrentGame = () => {
-        const currentGameJson = JSON.stringify(gameProps.toJSON())
-        const currentDate = new Date().toLocaleString('en-GB', { timeZone: 'Asia/Hong_Kong' });
-
-        if (!gameSaveDictionary[currentDate]) {
-            setGameSaveDictionary({ ...gameSaveDictionary, [currentDate]: currentGameJson });
-            toast({
-                title: "Success",
-                description: "Game saved successfully",
-                status: "success",
-                duration: 5000,
-                isClosable: true,
-            })
-        } else {
-            toast({
-                title: "Error",
-                description: "Game already saved",
-                status: "error",
-                duration: 5000,
-                isClosable: true,
-            })
-        }
-    }
-
-    const removeSavedGame = (gameName: string) => {
-        if (gameSaveDictionary[gameName]) {
-            const newGameSaveDictionary = { ...gameSaveDictionary };
-            if (newGameSaveDictionary[gameName]) {
-                delete newGameSaveDictionary[gameName];
-            }
-            setGameSaveDictionary(newGameSaveDictionary)
-            toast({
-                title: "Success",
-                description: "Game deleted successfully",
-                status: "success",
-                duration: 5000,
-                isClosable: true,
-            })
-        } else {
-            toast({
-                title: "Error",
-                description: "Game already deleted",
-                status: "error",
-                duration: 5000,
-                isClosable: true,
-            })
-        }
-    }
-
-
 
     // [Features] Start of Sound Functions
     const [countdownBeep, setCountdownBeep] = useState<any>(null);
@@ -276,7 +134,6 @@ export default function Dashboard(props: any) {
             pop.currentTime = 0;
         }
     }
-
     // [Features] End of Sound Functions
 
 
@@ -290,6 +147,7 @@ export default function Dashboard(props: any) {
                 clockData.set("timestamp", 0)
                 clockData.set("elapsed", 0)
                 clockData.set("paused", true)
+                clockData.set("stageTrigger", false)
                 clockData.set("init", true)
             })
         }
@@ -316,6 +174,30 @@ export default function Dashboard(props: any) {
         const remainingTime = clockData.get("paused") ? (GAME_STAGES_TIME[GAME_STAGES.indexOf(clockData.get("stage") as string)] * 1000) - (clockData.get("elapsed") as number) : (GAME_STAGES_TIME[GAME_STAGES.indexOf(clockData.get("stage") as string)] * 1000) - (clockData.get("elapsed") as number) - (Date.now() - (clockData.get("timestamp") as number));
         // Check if still have remaining time in the current stage
         if (remainingTime >= 0) {
+
+            // Check if the stage is just started
+            if (!clockData.get("stageTrigger")) {
+                clockData.set("stageTrigger", true);
+                console.log(`Just Started ${clockData.get("stage") as string}`);
+
+                switch (clockData.get("stage") as string) {
+                    case "GAME":
+                        switch (possessionData.get("currentPossession") as string) {
+                            case "red":
+                                startRedShotClock();
+                                break;
+                            case "blue":
+                                startBlueShotClock();
+                                break;
+                            case "possession":
+                                startPossessionClock();
+                                stopClock();
+                                break;
+                        }
+                        break;
+                }
+            }
+
             // Calculate remainingTime from seconds to human-readable text
             // For On-screen clock display
             const remainingMinutes = Math.floor(remainingTime / 60000) + "";
@@ -342,7 +224,7 @@ export default function Dashboard(props: any) {
             // That has to check constantly
             soundCheck((clockData.get("stage") as string), remainingTime);
 
-            if (gameProps.get("replay")) { replayHistoryHandler((clockData.get("stage") as string), elapsedTime); }
+            //if (gameProps.get("replay")) { replayHistoryHandler((clockData.get("stage") as string), elapsedTime); }
 
             // Recall itself 57 milliseconds after
             // Yes, it isn't real-time, but it seems ones.
@@ -384,7 +266,6 @@ export default function Dashboard(props: any) {
                         status: 'success',
                         duration: 5000,
                     })
-                    //gameEndVictoryCalc();
                 }
                 // Game start wait judge approval
                 if (newGameStage == "GAME") {
@@ -406,8 +287,25 @@ export default function Dashboard(props: any) {
             clockData.set("stage", clockData.get("stage") as string);
             clockData.set("timestamp", Date.now());
             clockData.set("elapsed", clockData.get("elapsed") as number);
+            clockData.set("stageTrigger", clockData.get("stageTrigger") as boolean);
             clockData.set("paused", false);
         })
+
+        if (clockData.get("stage") == "GAME") {
+            switch (possessionData.get("currentPossession") as string) {
+                case "red":
+                    startRedShotClock();
+                    break;
+                case "blue":
+                    startBlueShotClock();
+                    break;
+                case "possession":
+                    startPossessionClock();
+                    stopClock();
+                    break;
+            }
+        }
+
         toast({
             title: "Clock Started",
             status: 'success',
@@ -430,6 +328,10 @@ export default function Dashboard(props: any) {
             clockData.set("elapsed", elapsed);
             clockData.set("paused", true);
         })
+
+        stopRedShotClock();
+        stopBlueShotClock();
+
         toast({
             title: "Clock Stopped",
             status: 'success',
@@ -458,7 +360,20 @@ export default function Dashboard(props: any) {
             clockData.set("stage", clockData.get("stage") as string);
             clockData.set("timestamp", Date.now());
             clockData.set("elapsed", 0);
+            clockData.set("stageTrigger", false);
             clockData.set("paused", true);
+
+            redShotClockData.set("timestamp", Date.now());
+            redShotClockData.set("elapsed", 0);
+            redShotClockData.set("paused", true);
+
+            blueShotClockData.set("timestamp", Date.now());
+            blueShotClockData.set("elapsed", 0);
+            blueShotClockData.set("paused", true);
+
+            possessionClockData.set("timestamp", Date.now());
+            possessionClockData.set("elapsed", 0);
+            possessionClockData.set("paused", true);
         })
         toast({
             title: `Reset stage ${clockData.get("stage") as string}`,
@@ -478,6 +393,7 @@ export default function Dashboard(props: any) {
             clockData.set("stage", nextStage);
             clockData.set("timestamp", Date.now());
             clockData.set("elapsed", 0);
+            clockData.set("stageTrigger", false);
             clockData.set("paused", remainingTime > 0 ? false : true);
         })
         toast({
@@ -491,6 +407,353 @@ export default function Dashboard(props: any) {
     // [Core] End of Clock Functions and States
 
 
+    // [Feature] Start of ShotClock Functions and States
+    const [redShotClockData, setRedShotClockData] = useState(ydoc.getMap("redShotClockData") as Y.Map<any>);
+    const [blueShotClockData, setBlueShotClockData] = useState(ydoc.getMap("blueShotClockData") as Y.Map<any>);
+    const [possessionClockData, setPossessionClockData] = useState(ydoc.getMap("possessionClockData") as Y.Map<any>);
+    const [possessionData, setPossessionData] = useState(ydoc.getMap("possessionData") as Y.Map<any>);
+
+    useEffect(() => {
+        if (redShotClockData.get("init") == undefined) {
+            console.log("Initializing Red Shot Clock Data")
+            ydoc.transact((_y) => {
+                redShotClockData.set("timestamp", 0)
+                redShotClockData.set("elapsed", 0)
+                redShotClockData.set("paused", true)
+                redShotClockData.set("init", true)
+            })
+        }
+    }, [redShotClockData]);
+
+    useEffect(() => {
+        if (blueShotClockData.get("init") == undefined) {
+            console.log("Initializing Blue Shot Clock Data")
+            ydoc.transact((_y) => {
+                blueShotClockData.set("timestamp", 0)
+                blueShotClockData.set("elapsed", 0)
+                blueShotClockData.set("paused", true)
+                blueShotClockData.set("init", true)
+            })
+        }
+    }, [blueShotClockData]);
+
+    useEffect(() => {
+        if (possessionClockData.get("init") == undefined) {
+            console.log("Initializing Possession Clock Data")
+            ydoc.transact((_y) => {
+                possessionClockData.set("timestamp", 0)
+                possessionClockData.set("elapsed", 0)
+                possessionClockData.set("paused", true)
+                possessionClockData.set("firstPossession", true)
+                possessionClockData.set("init", true)
+            })
+        }
+    }, [possessionClockData]);
+
+    useEffect(() => {
+        if (possessionData.get("init") == undefined) {
+            console.log("Initializing Possession Data")
+            ydoc.transact((_y) => {
+                possessionData.set("currentPossession", "possession")
+                possessionData.set("nextPossession", "red")
+                possessionData.set("init", true)
+            })
+        }
+    }, [possessionData]);
+
+    const [redShotClockText, setRedShotClockText] = useState({ seconds: "00" });
+    const [blueShotClockText, setBlueShotClockText] = useState({ seconds: "00" });
+    const [possessionClockText, setPossessionClockText] = useState({ seconds: "00" });
+    const redShotClockInterval = useRef<any>(null);
+    const blueShotClockInterval = useRef<any>(null);
+    const possessionClockInterval = useRef<any>(null);
+
+    const [redShotClockPaused, setRedShotClockPaused] = useState(true);
+    const [blueShotClockPaused, setBlueShotClockPaused] = useState(true);
+    const [possessionClockPaused, setPossessionClockPaused] = useState(true);
+
+    const [nextPossession, setNextPossession] = useState("red");
+    const [currentPossession, setCurrentPossession] = useState("possession");
+
+    const updateRedShotClockText = () => {
+        setRedShotClockPaused(redShotClockData.get("paused") as boolean);
+
+        const remainingTime = redShotClockData.get("paused") ? (SHOTCLOCK * 1000) - (redShotClockData.get("elapsed") as number) : (SHOTCLOCK * 1000) - (redShotClockData.get("elapsed") as number) - (Date.now() - (redShotClockData.get("timestamp") as number));
+        if (remainingTime >= 0) {
+            const remainingSeconds = Math.floor(remainingTime / 1000 % 60) + "";
+            setRedShotClockText({
+                seconds: remainingSeconds.length < 2 ? "0" + remainingSeconds : remainingSeconds,
+            })
+            if (!(redShotClockData.get("paused") as boolean)) {
+                if (redShotClockInterval.current == null) {
+                    const tmpRedShotClockInterval = setInterval(updateRedShotClockText, 100);
+                    redShotClockInterval.current = tmpRedShotClockInterval;
+                }
+            } else {
+                clearInterval(redShotClockInterval.current);
+                redShotClockInterval.current = null;
+            }
+        } else {
+            clearInterval(redShotClockInterval.current);
+            if (redShotClockInterval.current != null) {
+                ydoc.transact((_y) => {
+                    redShotClockData.set("timestamp", Date.now());
+                    redShotClockData.set("elapsed", (SHOTCLOCK * 1000));
+                    redShotClockData.set("paused", true);
+
+                    possessionData.set("currentPossession", "possession");
+                })
+            }
+            redShotClockInterval.current = null;
+            stopClock();
+            console.log("Red Shot Clock Timeout")
+        }
+    }
+    redShotClockData.observeDeep(updateRedShotClockText);
+
+    const updateBlueShotClockText = () => {
+        setBlueShotClockPaused(blueShotClockData.get("paused") as boolean);
+
+        const remainingTime = blueShotClockData.get("paused") ? (SHOTCLOCK * 1000) - (blueShotClockData.get("elapsed") as number) : (SHOTCLOCK * 1000) - (blueShotClockData.get("elapsed") as number) - (Date.now() - (blueShotClockData.get("timestamp") as number));
+        if (remainingTime >= 0) {
+            const remainingSeconds = Math.floor(remainingTime / 1000 % 60) + "";
+            setBlueShotClockText({
+                seconds: remainingSeconds.length < 2 ? "0" + remainingSeconds : remainingSeconds,
+            })
+            if (!(blueShotClockData.get("paused") as boolean)) {
+                if (blueShotClockInterval.current == null) {
+                    const tmpBlueShotClockInterval = setInterval(updateBlueShotClockText, 100);
+                    blueShotClockInterval.current = tmpBlueShotClockInterval;
+                }
+            } else {
+                clearInterval(blueShotClockInterval.current);
+                blueShotClockInterval.current = null;
+            }
+        } else {
+            clearInterval(blueShotClockInterval.current);
+            if (blueShotClockInterval.current != null) {
+                ydoc.transact((_y) => {
+                    blueShotClockData.set("timestamp", Date.now());
+                    blueShotClockData.set("elapsed", (SHOTCLOCK * 1000));
+                    blueShotClockData.set("paused", true);
+
+                    possessionData.set("currentPossession", "possession");
+                })
+            }
+            blueShotClockInterval.current = null;
+            stopClock();
+            console.log("Blue Shot Clock Timeout")
+        }
+    }
+    blueShotClockData.observeDeep(updateBlueShotClockText);
+
+    const updatePossessionClockText = () => {
+        setPossessionClockPaused(possessionClockData.get("paused") as boolean);
+
+        const remainingTime = possessionClockData.get("paused") ? ((possessionClockData.get("firstPossession") ? FIRST_POSSESSION : POSSESSION) * 1000) - (possessionClockData.get("elapsed") as number) : ((possessionClockData.get("firstPossession") ? FIRST_POSSESSION : POSSESSION) * 1000) - (possessionClockData.get("elapsed") as number) - (Date.now() - (possessionClockData.get("timestamp") as number));
+        if (remainingTime >= 0) {
+            const remainingSeconds = Math.floor(remainingTime / 1000 % 60) + "";
+            setPossessionClockText({
+                seconds: remainingSeconds.length < 2 ? "0" + remainingSeconds : remainingSeconds,
+            })
+            if (!(possessionClockData.get("paused") as boolean)) {
+                if (possessionClockInterval.current == null) {
+                    const tmpPossessionClockInterval = setInterval(updatePossessionClockText, 100);
+                    possessionClockInterval.current = tmpPossessionClockInterval;
+                }
+            } else {
+                clearInterval(possessionClockInterval.current);
+                possessionClockInterval.current = null;
+            }
+        } else {
+            clearInterval(possessionClockInterval.current);
+            if (possessionClockInterval.current != null) {
+                resetPossessionClock();
+            }
+            possessionClockInterval.current = null;
+            if (possessionClockData.get("firstPossession") as boolean) {
+                possessionClockData.set("firstPossession", false);
+            }
+            console.log("Possession Clock Timeout")
+            possessionData.set("currentPossession", possessionData.get("nextPossession") as string);
+
+        }
+    }
+    possessionClockData.observeDeep(updatePossessionClockText);
+
+    possessionData.observeDeep(() => {
+        setCurrentPossession(possessionData.get("currentPossession") as string);
+        setNextPossession(possessionData.get("nextPossession") as string);
+        if (clockData.get("stage") == "GAME") {
+            switch (possessionData.get("currentPossession") as string) {
+                case "red":
+                    startRedShotClock();
+                    break;
+                case "blue":
+                    startBlueShotClock();
+                    break;
+            }
+        }
+    });
+
+    const startRedShotClock = () => {
+        if (clockData.get("stage") as string === "PREP") {
+            toast({
+                title: "No editing in PREP stage.",
+                status: 'error',
+                duration: 500,
+            })
+            return;
+        }
+        if (clockData.get("paused")) {
+            startClock();
+        }
+        if (redShotClockData.get("paused")) {
+            resetBlueShotClock();
+            resetPossessionClock();
+            ydoc.transact((_y) => {
+                possessionData.set("nextPossession", "blue");
+                possessionData.set("currentPossession", "red");
+
+                redShotClockData.set("timestamp", Date.now());
+                redShotClockData.set("elapsed", redShotClockData.get("elapsed") as number);
+                redShotClockData.set("paused", false);
+            })
+        }
+    }
+
+    const stopRedShotClock = () => {
+        if (!redShotClockData.get("paused")) {
+            ydoc.transact((_y) => {
+                const elapsed = (Date.now() - (redShotClockData.get("timestamp") as number)) + (redShotClockData.get("elapsed") as number)
+                redShotClockData.set("timestamp", Date.now());
+                redShotClockData.set("elapsed", elapsed);
+                redShotClockData.set("paused", true);
+            })
+        }
+    }
+
+    const toggleRedShotClock = () => {
+        if (redShotClockData.get("paused") as boolean) {
+            startRedShotClock();
+        } else {
+            stopRedShotClock();
+        }
+    }
+
+    const resetRedShotClock = () => {
+        ydoc.transact((_y) => {
+            redShotClockData.set("timestamp", Date.now());
+            redShotClockData.set("elapsed", 0);
+            redShotClockData.set("paused", true);
+        })
+    }
+
+    const startBlueShotClock = () => {
+        if (clockData.get("stage") as string === "PREP") {
+            toast({
+                title: "No editing in PREP stage.",
+                status: 'error',
+                duration: 500,
+            })
+            return;
+        }
+        if (clockData.get("paused")) {
+            startClock();
+        }
+        if (blueShotClockData.get("paused")) {
+            resetRedShotClock();
+            resetPossessionClock();
+            ydoc.transact((_y) => {
+                possessionData.set("nextPossession", "red");
+                possessionData.set("currentPossession", "blue");
+
+                blueShotClockData.set("timestamp", Date.now());
+                blueShotClockData.set("elapsed", blueShotClockData.get("elapsed") as number);
+                blueShotClockData.set("paused", false);
+            })
+        }
+    }
+
+    const stopBlueShotClock = () => {
+        if (!blueShotClockData.get("paused")) {
+            ydoc.transact((_y) => {
+                const elapsed = (Date.now() - (blueShotClockData.get("timestamp") as number)) + (blueShotClockData.get("elapsed") as number)
+                blueShotClockData.set("timestamp", Date.now());
+                blueShotClockData.set("elapsed", elapsed);
+                blueShotClockData.set("paused", true);
+            })
+        }
+    }
+
+    const toggleBlueShotClock = () => {
+        if (blueShotClockData.get("paused") as boolean) {
+            startBlueShotClock();
+        } else {
+            stopBlueShotClock();
+        }
+    }
+
+    const resetBlueShotClock = () => {
+        console.log("Reset Blue Shot Clock")
+        ydoc.transact((_y) => {
+            blueShotClockData.set("timestamp", Date.now());
+            blueShotClockData.set("elapsed", 0);
+            blueShotClockData.set("paused", true);
+        })
+    }
+
+    const startPossessionClock = () => {
+        if (clockData.get("stage") as string === "PREP") {
+            toast({
+                title: "No editing in PREP stage.",
+                status: 'error',
+                duration: 500,
+            })
+            return;
+        }
+        if (possessionClockData.get("paused")) {
+            setCurrentPossession("possession");
+            resetRedShotClock();
+            resetBlueShotClock();
+            ydoc.transact((_y) => {
+                possessionClockData.set("timestamp", Date.now());
+                possessionClockData.set("elapsed", possessionClockData.get("elapsed") as number);
+                possessionClockData.set("paused", false);
+            })
+        }
+    }
+
+    const stopPossessionClock = () => {
+        if (!possessionClockData.get("paused")) {
+            ydoc.transact((_y) => {
+                const elapsed = (Date.now() - (possessionClockData.get("timestamp") as number)) + (possessionClockData.get("elapsed") as number)
+                possessionClockData.set("timestamp", Date.now());
+                possessionClockData.set("elapsed", elapsed);
+                possessionClockData.set("paused", true);
+            })
+        }
+    }
+
+    const togglePossessionClock = () => {
+        if (possessionClockData.get("paused") as boolean) {
+            startPossessionClock();
+        } else {
+            stopPossessionClock();
+        }
+    }
+
+    const resetPossessionClock = () => {
+        ydoc.transact((_y) => {
+            possessionClockData.set("timestamp", Date.now());
+            possessionClockData.set("elapsed", 0);
+            possessionClockData.set("paused", true);
+        })
+    }
+
+    // [Feature] End of ShotClock Functions and States
+
+
     // [Core] Start of GameProps Functions and States
     const [gameProps, setGameProps] = useState(ydoc.getMap("gameProps") as Y.Map<any>);
     if (gameProps.get("init") == undefined) {
@@ -502,10 +765,19 @@ export default function Dashboard(props: any) {
             gameProps.set("history", gameHistory);
 
             const gamePropsItems = new Y.Map() as Y.Map<number>;
-            gamePropsItems.set("redStorageZone", 0);
-            gamePropsItems.set("redSeedling", 0);
-            gamePropsItems.set("blueStorageZone", 0);
-            gamePropsItems.set("blueSeedling", 0);
+            gamePropsItems.set("redDunk", 0);
+            gamePropsItems.set("redTwoPoint", 0);
+            gamePropsItems.set("redThreePoint", 0);
+            gamePropsItems.set("blueDunk", 0);
+            gamePropsItems.set("blueTwoPoint", 0);
+            gamePropsItems.set("blueThreePoint", 0);
+
+            gamePropsItems.set("redFoulDunk", 0);
+            gamePropsItems.set("redFoulTwoPoint", 0);
+            gamePropsItems.set("redFoulThreePoint", 0);
+            gamePropsItems.set("blueFoulDunk", 0);
+            gamePropsItems.set("blueFoulTwoPoint", 0);
+            gamePropsItems.set("blueFoulThreePoint", 0);
             gameProps.set("items", gamePropsItems);
 
 
@@ -521,6 +793,16 @@ export default function Dashboard(props: any) {
         redDunk: 0,
         redTwoPoint: 0,
         redThreePoint: 0,
+        blueDunk: 0,
+        blueTwoPoint: 0,
+        blueThreePoint: 0,
+
+        redFoulDunk: 0,
+        redFoulTwoPoint: 0,
+        redFoulThreePoint: 0,
+        blueFoulDunk: 0,
+        blueFoulTwoPoint: 0,
+        blueFoulThreePoint: 0,
     });
     const [teamState, setTeamState] = useState<{ red: { cname: string; ename: string; }; blue: { cname: string; ename: string; }; }>({
         red: { cname: "征龍", ename: "War Dragon" },
@@ -535,69 +817,55 @@ export default function Dashboard(props: any) {
         const historyYArray = gameProps.get("history") as Y.Array<{ action: string; time: string; team: string }>;
         const itemsYMap = gameProps.get("items") as Y.Map<number>;
 
+        /*
+        6.7.1 Points will be awarded for successful shots based on the shooting zone and
+            shooting types as follows:
+ 
+            6.7.1.1 Three (3) points for a shot made from the 3-point zone. The robot's base
+            perimeter must be fully within the 3-point zone before, during and after
+            the shot including space above the zone.
+ 
+            6.7.1.2 Two (2) points for a shot that are neither a 3-point shot nor a dunk shot.
+ 
+            6.7.1.3 Seven (7) points for a dunk shot. 
+ 
+        9.4.3 The offensive team will be awarded points from the designated zone where the
+            foul occurred. These points will not count as a successful shot attempt.
+ 
+            9.4.3.1 If the fouled robot’s base perimeter is fully within the 3-point zone
+            including space above, or the robot’s base perimeter is on the centerline,
+            the offensive team will be awarded three (3) points.
+ 
+            9.4.3.2 If the fouled robot’s base perimeter is in the 2-point zone, the offensive
+            team will be awarded two (2) points.
+ 
+            9.4.3.3 If the fouled robot is performing a dunk shoot, the offensive team will
+            be awarded seven (7) points.
+        */
+
         let redPoints = 0;
         let bluePoints = 0;
 
-        redPoints += (itemsYMap.get("redSeedling") || 0) * 10;
-        bluePoints += (itemsYMap.get("blueSeedling") || 0) * 10;
+        redPoints += (itemsYMap.get("redTwoPoint") || 0) * 2;
+        redPoints += (itemsYMap.get("redThreePoint") || 0) * 3;
+        redPoints += (itemsYMap.get("redDunk") || 0) * 7;
 
-        redPoints += (itemsYMap.get("redStorageZone") || 0) * 10;
-        bluePoints += (itemsYMap.get("blueStorageZone") || 0) * 10;
+        redPoints += (itemsYMap.get("blueFoulTwoPoint") || 0) * 2;
+        redPoints += (itemsYMap.get("blueFoulThreePoint") || 0) * 3;
+        redPoints += (itemsYMap.get("blueFoulDunk") || 0) * 7;
 
 
-        if (greateVictoryRef.current) {
-            setScores({ redPoints, bluePoints });
-            return { redPoints, bluePoints, redGreatVictory: false, blueGreatVictory: false, greatVictoryTimestamp: 0 }
-        }
+        bluePoints += (itemsYMap.get("blueTwoPoint") || 0) * 2;
+        bluePoints += (itemsYMap.get("blueThreePoint") || 0) * 3;
+        bluePoints += (itemsYMap.get("blueDunk") || 0) * 7;
 
-        let greatVictoryObject = { redGreatVictory: false, blueGreatVictory: false, greatVictoryTimestamp: 0 }
+        bluePoints += (itemsYMap.get("redFoulTwoPoint") || 0) * 2;
+        bluePoints += (itemsYMap.get("redFoulThreePoint") || 0) * 3;
+        bluePoints += (itemsYMap.get("redFoulDunk") || 0) * 7;
 
-        /* if (redOccoupiedSilos >= 3) {
-            let greatVictoryTimestamp = (GAME_STAGES_TIME[GAME_STAGES.indexOf(clockData.get("stage") as string)] * 1000) - (clockData.get("elapsed") as number) - (Date.now() - (clockData.get("timestamp") as number));
-            const elapsedTime = (clockData.get("elapsed") as number) + (Date.now() - (clockData.get("timestamp") as number));
-            const elapsedMinutes = Math.floor(elapsedTime / 60000) + "";
-            const elapsedSeconds = Math.floor(elapsedTime / 1000 % 60) + "";
-            const elapsedMilliseconds = elapsedTime % 1000 + "";
-            const elapsedText = {
-                minutes: elapsedMinutes.length < 2 ? "0" + elapsedMinutes : elapsedMinutes,
-                seconds: elapsedSeconds.length < 2 ? "0" + elapsedSeconds : elapsedSeconds,
-                milliseconds: elapsedMilliseconds.length < 3 ? elapsedMilliseconds.length < 2 ? "00" + elapsedMilliseconds : "0" + elapsedMilliseconds : elapsedMilliseconds
-            }
-            toast({
-                title: "RED GREAT VICTORY",
-                status: 'success',
-                position: 'bottom-left',
-                duration: 5000,
-            })
-            greateVictoryRef.current = true;
-            if (historyYArray.get(historyYArray.length - 1)?.action !== `RED GreatVictory`) historyYArray.push([{ action: `GreatVictory`, time: elapsedText.minutes + ":" + elapsedText.seconds + "." + elapsedText.milliseconds, team: "RED" }]);
-            greatVictoryObject = { redGreatVictory: true, blueGreatVictory: false, greatVictoryTimestamp }
-            stopClock();
-        } else if (blueOccoupiedSilos >= 3) {
-            let greatVictoryTimestamp = (GAME_STAGES_TIME[GAME_STAGES.indexOf(clockData.get("stage") as string)] * 1000) - (clockData.get("elapsed") as number) - (Date.now() - (clockData.get("timestamp") as number));
-            const elapsedTime = (clockData.get("elapsed") as number) + (Date.now() - (clockData.get("timestamp") as number));
-            const elapsedMinutes = Math.floor(elapsedTime / 60000) + "";
-            const elapsedSeconds = Math.floor(elapsedTime / 1000 % 60) + "";
-            const elapsedMilliseconds = elapsedTime % 1000 + "";
-            const elapsedText = {
-                minutes: elapsedMinutes.length < 2 ? "0" + elapsedMinutes : elapsedMinutes,
-                seconds: elapsedSeconds.length < 2 ? "0" + elapsedSeconds : elapsedSeconds,
-                milliseconds: elapsedMilliseconds.length < 3 ? elapsedMilliseconds.length < 2 ? "00" + elapsedMilliseconds : "0" + elapsedMilliseconds : elapsedMilliseconds
-            }
-            toast({
-                title: "BLUE GREAT VICTORY",
-                status: 'success',
-                position: 'bottom-right',
-                duration: 5000,
-            })
-            greateVictoryRef.current = true;
-            if (historyYArray.get(historyYArray.length - 1)?.action !== `BLUE GreatVictory`) historyYArray.push([{ action: `GreatVictory`, time: elapsedText.minutes + ":" + elapsedText.seconds + "." + elapsedText.milliseconds, team: "BLUE" }])
-            greatVictoryObject = { redGreatVictory: true, blueGreatVictory: true, greatVictoryTimestamp }
-            stopClock();
-        } */
 
         setScores({ redPoints, bluePoints });
-        return { redPoints, bluePoints, ...greatVictoryObject }
+        return { redPoints, bluePoints }
     }
 
 
@@ -621,8 +889,7 @@ export default function Dashboard(props: any) {
         console.log(teams)
     }
 
-
-    const redStorageZoneAction = (value: number, historyTime?: string) => {
+    const ballScoring = (item: string, value: number, team: string, historyTime?: string) => {
         const itemsYMap = gameProps.get("items") as Y.Map<number>;
         const historyYArray = gameProps.get("history") as Y.Array<{ action: string; time: string; team: string; }>;
         // Validation
@@ -635,54 +902,27 @@ export default function Dashboard(props: any) {
             })
             return;
         }
-        if (value > (itemsYMap.get("redSeedling") as number || 0)) {
-            toast({
-                title: "Storage Zone exceeded placed Seedling!",
-                status: 'error',
-                position: 'bottom-left',
-                duration: 500,
-            })
-            return;
-        }
-        historyYArray.forEach((val, index) => {
-            if (val.action.startsWith(`StorageZone ${value}`) && val.team === "RED") {
-                historyYArray.delete(index);
-            }
-        })
-        historyYArray.push([{ action: `StorageZone ${value}`, time: historyTime || elapsedText.minutes + ":" + elapsedText.seconds + "." + elapsedText.milliseconds, team: "RED" }])
-        itemsYMap.set("redStorageZone", value);
-    }
 
-    const redSeedlingAction = (value: number, historyTime?: string) => {
-        const itemsYMap = gameProps.get("items") as Y.Map<number>;
-        const historyYArray = gameProps.get("history") as Y.Array<{ action: string; time: string; team: string; }>;
-        // Validation
-        if (value < 0) return;
-        if (clockData.get("stage") as string === "PREP") {
-            toast({
-                title: "No editing in PREP stage.",
-                status: 'error',
-                duration: 500,
-            })
-            return;
-        }
-        if (value > 12) {
-            toast({
-                title: "Seedling exceeded!",
-                status: 'error',
-                position: 'bottom-left',
-                duration: 500,
-            })
-            return;
+        if ((itemsYMap.get(`${team}${item}`) as number) > value) {
+            const indicesToDelete: number[] = [];
+
+            historyYArray.forEach((val, index) => {
+                if (val.action.startsWith(`${item}`) && val.team === team) {
+                    if (Number(val.action.split(" ")[1]) >= value) {
+                        indicesToDelete.push(index);
+                    }
+                }
+            });
+
+            for (let i = indicesToDelete.length - 1; i >= 0; i--) {
+                historyYArray.delete(indicesToDelete[i], 1);
+            }
         }
 
-        historyYArray.forEach((val, index) => {
-            if (val.action.startsWith(`Seedling ${value}`) && val.team === "RED") {
-                historyYArray.delete(index);
-            }
-        })
-        historyYArray.push([{ action: `Seedling ${value}`, time: historyTime || elapsedText.minutes + ":" + elapsedText.seconds + "." + elapsedText.milliseconds, team: "RED" }])
-        itemsYMap.set("redSeedling", value);
+        if (value > 0) {
+            historyYArray.push([{ action: `${item} ${value}`, time: historyTime || elapsedText.minutes + ":" + elapsedText.seconds + "." + elapsedText.milliseconds, team: team }])
+        }
+        itemsYMap.set(`${team}${item}`, value);
     }
     // [Core] End of GameProps Functions and States
 
@@ -691,12 +931,6 @@ export default function Dashboard(props: any) {
     const forceReset = () => {
         forceStopSound();
         setScores({ redPoints: 0, bluePoints: 0 });
-        greateVictoryRef.current = false;
-
-        console.log(replayGameHistory, replayHistory.current)
-        replayHistory.current = [...replayGameHistory]
-        console.log(replayGameHistory, replayHistory.current)
-        const replayState = gameProps.get("replay") as boolean;
 
         ydoc.transact((_y) => {
             // Clearing the map helps prevent memory leak due to removed past history ٩(´•⌢•｀ )۶⁼³₌₃
@@ -707,7 +941,33 @@ export default function Dashboard(props: any) {
             clockData.set("timestamp", 0)
             clockData.set("elapsed", 0)
             clockData.set("paused", true)
+            clockData.set("stageTrigger", false);
             clockData.set("init", true)
+
+            redShotClockData.clear()
+            blueShotClockData.clear()
+            possessionClockData.clear()
+            possessionData.clear()
+
+            redShotClockData.set("timestamp", 0)
+            redShotClockData.set("elapsed", 0)
+            redShotClockData.set("paused", true)
+            redShotClockData.set("init", true)
+
+            blueShotClockData.set("timestamp", 0)
+            blueShotClockData.set("elapsed", 0)
+            blueShotClockData.set("paused", true)
+            blueShotClockData.set("init", true)
+
+            possessionClockData.set("timestamp", 0)
+            possessionClockData.set("elapsed", 0)
+            possessionClockData.set("paused", true)
+            possessionClockData.set("firstPossession", true)
+            possessionClockData.set("init", true)
+
+            possessionData.set("currentPossession", "possession")
+            possessionData.set("nextPossession", "red")
+            possessionData.set("init", true)
 
             gameProps.set("teams", { "red": { "cname": "征龍", "ename": "War Dragon" }, "blue": { "cname": "火之龍", "ename": "Fiery Dragon" } })
 
@@ -715,13 +975,21 @@ export default function Dashboard(props: any) {
             gameProps.set("history", gameHistory)
 
             const gamePropsItems = new Y.Map() as Y.Map<number>;
-            gamePropsItems.set("redStorageZone", 0);
-            gamePropsItems.set("redSeedling", 0);
-            gamePropsItems.set("blueStorageZone", 0);
-            gamePropsItems.set("blueSeedling", 0);
-            gameProps.set("items", gamePropsItems)
+            gamePropsItems.set("redDunk", 0);
+            gamePropsItems.set("redTwoPoint", 0);
+            gamePropsItems.set("redThreePoint", 0);
+            gamePropsItems.set("blueDunk", 0);
+            gamePropsItems.set("blueTwoPoint", 0);
+            gamePropsItems.set("blueThreePoint", 0);
 
-            gameProps.set("replay", replayState);
+            gamePropsItems.set("redFoulDunk", 0);
+            gamePropsItems.set("redFoulTwoPoint", 0);
+            gamePropsItems.set("redFoulThreePoint", 0);
+            gamePropsItems.set("blueFoulDunk", 0);
+            gamePropsItems.set("blueFoulTwoPoint", 0);
+            gamePropsItems.set("blueFoulThreePoint", 0);
+
+            gameProps.set("items", gamePropsItems);
 
             gameProps.set("init", true)
         })
@@ -737,21 +1005,25 @@ export default function Dashboard(props: any) {
 
             <Grid
                 h={containerHeight}
-                templateRows='repeat(6, 1fr)'
+                templateRows='repeat(7, 1fr)'
                 templateColumns='repeat(4, 1fr)'
                 bgColor={"gray.600"}
                 overflow={"hidden"}
                 fontFamily={"Quicksand Variable, sans-serif"}
                 fontWeight={"700"}
                 fontSize={"2rem"}
+                onContextMenu={(e) => e.preventDefault()}
             >
-                <GridItem rowSpan={6} colSpan={1} m={"1vw"} mr={0}>
-                    <Flex flexDirection={"column"} gap={5} alignItems={"center"} height={"100%"} justifyContent={"center"}>
-                        <ScoreDisplay color={"red"} team={teamState.red} editable={true} score={scores.redPoints} teams={Teams} setTeam={updateTeam} />
-                        <HistoryList history={historyState} team="RED" color={"red"} />
-                    </Flex>
+
+                <GridItem rowSpan={1} colSpan={1} m={"1vw"}>
+                    <Box fontSize={"0.7em"} textColor={"white"}>
+                        <span style={{ userSelect: "none" }}>GameID: </span>{gameID}
+                        <Button onClick={forceReset} colorScheme="red" size="sm" ml={2}>
+                            Force Reset
+                        </Button>
+                    </Box>
                 </GridItem>
-                <GridItem rowSpan={1} colSpan={2} m={"1vw"} textColor={"white"}>
+                <GridItem rowSpan={2} colSpan={2} m={"1vw"} textColor={"white"}>
                     <TimerBox
                         timeText={clockText}
                         gameStage={clockStage}
@@ -763,16 +1035,31 @@ export default function Dashboard(props: any) {
                         changeStage={changeStage}
                     />
                 </GridItem>
-                <GridItem rowSpan={6} colSpan={1} m={"1vw"} ml={0}>
+                <GridItem rowSpan={1} colSpan={1} m={"1vw"}>
+                    <Box textAlign={"end"} fontSize={"0.7em"}>
+                        <Text textColor={onlineStatus == 1 ? 'lightgreen' : onlineStatus == 0 ? 'lightcoral' : 'orange'} userSelect={"none"}>
+                            {onlineStatus == 1 ? "Connected" : onlineStatus == 0 ? "Disconnected" : "Large Time Diff"} <FontAwesomeIcon icon={faCircleDot} />
+                        </Text>
+                    </Box>
+                </GridItem>
+
+                <GridItem rowSpan={6} colSpan={1} m={"1vw"} mr={0}>
                     <Flex flexDirection={"column"} gap={5} alignItems={"center"} height={"100%"} justifyContent={"center"}>
                         <ScoreDisplay color={"blue"} team={teamState.blue} editable={true} score={scores.bluePoints} teams={Teams} setTeam={updateTeam} />
                         <HistoryList history={historyState} color={"blue"} />
                     </Flex>
                 </GridItem>
+                <GridItem rowSpan={6} colSpan={1} m={"1vw"} ml={0}>
+                    <Flex flexDirection={"column"} gap={5} alignItems={"center"} height={"100%"} justifyContent={"center"}>
+                        <ScoreDisplay color={"red"} team={teamState.red} editable={true} score={scores.redPoints} teams={Teams} setTeam={updateTeam} />
+                        <HistoryList history={historyState} team="RED" color={"red"} />
+                    </Flex>
+                </GridItem>
                 <GridItem rowSpan={1} colSpan={2} m={"1vw"}>
                     <Flex flexDir={"row"} justifyContent={"space-between"}>
-                        <ShotClock color={"red"} />
-                        <ShotClock color={"blue"} />
+                        <ShotClock color={"blue"} timeText={blueShotClockText} startClock={startBlueShotClock} resetClock={resetBlueShotClock} clockPaused={blueShotClockPaused} possessionClockPaused={possessionClockPaused} possessionData={possessionData} />
+                        <PossessionClock timeText={possessionClockText} startClock={startPossessionClock} resetClock={resetPossessionClock} />
+                        <ShotClock color={"red"} timeText={redShotClockText} startClock={startRedShotClock} resetClock={resetRedShotClock} clockPaused={redShotClockPaused} possessionClockPaused={possessionClockPaused} possessionData={possessionData} />
                     </Flex>
                 </GridItem>
                 <GridItem rowSpan={5} colSpan={2} m={"1vw"}>
@@ -794,7 +1081,7 @@ export default function Dashboard(props: any) {
                                 transform="translate(-50%, -50%) scale(1)"
                                 transformOrigin='center'
                             >
-                                <Counter counter={itemsState.redDunk} setCounter={redSeedlingAction} color={"red"} />
+                                <Counter counter={itemsState.redDunk} setCounter={(val: number) => ballScoring("Dunk", val, "red")} color={"red"} />
                             </Box>
                             <Box
                                 position="absolute"
@@ -803,16 +1090,149 @@ export default function Dashboard(props: any) {
                                 transform="translate(-50%, -50%) scale(1)"
                                 transformOrigin='center'
                             >
-                                <Counter counter={itemsState.redTwoPoint} setCounter={redSeedlingAction} color={"red"} />
+                                <Counter counter={itemsState.redTwoPoint} setCounter={(val: number) => ballScoring("TwoPoint", val, "red")} color={"red"} />
                             </Box>
                             <Box
                                 position="absolute"
-                                left="60%"
-                                top="40%"
+                                left="40%"
+                                top="67%"
                                 transform="translate(-50%, -50%) scale(1)"
                                 transformOrigin='center'
                             >
-                                <Counter counter={itemsState.redThreePoint} setCounter={redSeedlingAction} color={"red"} />
+                                <Counter counter={itemsState.redThreePoint} setCounter={(val: number) => ballScoring("ThreePoint", val, "red")} color={"red"} />
+                            </Box>
+                            <Box
+                                position="absolute"
+                                left="33%"
+                                top="80%"
+                                transform="translate(-50%, -50%) scale(1)"
+                                transformOrigin='center'
+                                shadow={"lg"} rounded={"lg"} px={"0.5rem"}
+                                bgColor={"white"}
+                                fontSize={"1rem"}
+                                userSelect={"none"}
+                            >
+                                Red Offending
+                            </Box>
+                            <Box
+                                position="absolute"
+                                left="27%"
+                                top="50%"
+                                transform="translate(-50%, -50%) scale(1)"
+                                transformOrigin='center'
+                            >
+                                <Counter counter={itemsState.redFoulDunk} setCounter={(val: number) => ballScoring("FoulDunk", val, "red")} color={"blue"} />
+                            </Box>
+                            <Box
+                                position="absolute"
+                                left="20%"
+                                top="33%"
+                                transform="translate(-50%, -50%) scale(1)"
+                                transformOrigin='center'
+                            >
+                                <Counter counter={itemsState.redFoulTwoPoint} setCounter={(val: number) => ballScoring("FoulTwoPoint", val, "red")} color={"blue"} />
+                            </Box>
+                            <Box
+                                position="absolute"
+                                left="40%"
+                                top="33%"
+                                transform="translate(-50%, -50%) scale(1)"
+                                transformOrigin='center'
+                            >
+                                <Counter counter={itemsState.redFoulThreePoint} setCounter={(val: number) => ballScoring("FoulThreePoint", val, "red")} color={"blue"} />
+                            </Box>
+                            <Box
+                                position="absolute"
+                                left="33%"
+                                top="20%"
+                                transform="translate(-50%, -50%) scale(1)"
+                                transformOrigin='center'
+                                shadow={"lg"} rounded={"lg"} px={"0.5rem"}
+                                bgColor={"white"}
+                                fontSize={"1rem"}
+                                userSelect={"none"}
+                            >
+                                Red Foul
+                            </Box>
+                            <Box
+                                position="absolute"
+                                right="15%"
+                                top="50%"
+                                transform="translate(-50%, -50%) scale(1)"
+                                transformOrigin='center'
+                            >
+                                <Counter counter={itemsState.blueDunk} setCounter={(val: number) => ballScoring("Dunk", val, "blue")} color={"blue"} />
+                            </Box>
+                            <Box
+                                position="absolute"
+                                right="15%"
+                                top="67%"
+                                transform="translate(-50%, -50%) scale(1)"
+                                transformOrigin='center'
+                            >
+                                <Counter counter={itemsState.blueTwoPoint} setCounter={(val: number) => ballScoring("TwoPoint", val, "blue")} color={"blue"} />
+                            </Box>
+                            <Box
+                                position="absolute"
+                                right="35%"
+                                top="67%"
+                                transform="translate(-50%, -50%) scale(1)"
+                                transformOrigin='center'
+                            >
+                                <Counter counter={itemsState.blueThreePoint} setCounter={(val: number) => ballScoring("ThreePoint", val, "blue")} color={"blue"} />
+                            </Box>
+                            <Box
+                                position="absolute"
+                                right="14%"
+                                top="80%"
+                                transform="translate(-50%, -50%) scale(1)"
+                                transformOrigin='center'
+                                shadow={"lg"} rounded={"lg"} px={"0.5rem"}
+                                bgColor={"white"}
+                                fontSize={"1rem"}
+                                userSelect={"none"}
+                            >
+                                Blue Offending
+                            </Box>
+                            <Box
+                                position="absolute"
+                                right="22%"
+                                top="50%"
+                                transform="translate(-50%, -50%) scale(1)"
+                                transformOrigin='center'
+                            >
+                                <Counter counter={itemsState.blueFoulDunk} setCounter={(val: number) => ballScoring("FoulDunk", val, "blue")} color={"red"} />
+                            </Box>
+                            <Box
+                                position="absolute"
+                                right="15%"
+                                top="33%"
+                                transform="translate(-50%, -50%) scale(1)"
+                                transformOrigin='center'
+                            >
+                                <Counter counter={itemsState.blueFoulTwoPoint} setCounter={(val: number) => ballScoring("FoulTwoPoint", val, "blue")} color={"red"} />
+                            </Box>
+                            <Box
+                                position="absolute"
+                                right="35%"
+                                top="33%"
+                                transform="translate(-50%, -50%) scale(1)"
+                                transformOrigin='center'
+                            >
+                                <Counter counter={itemsState.blueFoulThreePoint} setCounter={(val: number) => ballScoring("FoulThreePoint", val, "blue")} color={"red"} />
+                            </Box>
+                            <Box
+                                position="absolute"
+                                right="20%"
+                                top="20%"
+                                transform="translate(-50%, -50%) scale(1)"
+                                transformOrigin='center'
+                                shadow={"lg"} rounded={"lg"} px={"0.5rem"}
+                                bgColor={"white"}
+                                fontSize={"1rem"}
+                                userSelect={"none"}
+                            >
+                                Blue Foul
                             </Box>
                         </Box>
                     </Flex>
@@ -822,7 +1242,7 @@ export default function Dashboard(props: any) {
 
 
 
-            <Modal isOpen={false} onClose={() => { }} isCentered>
+            <Modal isOpen={gameIDModal} onClose={() => { }} isCentered>
                 <ModalOverlay />
                 <ModalContent>
                     <ModalHeader>Connect to Game Room</ModalHeader>
@@ -849,77 +1269,11 @@ export default function Dashboard(props: any) {
                     <ModalBody>
                         <Flex my="0.5rem"><Switch colorScheme='teal' size='md' isChecked={gameSettings.preGameCountdown} onChange={() => { setGameSettings({ ...gameSettings, preGameCountdown: !gameSettings.preGameCountdown }) }} /> <Box mt={"-0.2rem"} ml={"0.5rem"}>PreGame 3s Countdown Sound Effect</Box></Flex>
                         <Flex my="0.5rem"><Switch colorScheme='teal' size='md' isChecked={gameSettings.endGameCountdown} onChange={() => { setGameSettings({ ...gameSettings, endGameCountdown: !gameSettings.endGameCountdown }) }} /> <Box mt={"-0.2rem"} ml={"0.5rem"}>EndGame 10s Countdown Sound Effect</Box></Flex>
-
-                        <Flex mt="0.5rem"><Button colorScheme={"teal"} onClick={() => setReplayGameModal(true)}>Replay Game Settings</Button></Flex>
-
-                        <Flex mt="0.5rem"><Button colorScheme={"purple"} onClick={() => setGameSaveModal(true)}>Game Saves</Button></Flex>
                     </ModalBody>
 
                     <ModalFooter>
                         {props.buildVersion ? <Text fontSize={"0.75rem"}>Version: {(props.buildVersion as string).substring(0, 6)}</Text> : <Text fontSize={"0.75rem"}>Version: Development</Text>}
                     </ModalFooter>
-                </ModalContent>
-            </Modal>
-
-            <Modal size={"xl"} isOpen={replayGameModal} onClose={() => { setReplayGameModal(false) }} isCentered>
-                <ModalOverlay />
-                <ModalContent>
-                    <ModalHeader>Replay Game</ModalHeader>
-                    <ModalCloseButton />
-                    <ModalBody>
-                        <RadioGroup onChange={setReplayGameInputOption} value={replayGameInputOption}>
-                            <Stack direction='row'>
-                                <Radio value='ALL'>All History</Radio>
-                                <Radio value='RED'>RED Team History</Radio>
-                                <Radio value='BLUE'>BLUE Team History</Radio>
-                            </Stack>
-                        </RadioGroup>
-                        <Textarea size={"md"} ref={replayGameModalTextArea} placeholder='Paste Game Props JSON here' />
-                    </ModalBody>
-                    <ModalFooter>
-                        <Button colorScheme='red' mr={3} onClick={() => { replayHistory.current = []; setReplayGameHistory([]); setReplayGameModal(false); }}>Clear</Button>
-                        <Button colorScheme='blue' mr={3} onClick={() => { parseHistory(replayGameModalTextArea.current?.value || "", replayGameInputOption) }}>
-                            Submit
-                        </Button>
-                    </ModalFooter>
-                </ModalContent>
-            </Modal>
-
-
-            <Modal size={"xl"} isOpen={gameSaveModal} onClose={() => { setGameSaveModal(false) }} isCentered>
-                <ModalOverlay />
-                <ModalContent>
-                    <ModalHeader>
-                        Game Saves
-                        <Button onClick={saveCurrentGame} colorScheme="green" style={{ position: "absolute", right: "1rem", top: "0.75rem" }}>Save</Button>
-                    </ModalHeader>
-                    <ModalBody>
-                        {JSON.stringify(gameSaveDictionary) == "{}" ? <Text m={"1.5rem"} textAlign={"center"} fontStyle={"italic"}>No Game Saves</Text> :
-                            (<TableContainer>
-                                <Table variant="striped" size="sm">
-                                    <Thead>
-                                        <Tr>
-                                            <Th>Time</Th>
-                                            <Th>Action</Th>
-                                        </Tr>
-                                    </Thead>
-                                    <Tbody>
-                                        {Object.entries(gameSaveDictionary).map(([key, value]) => (
-                                            <Tr key={key}>
-                                                <Td>{key}</Td>
-                                                <Td>
-                                                    <Button mx={"0.1rem"} size={"xs"} onClick={() => { parseHistory(value as string, "RED"); gameProps.set("replay", true); setGameSaveModal(false); setGameSettingsModal(false); }} colorScheme={"red"}>Load RED</Button>
-                                                    <Button mx={"0.1rem"} size={"xs"} onClick={() => { parseHistory(value as string, "ALL"); gameProps.set("replay", true); setGameSaveModal(false); setGameSettingsModal(false); }} colorScheme={"green"}>Load ALL</Button>
-                                                    <Button mx={"0.1rem"} size={"xs"} onClick={() => { parseHistory(value as string, "BLUE"); gameProps.set("replay", true); setGameSaveModal(false); setGameSettingsModal(false); }} colorScheme={"blue"}>Load BLUE</Button>
-
-                                                    <Button mx={"0.5rem"} size={"xs"} onClick={() => { removeSavedGame(key) }} colorScheme={"orange"}>DELETE</Button>
-                                                </Td>
-                                            </Tr>
-                                        ))}
-                                    </Tbody>
-                                </Table>
-                            </TableContainer>)}
-                    </ModalBody>
                 </ModalContent>
             </Modal>
         </>

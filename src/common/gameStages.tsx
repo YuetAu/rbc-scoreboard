@@ -1,5 +1,7 @@
-const GAME_STAGES = ["PREP", "GAME", "END"]
-const GAME_STAGES_TIME = [60, 180, 0]
-const GAME_STAGES_TEXT = ["Preparation", "Game", "End"]
+export const GAME_STAGES = ["PREP", "GAME", "END"]
+export const GAME_STAGES_TIME = [60, 180, 0]
+export const GAME_STAGES_TEXT = ["Preparation", "Game", "End"]
 
-export { GAME_STAGES, GAME_STAGES_TIME, GAME_STAGES_TEXT }
+export const SHOTCLOCK = 20
+export const POSSESSION = 10
+export const FIRST_POSSESSION = 5
