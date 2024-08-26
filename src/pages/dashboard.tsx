@@ -778,13 +778,6 @@ export default function Dashboard(props: any) {
             gamePropsItems.set("blueDunk", 0);
             gamePropsItems.set("blueTwoPoint", 0);
             gamePropsItems.set("blueThreePoint", 0);
-
-            gamePropsItems.set("redFoulDunk", 0);
-            gamePropsItems.set("redFoulTwoPoint", 0);
-            gamePropsItems.set("redFoulThreePoint", 0);
-            gamePropsItems.set("blueFoulDunk", 0);
-            gamePropsItems.set("blueFoulTwoPoint", 0);
-            gamePropsItems.set("blueFoulThreePoint", 0);
             gameProps.set("items", gamePropsItems);
 
 
@@ -803,13 +796,6 @@ export default function Dashboard(props: any) {
         blueDunk: 0,
         blueTwoPoint: 0,
         blueThreePoint: 0,
-
-        redFoulDunk: 0,
-        redFoulTwoPoint: 0,
-        redFoulThreePoint: 0,
-        blueFoulDunk: 0,
-        blueFoulTwoPoint: 0,
-        blueFoulThreePoint: 0,
     });
     const [teamState, setTeamState] = useState<{ red: { cname: string; ename: string; }; blue: { cname: string; ename: string; }; }>({
         red: { cname: "征龍", ename: "War Dragon" },
@@ -860,15 +846,6 @@ export default function Dashboard(props: any) {
         redPoints += (itemsYMap.get("blueFoulTwoPoint") || 0) * 2;
         redPoints += (itemsYMap.get("blueFoulThreePoint") || 0) * 3;
         redPoints += (itemsYMap.get("blueFoulDunk") || 0) * 7;
-
-
-        bluePoints += (itemsYMap.get("blueTwoPoint") || 0) * 2;
-        bluePoints += (itemsYMap.get("blueThreePoint") || 0) * 3;
-        bluePoints += (itemsYMap.get("blueDunk") || 0) * 7;
-
-        bluePoints += (itemsYMap.get("redFoulTwoPoint") || 0) * 2;
-        bluePoints += (itemsYMap.get("redFoulThreePoint") || 0) * 3;
-        bluePoints += (itemsYMap.get("redFoulDunk") || 0) * 7;
 
 
         setScores({ redPoints, bluePoints });
@@ -988,13 +965,6 @@ export default function Dashboard(props: any) {
             gamePropsItems.set("blueDunk", 0);
             gamePropsItems.set("blueTwoPoint", 0);
             gamePropsItems.set("blueThreePoint", 0);
-
-            gamePropsItems.set("redFoulDunk", 0);
-            gamePropsItems.set("redFoulTwoPoint", 0);
-            gamePropsItems.set("redFoulThreePoint", 0);
-            gamePropsItems.set("blueFoulDunk", 0);
-            gamePropsItems.set("blueFoulTwoPoint", 0);
-            gamePropsItems.set("blueFoulThreePoint", 0);
 
             gameProps.set("items", gamePropsItems);
 
@@ -1125,46 +1095,6 @@ export default function Dashboard(props: any) {
                             </Box>
                             <Box
                                 position="absolute"
-                                left="27%"
-                                top="50%"
-                                transform="translate(-50%, -50%) scale(1)"
-                                transformOrigin='center'
-                            >
-                                <Counter counter={itemsState.redFoulDunk} setCounter={(val: number) => ballScoring("FoulDunk", val, "red")} color={"blue"} />
-                            </Box>
-                            <Box
-                                position="absolute"
-                                left="20%"
-                                top="33%"
-                                transform="translate(-50%, -50%) scale(1)"
-                                transformOrigin='center'
-                            >
-                                <Counter counter={itemsState.redFoulTwoPoint} setCounter={(val: number) => ballScoring("FoulTwoPoint", val, "red")} color={"blue"} />
-                            </Box>
-                            <Box
-                                position="absolute"
-                                left="40%"
-                                top="33%"
-                                transform="translate(-50%, -50%) scale(1)"
-                                transformOrigin='center'
-                            >
-                                <Counter counter={itemsState.redFoulThreePoint} setCounter={(val: number) => ballScoring("FoulThreePoint", val, "red")} color={"blue"} />
-                            </Box>
-                            <Box
-                                position="absolute"
-                                left="33%"
-                                top="20%"
-                                transform="translate(-50%, -50%) scale(1)"
-                                transformOrigin='center'
-                                shadow={"lg"} rounded={"lg"} px={"0.5rem"}
-                                bgColor={"white"}
-                                fontSize={"1rem"}
-                                userSelect={"none"}
-                            >
-                                Red Foul
-                            </Box>
-                            <Box
-                                position="absolute"
                                 right="15%"
                                 top="50%"
                                 transform="translate(-50%, -50%) scale(1)"
@@ -1202,46 +1132,6 @@ export default function Dashboard(props: any) {
                                 userSelect={"none"}
                             >
                                 Blue Offending
-                            </Box>
-                            <Box
-                                position="absolute"
-                                right="22%"
-                                top="50%"
-                                transform="translate(-50%, -50%) scale(1)"
-                                transformOrigin='center'
-                            >
-                                <Counter counter={itemsState.blueFoulDunk} setCounter={(val: number) => ballScoring("FoulDunk", val, "blue")} color={"red"} />
-                            </Box>
-                            <Box
-                                position="absolute"
-                                right="15%"
-                                top="33%"
-                                transform="translate(-50%, -50%) scale(1)"
-                                transformOrigin='center'
-                            >
-                                <Counter counter={itemsState.blueFoulTwoPoint} setCounter={(val: number) => ballScoring("FoulTwoPoint", val, "blue")} color={"red"} />
-                            </Box>
-                            <Box
-                                position="absolute"
-                                right="35%"
-                                top="33%"
-                                transform="translate(-50%, -50%) scale(1)"
-                                transformOrigin='center'
-                            >
-                                <Counter counter={itemsState.blueFoulThreePoint} setCounter={(val: number) => ballScoring("FoulThreePoint", val, "blue")} color={"red"} />
-                            </Box>
-                            <Box
-                                position="absolute"
-                                right="20%"
-                                top="20%"
-                                transform="translate(-50%, -50%) scale(1)"
-                                transformOrigin='center'
-                                shadow={"lg"} rounded={"lg"} px={"0.5rem"}
-                                bgColor={"white"}
-                                fontSize={"1rem"}
-                                userSelect={"none"}
-                            >
-                                Blue Foul
                             </Box>
                         </Box>
                     </Flex>
