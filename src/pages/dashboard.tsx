@@ -1247,15 +1247,12 @@ export default function Dashboard(props: any) {
                 <ModalContent>
                     <ModalHeader>Connect to Game Room</ModalHeader>
                     <ModalBody>
-                        <Input placeholder="Game ID" ref={gameIDInput} />
+                        <Input placeholder="Game ID or leave blank to create new game" ref={gameIDInput} />
                     </ModalBody>
 
                     <ModalFooter>
-                        <Button colorScheme='blue' mr={3} onClick={() => submitGameID(gameIDInput.current?.value)}>
+                        <Button colorScheme='blue' mr={3} onClick={() => submitGameID(gameIDInput.current?.value || String(Math.floor(10000000 + Math.random() * 90000000)))}>
                             Submit
-                        </Button>
-                        <Button colorScheme='green' mr={3} onClick={() => submitGameID(String(Math.floor(10000000 + Math.random() * 90000000)))}>
-                            Create Game
                         </Button>
                     </ModalFooter>
                 </ModalContent>
