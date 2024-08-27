@@ -15,7 +15,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useEffect, useRef, useState } from "react";
 import * as Y from "yjs";
 import Teams from "../props/dashboard/teams.json";
-import Link from "next/link";
 
 
 export default function Dashboard(props: any) {
@@ -479,9 +478,6 @@ export default function Dashboard(props: any) {
     const [blueShotClockPaused, setBlueShotClockPaused] = useState(true);
     const [possessionClockPaused, setPossessionClockPaused] = useState(true);
 
-    const [nextPossession, setNextPossession] = useState("red");
-    const [currentPossession, setCurrentPossession] = useState("possession");
-
     const updateRedShotClockText = () => {
         setRedShotClockPaused(redShotClockData.get("paused") as boolean);
 
@@ -589,8 +585,6 @@ export default function Dashboard(props: any) {
     possessionClockData.observeDeep(updatePossessionClockText);
 
     possessionData.observeDeep(() => {
-        setCurrentPossession(possessionData.get("currentPossession") as string);
-        setNextPossession(possessionData.get("nextPossession") as string);
         if (clockData.get("stage") == "GAME") {
             switch (possessionData.get("currentPossession") as string) {
                 case "red":
@@ -720,10 +714,11 @@ export default function Dashboard(props: any) {
             return;
         }
         if (possessionClockData.get("paused")) {
-            setCurrentPossession("possession");
             resetRedShotClock();
             resetBlueShotClock();
             ydoc.transact((_y) => {
+                possessionData.set("currentPossession", "possession");
+
                 possessionClockData.set("timestamp", Date.now());
                 possessionClockData.set("elapsed", possessionClockData.get("elapsed") as number);
                 possessionClockData.set("paused", false);
@@ -843,9 +838,9 @@ export default function Dashboard(props: any) {
         redPoints += (itemsYMap.get("redThreePoint") || 0) * 3;
         redPoints += (itemsYMap.get("redDunk") || 0) * 7;
 
-        redPoints += (itemsYMap.get("blueFoulTwoPoint") || 0) * 2;
-        redPoints += (itemsYMap.get("blueFoulThreePoint") || 0) * 3;
-        redPoints += (itemsYMap.get("blueFoulDunk") || 0) * 7;
+        bluePoints += (itemsYMap.get("blueTwoPoint") || 0) * 2;
+        bluePoints += (itemsYMap.get("blueThreePoint") || 0) * 3;
+        bluePoints += (itemsYMap.get("blueDunk") || 0) * 7;
 
 
         setScores({ redPoints, bluePoints });
