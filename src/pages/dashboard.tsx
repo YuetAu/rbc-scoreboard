@@ -7,7 +7,7 @@ import { ScoreDisplay } from "@/props/dashboard/ScoreDisplay";
 import { PossessionClock, ShotClock } from "@/props/dashboard/ShotClock";
 import TimerBox from "@/props/dashboard/TimerBox";
 import { YJsClient } from "@/yjsClient/yjsClient";
-import { Box, Button, Flex, Grid, GridItem, Image, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Radio, RadioGroup, Stack, Switch, Table, TableContainer, Tbody, Td, Text, Textarea, Th, Thead, Tr, useToast } from "@chakra-ui/react";
+import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, Flex, Grid, GridItem, Image, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Radio, RadioGroup, Stack, Switch, Tab, Table, TableContainer, TabList, TabPanels, Tabs, Tbody, Td, Text, Textarea, Th, Thead, Tr, useToast } from "@chakra-ui/react";
 import "@fontsource-variable/quicksand";
 import Head from 'next/head';
 import { faCircleDot, faVideoCamera } from '@fortawesome/free-solid-svg-icons';
@@ -15,7 +15,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useEffect, useRef, useState } from "react";
 import * as Y from "yjs";
 import Teams from "../props/dashboard/teams.json";
-import { start } from "repl";
 
 
 export default function Dashboard(props: any) {
@@ -76,7 +75,8 @@ export default function Dashboard(props: any) {
     // [Features] GameSetting Functions and States
     const isFirstReadSettings = useRef(false);
     const [gameSettingsModal, setGameSettingsModal] = useState(false);
-    const [gameSettings, setGameSettings] = useState({ preGameCountdown: true, endGameCountdown: true });
+    const [gameSettings, setGameSettings] = useState({ sounds: { preGameCountdown: true, endGameCountdown: true, shotClock8sTone: true, shotClockEndTone: true } });
+    const gameSettingsRef = useRef(gameSettings);
 
     useEffect(() => {
         const localGameSettings = localStorage.getItem("gameSettings");
@@ -84,8 +84,10 @@ export default function Dashboard(props: any) {
             setGameSettings(JSON.parse(localGameSettings));
             isFirstReadSettings.current = true;
         } else {
-            localStorage.setItem("gameSettings", JSON.stringify(gameSettings));
+            localStorage.setItem("gameSettings", JSON.stringify({ ...gameSettings }));
         }
+
+        gameSettingsRef.current = gameSettings;
     }, [gameSettings]);
 
     // [Features] Start of Sound Functions
@@ -108,7 +110,7 @@ export default function Dashboard(props: any) {
     const soundCheck = (stage: string, remainingTime: number, elapsedTime?: number) => {
         switch (stage) {
             case "PREP":
-                if (remainingTime <= 3000 && remainingTime > 0) {
+                if (remainingTime <= 3000 && remainingTime > 0 && gameSettingsRef.current.sounds.preGameCountdown) {
                     const secondsRemaining = Math.ceil(remainingTime / 1000);
                     if (secondsRemaining !== lastBeepSecond.current && beepSound) {
                         beepSound.play();
@@ -117,11 +119,11 @@ export default function Dashboard(props: any) {
                 }
                 break;
             case "PREPEND":
-                if (startSound) {
+                if (startSound && gameSettingsRef.current.sounds.preGameCountdown) {
                     startSound.play();
                 }
             case "GAME":
-                if (remainingTime <= 10000 && remainingTime > 0) {
+                if (remainingTime <= 10000 && remainingTime > 0 && gameSettingsRef.current.sounds.endGameCountdown) {
                     const secondsRemaining = Math.ceil(remainingTime / 1000);
                     if (secondsRemaining !== lastBeepSecond.current) {
                         beepSound.play();
@@ -130,15 +132,14 @@ export default function Dashboard(props: any) {
                 }
                 break;
             case "GAMEEND":
-                if (startSound) {
+                if (startSound && gameSettingsRef.current.sounds.endGameCountdown) {
                     startSound.play();
                 }
                 break;
             case "REDSHOTCLOCK":
             case "BLUESHOTCLOCK":
-                if (elapsedTime && !lastTone2Second.current) {
+                if (elapsedTime && !lastTone2Second.current && gameSettingsRef.current.sounds.shotClock8sTone) {
                     const secondsElapsed = Math.ceil(elapsedTime / 1000);
-                    console.log("Tone Sound", secondsElapsed);
                     if (secondsElapsed == 8 && !lastTone2Second.current && tone2Sound) {
                         tone2Sound.play();
                         lastTone2Second.current = true;
@@ -150,7 +151,7 @@ export default function Dashboard(props: any) {
             case "REDSHOTCLOCKEND":
             case "BLUESHOTCLOCKEND":
             case "POSSESSIONCLOCKEND":
-                if (toneSound) {
+                if (toneSound && gameSettingsRef.current.sounds.shotClockEndTone) {
                     toneSound.play();
                 }
                 break;
@@ -1055,9 +1056,9 @@ export default function Dashboard(props: any) {
             >
 
                 <GridItem rowSpan={1} colSpan={1} m={"1vw"}>
-                    <Box fontSize={"0.7em"} textColor={"white"}>
-                        <span style={{ userSelect: "none" }}>GameID: </span>{gameID}
-                        <Button onClick={forceReset} colorScheme="red" size="sm" ml={2}>
+                    <Box fontSize={"0.6em"} textColor={"white"}>
+                        <Text><span style={{ userSelect: "none" }}>GameID: </span>{gameID}</Text>
+                        <Button onClick={forceReset} colorScheme="red" size="sm" >
                             Force Reset
                         </Button>
                     </Box>
@@ -1075,10 +1076,13 @@ export default function Dashboard(props: any) {
                     />
                 </GridItem>
                 <GridItem rowSpan={1} colSpan={1} m={"1vw"}>
-                    <Box textAlign={"end"} fontSize={"0.7em"}>
+                    <Box textAlign={"end"} fontSize={"0.6em"} textColor={"white"}>
                         <Text textColor={onlineStatus == 1 ? 'lightgreen' : onlineStatus == 0 ? 'lightcoral' : 'orange'} userSelect={"none"}>
                             {onlineStatus == 1 ? "Connected" : onlineStatus == 0 ? "Disconnected" : "Large Time Diff"} <FontAwesomeIcon icon={faCircleDot} />
                         </Text>
+                        <Button onClick={() => setGameSettingsModal(true)} colorScheme="green" size="sm" >
+                            Game Setting
+                        </Button>
                     </Box>
                 </GridItem>
 
@@ -1244,8 +1248,52 @@ export default function Dashboard(props: any) {
                     <ModalHeader>Game Settings</ModalHeader>
                     <ModalCloseButton />
                     <ModalBody>
-                        <Flex my="0.5rem"><Switch colorScheme='teal' size='md' isChecked={gameSettings.preGameCountdown} onChange={() => { setGameSettings({ ...gameSettings, preGameCountdown: !gameSettings.preGameCountdown }) }} /> <Box mt={"-0.2rem"} ml={"0.5rem"}>PreGame 3s Countdown Sound Effect</Box></Flex>
-                        <Flex my="0.5rem"><Switch colorScheme='teal' size='md' isChecked={gameSettings.endGameCountdown} onChange={() => { setGameSettings({ ...gameSettings, endGameCountdown: !gameSettings.endGameCountdown }) }} /> <Box mt={"-0.2rem"} ml={"0.5rem"}>EndGame 10s Countdown Sound Effect</Box></Flex>
+                        <Accordion allowToggle>
+                            <AccordionItem>
+                                <h2>
+                                    <AccordionButton>
+                                        <Box as='span' flex='1' textAlign='left'>
+                                            Sounds
+                                        </Box>
+                                        <AccordionIcon />
+                                    </AccordionButton>
+                                </h2>
+                                <AccordionPanel>
+                                    <Flex my="0.5rem"><Switch colorScheme='teal' size='md' isChecked={gameSettings.sounds.preGameCountdown} onChange={() => { setGameSettings({ ...gameSettings, sounds: { ...gameSettings.sounds, preGameCountdown: !gameSettings.sounds.preGameCountdown } }) }} /> <Box mt={"-0.2rem"} ml={"0.5rem"}>PreGame 3s Countdown Sound Effect</Box></Flex>
+                                    <Flex my="0.5rem"><Switch colorScheme='teal' size='md' isChecked={gameSettings.sounds.endGameCountdown} onChange={() => { setGameSettings({ ...gameSettings, sounds: { ...gameSettings.sounds, endGameCountdown: !gameSettings.sounds.endGameCountdown } }) }} /> <Box mt={"-0.2rem"} ml={"0.5rem"}>EndGame 10s Countdown Sound Effect</Box></Flex>
+                                    <br />
+                                    <Flex my="0.5rem"><Switch colorScheme='teal' size='md' isChecked={gameSettings.sounds.shotClock8sTone} onChange={() => { setGameSettings({ ...gameSettings, sounds: { ...gameSettings.sounds, shotClock8sTone: !gameSettings.sounds.shotClock8sTone } }) }} /> <Box mt={"-0.2rem"} ml={"0.5rem"}>ShotClock 8s Tone</Box></Flex>
+                                    <Flex my="0.5rem"><Switch colorScheme='teal' size='md' isChecked={gameSettings.sounds.shotClockEndTone} onChange={() => { setGameSettings({ ...gameSettings, sounds: { ...gameSettings.sounds, shotClockEndTone: !gameSettings.sounds.shotClockEndTone } }) }} /> <Box mt={"-0.2rem"} ml={"0.5rem"}>ShotClock/PossessionClock End Tone</Box></Flex>
+                                </AccordionPanel>
+                            </AccordionItem>
+                            <AccordionItem>
+                                <h2>
+                                    <AccordionButton>
+                                        <Box as='span' flex='1' textAlign='left'>
+                                            Game Stages
+                                        </Box>
+                                        <AccordionIcon />
+                                    </AccordionButton>
+                                </h2>
+                                <AccordionPanel>
+                                </AccordionPanel>
+                            </AccordionItem>
+                            <AccordionItem>
+                                <h2>
+                                    <AccordionButton>
+                                        <Box as='span' flex='1' textAlign='left'>
+                                            Advance
+                                        </Box>
+                                        <AccordionIcon />
+                                    </AccordionButton>
+                                </h2>
+                                <AccordionPanel>
+                                    <Button onClick={() => { navigator.clipboard.writeText(JSON.stringify(gameProps.toJSON())).then(() => toast({ title: "GameProps Copied!", status: "success", duration: 1000 })) }} colorScheme="blue" size={"sm"}>Copy Game Props</Button>
+                                </AccordionPanel>
+                            </AccordionItem>
+                        </Accordion>
+
+
                     </ModalBody>
 
                     <ModalFooter>
