@@ -15,6 +15,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useEffect, useRef, useState } from "react";
 import * as Y from "yjs";
 import Teams from "../props/dashboard/teams.json";
+import { start } from "repl";
 
 
 export default function Dashboard(props: any) {
@@ -88,26 +89,69 @@ export default function Dashboard(props: any) {
     }, [gameSettings]);
 
     // [Features] Start of Sound Functions
-    const [countdownBeep, setCountdownBeep] = useState<any>(null);
-    const [countdownBeep10, setCountdownBeep10] = useState<any>(null);
-    const [pop, setPop] = useState<any>(null);
+    const [beepSound, setBeepSound] = useState<any>(null);
+    const [startSound, setStartSound] = useState<any>(null);
+    const [toneSound, setToneSound] = useState<any>(null);
+    const [tone2Sound, setTone2Sound] = useState<any>(null);
     useEffect(() => {
-        setCountdownBeep(new Audio("/sound/countdown.mp3"));
-        setCountdownBeep10(new Audio("/sound/countdown10.mp3"));
-        setPop(new Audio("/sound/pop.mp3"));
+        setBeepSound(new Audio("/sound/beep.mp3"));
+        setStartSound(new Audio("/sound/start.mp3"));
+        setToneSound(new Audio("/sound/tone.mp3"));
+        setTone2Sound(new Audio("/sound/tone2.mp3"));
     }, [])
 
-    const soundCheck = (stage: string, remainingTime: number) => {
+
+    const lastBeepSecond = useRef(0);
+    const lastToneSecond = useRef(false);
+    const lastTone2Second = useRef(false);
+
+    const soundCheck = (stage: string, remainingTime: number, elapsedTime?: number) => {
         switch (stage) {
             case "PREP":
-                if (remainingTime <= 3000 && countdownBeep && countdownBeep.paused && gameSettings.preGameCountdown) {
-                    countdownBeep.paused && countdownBeep.play();
+                if (remainingTime <= 3000 && remainingTime > 0) {
+                    const secondsRemaining = Math.ceil(remainingTime / 1000);
+                    if (secondsRemaining !== lastBeepSecond.current && beepSound) {
+                        beepSound.play();
+                        lastBeepSecond.current = secondsRemaining;
+                    }
                 }
                 break;
+            case "PREPEND":
+                if (startSound) {
+                    startSound.play();
+                }
             case "GAME":
-                if (remainingTime <= 10000 && countdownBeep10 && countdownBeep10.paused && gameSettings.endGameCountdown) {
-                    countdownBeep10.currentTime = (10000 - remainingTime) / 1000;
-                    countdownBeep.paused && countdownBeep10.play();
+                if (remainingTime <= 10000 && remainingTime > 0) {
+                    const secondsRemaining = Math.ceil(remainingTime / 1000);
+                    if (secondsRemaining !== lastBeepSecond.current) {
+                        beepSound.play();
+                        lastBeepSecond.current = secondsRemaining;
+                    }
+                }
+                break;
+            case "GAMEEND":
+                if (startSound) {
+                    startSound.play();
+                }
+                break;
+            case "REDSHOTCLOCK":
+            case "BLUESHOTCLOCK":
+                if (elapsedTime && !lastTone2Second.current) {
+                    const secondsElapsed = Math.ceil(elapsedTime / 1000);
+                    console.log("Tone Sound", secondsElapsed);
+                    if (secondsElapsed == 8 && !lastTone2Second.current && tone2Sound) {
+                        tone2Sound.play();
+                        lastTone2Second.current = true;
+                    } else {
+                        lastTone2Second.current = false;
+                    }
+                }
+                break;
+            case "REDSHOTCLOCKEND":
+            case "BLUESHOTCLOCKEND":
+            case "POSSESSIONCLOCKEND":
+                if (toneSound) {
+                    toneSound.play();
                 }
                 break;
             case "END":
@@ -116,22 +160,21 @@ export default function Dashboard(props: any) {
     }
 
     const stopSound = () => {
-        //countdownBeep && countdownBeep.pause(); // Ignore countdownBeep to passthough last second beep
-        countdownBeep10 && countdownBeep10.pause();
+
     }
 
     const forceStopSound = () => {
-        if (countdownBeep && !countdownBeep.paused) {
-            countdownBeep.pause();
-            countdownBeep.currentTime = 0;
+        if (beepSound) {
+            beepSound.pause();
+            beepSound.currentTime = 0;
         }
-        if (countdownBeep10 && !countdownBeep10.paused) {
-            countdownBeep10.pause();
-            countdownBeep10.currentTime = 0;
+        if (startSound) {
+            startSound.pause();
+            startSound.currentTime = 0;
         }
-        if (pop && !pop.paused) {
-            pop.pause();
-            pop.currentTime = 0;
+        if (toneSound) {
+            toneSound.pause();
+            toneSound.currentTime = 0;
         }
     }
     // [Features] End of Sound Functions
@@ -247,6 +290,9 @@ export default function Dashboard(props: any) {
             // There is no remaining time in current stage
             // Continue to next stage
 
+            // End of stage
+            soundCheck((clockData.get("stage") as string) + "END", 0);
+
             // Check if still have stage
             if (GAME_STAGES.indexOf(clockData.get("stage") as string) + 1 < GAME_STAGES.length) {
                 // Get the new stage name and remaining time
@@ -338,8 +384,7 @@ export default function Dashboard(props: any) {
             duration: 1000,
         })
         // Delay 50ms to prevent updateClockText start the sound again
-        setTimeout(() => { stopSound(); }, 50);
-        setTimeout(() => { stopSound(); }, 100);
+        // setTimeout(() => { forceStopSound(); }, 50);
 
         // Clear interval if paused
         clearInterval(clockInterval.current);
@@ -482,11 +527,15 @@ export default function Dashboard(props: any) {
         setRedShotClockPaused(redShotClockData.get("paused") as boolean);
 
         const remainingTime = redShotClockData.get("paused") ? (SHOTCLOCK * 1000) - (redShotClockData.get("elapsed") as number) : (SHOTCLOCK * 1000) - (redShotClockData.get("elapsed") as number) - (Date.now() - (redShotClockData.get("timestamp") as number));
+        const elapsedTime = redShotClockData.get("paused") ? (redShotClockData.get("elapsed") as number) : (redShotClockData.get("elapsed") as number) + (Date.now() - (redShotClockData.get("timestamp") as number));
         if (remainingTime >= 0) {
             const remainingSeconds = Math.floor(remainingTime / 1000 % 60) + "";
             setRedShotClockText({
                 seconds: remainingSeconds.length < 2 ? "0" + remainingSeconds : remainingSeconds,
             })
+
+            soundCheck("REDSHOTCLOCK", remainingTime, elapsedTime);
+
             if (!(redShotClockData.get("paused") as boolean)) {
                 if (redShotClockInterval.current == null) {
                     const tmpRedShotClockInterval = setInterval(updateRedShotClockText, 100);
@@ -497,6 +546,9 @@ export default function Dashboard(props: any) {
                 redShotClockInterval.current = null;
             }
         } else {
+
+            soundCheck("REDSHOTCLOCKEND", 0);
+
             clearInterval(redShotClockInterval.current);
             if (redShotClockInterval.current != null) {
                 ydoc.transact((_y) => {
@@ -518,11 +570,15 @@ export default function Dashboard(props: any) {
         setBlueShotClockPaused(blueShotClockData.get("paused") as boolean);
 
         const remainingTime = blueShotClockData.get("paused") ? (SHOTCLOCK * 1000) - (blueShotClockData.get("elapsed") as number) : (SHOTCLOCK * 1000) - (blueShotClockData.get("elapsed") as number) - (Date.now() - (blueShotClockData.get("timestamp") as number));
+        const elapsedTime = blueShotClockData.get("paused") ? (blueShotClockData.get("elapsed") as number) : (blueShotClockData.get("elapsed") as number) + (Date.now() - (blueShotClockData.get("timestamp") as number));
         if (remainingTime >= 0) {
             const remainingSeconds = Math.floor(remainingTime / 1000 % 60) + "";
             setBlueShotClockText({
                 seconds: remainingSeconds.length < 2 ? "0" + remainingSeconds : remainingSeconds,
             })
+
+            soundCheck("BLUESHOTCLOCK", remainingTime, elapsedTime);
+
             if (!(blueShotClockData.get("paused") as boolean)) {
                 if (blueShotClockInterval.current == null) {
                     const tmpBlueShotClockInterval = setInterval(updateBlueShotClockText, 100);
@@ -533,6 +589,9 @@ export default function Dashboard(props: any) {
                 blueShotClockInterval.current = null;
             }
         } else {
+
+            soundCheck("BLUESHOTCLOCKEND", 0);
+
             clearInterval(blueShotClockInterval.current);
             if (blueShotClockInterval.current != null) {
                 ydoc.transact((_y) => {
@@ -559,6 +618,9 @@ export default function Dashboard(props: any) {
             setPossessionClockText({
                 seconds: remainingSeconds.length < 2 ? "0" + remainingSeconds : remainingSeconds,
             })
+
+            soundCheck("POSSESSIONCLOCK", remainingTime);
+
             if (!(possessionClockData.get("paused") as boolean)) {
                 if (possessionClockInterval.current == null) {
                     const tmpPossessionClockInterval = setInterval(updatePossessionClockText, 100);
@@ -569,6 +631,9 @@ export default function Dashboard(props: any) {
                 possessionClockInterval.current = null;
             }
         } else {
+
+            soundCheck("POSSESSIONCLOCKEND", 0);
+
             clearInterval(possessionClockInterval.current);
             if (possessionClockInterval.current != null) {
                 resetPossessionClock();
@@ -1162,7 +1227,7 @@ export default function Dashboard(props: any) {
                             <br />
                             This is uncharted territory, please report any bugs or issues to the developer.
                             <br />
-                            You have been warned.
+                            <b>You have been warned.</b>
                         </Text>
                     </ModalBody>
                     <ModalFooter>
