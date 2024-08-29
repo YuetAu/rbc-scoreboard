@@ -41,6 +41,28 @@ export default function Dashboard(props: any) {
         }
     }, [])
 
+    // [Sys] TimeSync Functions and States
+    const timeSyncRef = useRef([]);
+    const timeOffset = useRef(0);
+
+    const getTimeOffset = async () => {
+        const startTime = Date.now();
+        fetch("/api/timeSync").then((response) => {
+            response.text().then((data) => {
+                const endTime = Date.now();
+                const time = parseInt(data);
+                const offset = (endTime - startTime) / 2;
+                timeOffset.current = time - endTime + offset;
+                console.log("Time Offset", timeOffset.current);
+            })
+        })
+    }
+
+    useEffect(() => {
+        getTimeOffset();
+        const interval = setInterval(getTimeOffset, 50 * 1000);
+        return () => clearInterval(interval);
+    }, [])
 
     // [Core] GameID Functions and States
     const [gameID, setGameID] = useState("");
@@ -64,7 +86,6 @@ export default function Dashboard(props: any) {
             yJsClient.getYPartyProvider().on("status", connectionEventHandler);
 
             for (const stage in gameSettings.stages) {
-                console.log('stage', stage, gameSettings.stages[stage as keyof typeof gameSettings.stages]);
                 ydoc.transact((_y: any) => {
                     const gamePropsSettings = gameProps.get("settings") as Y.Map<number>;
                     gamePropsSettings.set(stage, Number(gameSettings.stages[stage as keyof typeof gameSettings.stages]));
