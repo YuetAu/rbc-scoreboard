@@ -3,12 +3,12 @@ export const runtime = "edge";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 type ResponseData = {
-    message: string;
+    time: string;
 };
 
 export default function handler(
     req: NextApiRequest,
-    res: NextApiResponse,
+    res: NextApiResponse<ResponseData>,
 ) {
-    res.status(200).send(Date.now().toString());
+    res.status(200).json({ time: Date.now().toString() });
 }
