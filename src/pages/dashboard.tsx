@@ -7,7 +7,7 @@ import { ScoreDisplay } from "@/props/dashboard/ScoreDisplay";
 import { PossessionClock, ShotClock } from "@/props/dashboard/ShotClock";
 import TimerBox from "@/props/dashboard/TimerBox";
 import { YJsClient } from "@/yjsClient/yjsClient";
-import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, Flex, Grid, GridItem, Image, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Radio, RadioGroup, Stack, Switch, Tab, Table, TableContainer, TabList, TabPanels, Tabs, Tbody, Td, Text, Textarea, Th, Thead, Tr, useToast } from "@chakra-ui/react";
+import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, Flex, Grid, GridItem, Image, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, NumberDecrementStepper, NumberIncrementStepper, NumberInput, NumberInputField, NumberInputStepper, Radio, RadioGroup, Stack, Switch, Tab, Table, TableContainer, TabList, TabPanels, Tabs, Tbody, Td, Text, Textarea, Th, Thead, Tr, useToast } from "@chakra-ui/react";
 import "@fontsource-variable/quicksand";
 import Head from 'next/head';
 import { faCircleDot, faVideoCamera } from '@fortawesome/free-solid-svg-icons';
@@ -15,6 +15,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useEffect, useRef, useState } from "react";
 import * as Y from "yjs";
 import Teams from "../props/dashboard/teams.json";
+import { deepMerge } from "@/helpers/deepMerge";
 
 
 export default function Dashboard(props: any) {
@@ -61,6 +62,14 @@ export default function Dashboard(props: any) {
             setPossessionData(yJsClient.getYDoc().getMap("possessionData") as Y.Map<any>);
             setGameIDModal(false);
             yJsClient.getYPartyProvider().on("status", connectionEventHandler);
+
+            for (const stage in gameSettings.stages) {
+                console.log('stage', stage, gameSettings.stages[stage as keyof typeof gameSettings.stages]);
+                ydoc.transact((_y: any) => {
+                    const gamePropsSettings = gameProps.get("settings") as Y.Map<number>;
+                    gamePropsSettings.set(stage, Number(gameSettings.stages[stage as keyof typeof gameSettings.stages]));
+                })
+            }
         }
     }
 
@@ -75,16 +84,23 @@ export default function Dashboard(props: any) {
     // [Features] GameSetting Functions and States
     const isFirstReadSettings = useRef(false);
     const [gameSettingsModal, setGameSettingsModal] = useState(false);
-    const [gameSettings, setGameSettings] = useState({ sounds: { preGameCountdown: true, endGameCountdown: true, shotClock8sTone: true, shotClockEndTone: true } });
+    const [gameSettings, setGameSettings] = useState({ sounds: { preGameCountdown: true, endGameCountdown: true, shotClock8sTone: true, shotClockEndTone: true }, stages: { PREP: 60, GAME: 120, END: 0 } });
     const gameSettingsRef = useRef(gameSettings);
 
     useEffect(() => {
-        const localGameSettings = localStorage.getItem("gameSettings");
-        if (localGameSettings && !isFirstReadSettings.current) {
-            setGameSettings(JSON.parse(localGameSettings));
+        const localGameSettingsJSON = localStorage.getItem("gameSettings");
+        if (localGameSettingsJSON && !isFirstReadSettings.current) {
+            try {
+                const localGameSettings = JSON.parse(localGameSettingsJSON);
+                const mergedSettings = deepMerge(gameSettings, localGameSettings);
+                setGameSettings(mergedSettings);
+                localStorage.setItem("gameSettings", JSON.stringify(mergedSettings));
+            } catch (error) {
+                localStorage.setItem("gameSettings", JSON.stringify(gameSettings));
+            }
             isFirstReadSettings.current = true;
         } else {
-            localStorage.setItem("gameSettings", JSON.stringify({ ...gameSettings }));
+            localStorage.setItem("gameSettings", JSON.stringify(gameSettings));
         }
 
         gameSettingsRef.current = gameSettings;
@@ -138,7 +154,7 @@ export default function Dashboard(props: any) {
                 break;
             case "REDSHOTCLOCK":
             case "BLUESHOTCLOCK":
-                if (elapsedTime && !lastTone2Second.current && gameSettingsRef.current.sounds.shotClock8sTone) {
+                if (elapsedTime && gameSettingsRef.current.sounds.shotClock8sTone) {
                     const secondsElapsed = Math.ceil(elapsedTime / 1000);
                     if (secondsElapsed == 8 && !lastTone2Second.current && tone2Sound) {
                         tone2Sound.play();
@@ -215,7 +231,10 @@ export default function Dashboard(props: any) {
         // Calculate elapsedTime and remainingTime based on clock paused or not
         // To ensure every clock show the same time when stopped
         const elapsedTime = clockData.get("paused") ? clockData.get("elapsed") as number : (clockData.get("elapsed") as number) + (Date.now() - (clockData.get("timestamp") as number));
-        const remainingTime = clockData.get("paused") ? (GAME_STAGES_TIME[GAME_STAGES.indexOf(clockData.get("stage") as string)] * 1000) - (clockData.get("elapsed") as number) : (GAME_STAGES_TIME[GAME_STAGES.indexOf(clockData.get("stage") as string)] * 1000) - (clockData.get("elapsed") as number) - (Date.now() - (clockData.get("timestamp") as number));
+        const remainingTime = clockData.get("paused")
+            ? (syncGameSettingsRef.current[clockData.get("stage") as keyof typeof syncGameSettingsRef.current] * 1000) - (clockData.get("elapsed") as number)
+            : (syncGameSettingsRef.current[clockData.get("stage") as keyof typeof syncGameSettingsRef.current] * 1000) - (clockData.get("elapsed") as number) - (Date.now() - (clockData.get("timestamp") as number));
+
         // Check if still have remaining time in the current stage
         if (remainingTime >= 0) {
 
@@ -435,6 +454,11 @@ export default function Dashboard(props: any) {
     }
 
     const changeStage = (skipStage: number) => {
+
+        resetBlueShotClock();
+        resetRedShotClock();
+        resetPossessionClock();
+
         const index = GAME_STAGES.indexOf(clockData.get("stage") as string);
         if (index + skipStage < 0) { stopClock(); return; }
         if (index + skipStage > GAME_STAGES.length - 1) { stopClock(); return; }
@@ -779,6 +803,9 @@ export default function Dashboard(props: any) {
             })
             return;
         }
+        if (!clockData.get("paused")) {
+            stopClock();
+        }
         if (possessionClockData.get("paused")) {
             resetRedShotClock();
             resetBlueShotClock();
@@ -841,6 +868,11 @@ export default function Dashboard(props: any) {
             gamePropsItems.set("blueThreePoint", 0);
             gameProps.set("items", gamePropsItems);
 
+            const gamePropsSettings = new Y.Map() as Y.Map<boolean>;
+            gamePropsSettings.set("PREP", 60);
+            gamePropsSettings.set("GAME", 120);
+            gamePropsSettings.set("END", 0);
+            gameProps.set("settings", gamePropsSettings);
 
             gameProps.set("replay", false);
 
@@ -862,6 +894,12 @@ export default function Dashboard(props: any) {
         red: { cname: "征龍", ename: "War Dragon" },
         blue: { cname: "火之龍", ename: "Fiery Dragon" }
     });
+    const [syncGameSettings, setSyncGameSettings] = useState({ PREP: 60, GAME: 120, END: 0 });
+    const syncGameSettingsRef = useRef(syncGameSettings);
+
+    useEffect(() => {
+        syncGameSettingsRef.current = syncGameSettings;
+    }, [syncGameSettings]);
 
     // GameProps Main Scoring Function
     const [scores, setScores] = useState({ redPoints: 0, bluePoints: 0 });
@@ -919,9 +957,11 @@ export default function Dashboard(props: any) {
         const teamYMap = gameProps.get("teams") as { red: { cname: string; ename: string; }; blue: { cname: string; ename: string; }; };
         const historyYArray = gameProps.get("history") as Y.Array<{ action: string; time: string; team: string }>;
         const itemsYMap = gameProps.get("items") as Y.Map<number>;
+        const settingsYMap = gameProps.get("settings") as Y.Map<number>;
         setTeamState(teamYMap);
         setHistoryState(historyYArray.toJSON());
         setItemsState(itemsYMap.toJSON());
+        setSyncGameSettings(settingsYMap.toJSON());
 
         scoreCalculation();
     });
@@ -1026,8 +1066,13 @@ export default function Dashboard(props: any) {
             gamePropsItems.set("blueDunk", 0);
             gamePropsItems.set("blueTwoPoint", 0);
             gamePropsItems.set("blueThreePoint", 0);
-
             gameProps.set("items", gamePropsItems);
+
+            const gamePropsSettings = new Y.Map() as Y.Map<boolean>;
+            gamePropsSettings.set("PREP", 60);
+            gamePropsSettings.set("GAME", 120);
+            gamePropsSettings.set("END", 0);
+            gameProps.set("settings", gamePropsSettings);
 
             gameProps.set("init", true)
         })
@@ -1276,6 +1321,42 @@ export default function Dashboard(props: any) {
                                     </AccordionButton>
                                 </h2>
                                 <AccordionPanel>
+                                    <TableContainer>
+                                        <Table>
+                                            <Thead>
+                                                <Tr>
+                                                    <Th>Stage</Th>
+                                                    <Th>Duration</Th>
+                                                </Tr>
+                                            </Thead>
+                                            <Tbody>
+                                                {Object.keys(gameSettings.stages).map((stage, index) => {
+                                                    return (
+                                                        <Tr key={index}>
+                                                            <Td p={"0.5rem"}>{stage}</Td>
+                                                            <Td p={"0.5rem"}>
+                                                                <NumberInput min={0} max={999} w={"5rem"} size={"sm"} value={Number(syncGameSettings[stage as keyof typeof syncGameSettings])}
+                                                                    onChange={(value) => {
+                                                                        ydoc.transact((_y: any) => {
+                                                                            const gamePropsSettings = gameProps.get("settings") as Y.Map<number>;
+                                                                            gamePropsSettings.set(stage, Number(value));
+                                                                        })
+                                                                    }}
+                                                                >
+                                                                    <NumberInputField />
+                                                                    <NumberInputStepper>
+                                                                        <NumberIncrementStepper />
+                                                                        <NumberDecrementStepper />
+                                                                    </NumberInputStepper>
+                                                                </NumberInput>
+                                                            </Td>
+                                                        </Tr>
+                                                    )
+                                                })}
+                                            </Tbody>
+                                        </Table>
+                                    </TableContainer>
+                                    <Button mt={"0.5rem"} onClick={() => { setGameSettings({ ...gameSettings, stages: { ...gameProps.get("settings").toJSON() } }) }} colorScheme="purple" size={"sm"}>Save as preference</Button>
                                 </AccordionPanel>
                             </AccordionItem>
                             <AccordionItem>
