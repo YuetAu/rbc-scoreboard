@@ -915,7 +915,7 @@ export default function Dashboard(props: any) {
         red: { cname: "征龍", ename: "War Dragon" },
         blue: { cname: "火之龍", ename: "Fiery Dragon" }
     });
-    const [syncGameSettings, setSyncGameSettings] = useState({ PREP: 60, GAME: 120, END: 0 });
+    const [syncGameSettings, setSyncGameSettings] = useState<{ PREP: number, GAME: number, END: number }>({ PREP: 60, GAME: 120, END: 0 });
     const syncGameSettingsRef = useRef(syncGameSettings);
 
     useEffect(() => {
@@ -982,7 +982,7 @@ export default function Dashboard(props: any) {
         setTeamState(teamYMap);
         setHistoryState(historyYArray.toJSON());
         setItemsState(itemsYMap.toJSON());
-        setSyncGameSettings(settingsYMap.toJSON());
+        setSyncGameSettings(settingsYMap.toJSON() as { PREP: number, GAME: number, END: number });
 
         scoreCalculation();
     });
