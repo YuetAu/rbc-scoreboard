@@ -889,7 +889,7 @@ export default function Dashboard(props: any) {
             gamePropsItems.set("blueThreePoint", 0);
             gameProps.set("items", gamePropsItems);
 
-            const gamePropsSettings = new Y.Map() as Y.Map<boolean>;
+            const gamePropsSettings = new Y.Map() as Y.Map<number>;
             gamePropsSettings.set("PREP", 60);
             gamePropsSettings.set("GAME", 120);
             gamePropsSettings.set("END", 0);
@@ -1089,7 +1089,7 @@ export default function Dashboard(props: any) {
             gamePropsItems.set("blueThreePoint", 0);
             gameProps.set("items", gamePropsItems);
 
-            const gamePropsSettings = new Y.Map() as Y.Map<boolean>;
+            const gamePropsSettings = new Y.Map() as Y.Map<number>;
             gamePropsSettings.set("PREP", 60);
             gamePropsSettings.set("GAME", 120);
             gamePropsSettings.set("END", 0);
