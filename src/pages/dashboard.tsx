@@ -55,6 +55,9 @@ export default function Dashboard(props: any) {
                 timeOffset.current = time - endTime + offset;
                 console.log("Time Offset", timeOffset.current);
             })
+        }).catch((error) => {
+            console.error("Error fetching time sync", error);
+            timeOffset.current = 0;
         })
     }
 
