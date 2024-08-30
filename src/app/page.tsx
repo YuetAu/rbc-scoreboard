@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 
 export default function Home() {
-    redirect(`/dashboard`) // Navigate to the new post page
+    redirect(`/dashboard`)
     return (<></>)
 }

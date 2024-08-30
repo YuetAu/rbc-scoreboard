@@ -44,31 +44,64 @@ export default function Dashboard(props: any) {
     const buildVersion = process.env.CF_PAGES_COMMIT_SHA || null;
 
     // [Sys] TimeSync Functions and States
-    const timeSyncRef = useRef([]);
     const timeOffset = useRef(0);
-
-
+    const timeSyncInterval = useRef<any>(null);
+    const timeSyncType = useRef(0);
+    const [timeOffsetModal, setTimeOffsetModal] = useState(false);
 
     const getTimeOffset = async () => {
-        const startTime = Date.now();
-        fetch("/api/timeSync").then((response) => {
-            response.text().then((data) => {
+        const syncAttempts = 3; // Number of sync attempts
+        let totalOffset = 0;
+
+        for (let i = 0; i < syncAttempts; i++) {
+            try {
+                const startTime = Date.now();
+                const response = await fetch("/api/timeSync");
                 const endTime = Date.now();
-                const time = parseInt(data);
-                const offset = (endTime - startTime) / 2;
-                timeOffset.current = time - endTime + offset;
-                console.log("Time Offset", timeOffset.current);
-            })
-        }).catch((error) => {
-            console.error("Error fetching time sync", error);
-            timeOffset.current = 0;
-        })
-    }
+                const serverTime = parseInt(await response.text());
+
+                const roundTripTime = endTime - startTime;
+                const offset = serverTime - (endTime - roundTripTime / 2);
+
+                totalOffset += offset;
+
+                console.log(`Sync attempt ${i + 1}:`, { serverTime, startTime, endTime, roundTripTime, offset });
+            } catch (error) {
+                console.error(`Error in sync attempt ${i + 1}:`, error);
+            }
+        }
+
+        timeOffset.current = totalOffset / syncAttempts;
+        console.log("Final Time Offset:", timeOffset.current);
+
+        if (timeOffset.current > 1000 || timeOffset.current < -1000) {
+            setOnlineStatus(2);
+        }
+    };
+
 
     useEffect(() => {
         getTimeOffset();
-        const interval = setInterval(getTimeOffset, 50 * 1000);
-        return () => clearInterval(interval);
+        if (timeOffset.current > 10000 || timeOffset.current < -10000) {
+            if (timeSyncType.current != 2) {
+                timeSyncInterval.current && clearInterval(timeSyncInterval.current);
+                timeSyncInterval.current = setInterval(getTimeOffset, 20 * 1000);
+                timeSyncType.current = 2;
+            }
+        } else if (timeOffset.current > 1000 || timeOffset.current < -1000) {
+            if (timeSyncType.current != 1) {
+                timeSyncInterval.current && clearInterval(timeSyncInterval.current);
+                timeSyncInterval.current = setInterval(getTimeOffset, 60 * 1000);
+                timeSyncType.current = 1;
+            }
+        } else {
+            if (timeSyncType.current != 0) {
+                timeSyncInterval.current && clearInterval(timeSyncInterval.current);
+                timeSyncInterval.current = setInterval(getTimeOffset, 120 * 1000);
+                timeSyncType.current = 0;
+            }
+        }
+        return () => clearInterval(timeSyncInterval.current);
     }, [])
 
     // [Core] GameID Functions and States
@@ -104,6 +137,7 @@ export default function Dashboard(props: any) {
     const connectionEventHandler = (event: any) => {
         if (event.status == "connected") {
             setOnlineStatus(1);
+            getTimeOffset();
         } else {
             setOnlineStatus(0);
         }
@@ -258,10 +292,10 @@ export default function Dashboard(props: any) {
 
         // Calculate elapsedTime and remainingTime based on clock paused or not
         // To ensure every clock show the same time when stopped
-        const elapsedTime = clockData.get("paused") ? clockData.get("elapsed") as number : (clockData.get("elapsed") as number) + (Date.now() - (clockData.get("timestamp") as number));
+        const elapsedTime = clockData.get("paused") ? clockData.get("elapsed") as number : (clockData.get("elapsed") as number) + ((Date.now() + timeOffset.current) - (clockData.get("timestamp") as number));
         const remainingTime = clockData.get("paused")
             ? (syncGameSettingsRef.current[clockData.get("stage") as keyof typeof syncGameSettingsRef.current] * 1000) - (clockData.get("elapsed") as number)
-            : (syncGameSettingsRef.current[clockData.get("stage") as keyof typeof syncGameSettingsRef.current] * 1000) - (clockData.get("elapsed") as number) - (Date.now() - (clockData.get("timestamp") as number));
+            : (syncGameSettingsRef.current[clockData.get("stage") as keyof typeof syncGameSettingsRef.current] * 1000) - (clockData.get("elapsed") as number) - ((Date.now() + timeOffset.current) - (clockData.get("timestamp") as number));
 
         // Check if still have remaining time in the current stage
         if (remainingTime >= 0) {
@@ -349,7 +383,7 @@ export default function Dashboard(props: any) {
                 const remainingTime = GAME_STAGES_TIME[GAME_STAGES.indexOf(newGameStage)] * 1000;
                 ydoc.transact((_y) => {
                     clockData.set("stage", newGameStage);
-                    clockData.set("timestamp", Date.now());
+                    clockData.set("timestamp", (Date.now() + timeOffset.current));
                     clockData.set("elapsed", 0);
                     clockData.set("paused", remainingTime > 0 ? false : true);
                 })
@@ -379,7 +413,7 @@ export default function Dashboard(props: any) {
         console.log("Clock Started")
         ydoc.transact((_y) => {
             clockData.set("stage", clockData.get("stage") as string);
-            clockData.set("timestamp", Date.now());
+            clockData.set("timestamp", (Date.now() + timeOffset.current));
             clockData.set("elapsed", clockData.get("elapsed") as number);
             clockData.set("stageTrigger", clockData.get("stageTrigger") as boolean);
             clockData.set("paused", false);
@@ -415,10 +449,10 @@ export default function Dashboard(props: any) {
 
     const stopClock = () => {
         console.log("Clock Stopped")
-        const elapsed = (Date.now() - (clockData.get("timestamp") as number)) + (clockData.get("elapsed") as number)
+        const elapsed = ((Date.now() + timeOffset.current) - (clockData.get("timestamp") as number)) + (clockData.get("elapsed") as number)
         ydoc.transact((_y) => {
             clockData.set("stage", clockData.get("stage") as string);
-            clockData.set("timestamp", Date.now());
+            clockData.set("timestamp", (Date.now() + timeOffset.current));
             clockData.set("elapsed", elapsed);
             clockData.set("paused", true);
         })
@@ -452,20 +486,20 @@ export default function Dashboard(props: any) {
         console.log("Reset Stage Time")
         ydoc.transact((_y) => {
             clockData.set("stage", clockData.get("stage") as string);
-            clockData.set("timestamp", Date.now());
+            clockData.set("timestamp", (Date.now() + timeOffset.current));
             clockData.set("elapsed", 0);
             clockData.set("stageTrigger", false);
             clockData.set("paused", true);
 
-            redShotClockData.set("timestamp", Date.now());
+            redShotClockData.set("timestamp", (Date.now() + timeOffset.current));
             redShotClockData.set("elapsed", 0);
             redShotClockData.set("paused", true);
 
-            blueShotClockData.set("timestamp", Date.now());
+            blueShotClockData.set("timestamp", (Date.now() + timeOffset.current));
             blueShotClockData.set("elapsed", 0);
             blueShotClockData.set("paused", true);
 
-            possessionClockData.set("timestamp", Date.now());
+            possessionClockData.set("timestamp", (Date.now() + timeOffset.current));
             possessionClockData.set("elapsed", 0);
             possessionClockData.set("firstPossession", true);
             possessionClockData.set("paused", true);
@@ -495,7 +529,7 @@ export default function Dashboard(props: any) {
         console.log(`Skip stage to ${nextStage}`);
         ydoc.transact((_y) => {
             clockData.set("stage", nextStage);
-            clockData.set("timestamp", Date.now());
+            clockData.set("timestamp", (Date.now() + timeOffset.current));
             clockData.set("elapsed", 0);
             clockData.set("stageTrigger", false);
             clockData.set("paused", remainingTime > 0 ? false : true);
@@ -579,8 +613,8 @@ export default function Dashboard(props: any) {
     const updateRedShotClockText = () => {
         setRedShotClockPaused(redShotClockData.get("paused") as boolean);
 
-        const remainingTime = redShotClockData.get("paused") ? (SHOTCLOCK * 1000) - (redShotClockData.get("elapsed") as number) : (SHOTCLOCK * 1000) - (redShotClockData.get("elapsed") as number) - (Date.now() - (redShotClockData.get("timestamp") as number));
-        const elapsedTime = redShotClockData.get("paused") ? (redShotClockData.get("elapsed") as number) : (redShotClockData.get("elapsed") as number) + (Date.now() - (redShotClockData.get("timestamp") as number));
+        const remainingTime = redShotClockData.get("paused") ? (SHOTCLOCK * 1000) - (redShotClockData.get("elapsed") as number) : (SHOTCLOCK * 1000) - (redShotClockData.get("elapsed") as number) - ((Date.now() + timeOffset.current) - (redShotClockData.get("timestamp") as number));
+        const elapsedTime = redShotClockData.get("paused") ? (redShotClockData.get("elapsed") as number) : (redShotClockData.get("elapsed") as number) + ((Date.now() + timeOffset.current) - (redShotClockData.get("timestamp") as number));
         if (remainingTime >= 0) {
             const remainingSeconds = Math.floor(remainingTime / 1000 % 60) + "";
             setRedShotClockText({
@@ -605,7 +639,7 @@ export default function Dashboard(props: any) {
             clearInterval(redShotClockInterval.current);
             if (redShotClockInterval.current != null) {
                 ydoc.transact((_y) => {
-                    redShotClockData.set("timestamp", Date.now());
+                    redShotClockData.set("timestamp", (Date.now() + timeOffset.current));
                     redShotClockData.set("elapsed", (SHOTCLOCK * 1000));
                     redShotClockData.set("paused", true);
 
@@ -622,8 +656,8 @@ export default function Dashboard(props: any) {
     const updateBlueShotClockText = () => {
         setBlueShotClockPaused(blueShotClockData.get("paused") as boolean);
 
-        const remainingTime = blueShotClockData.get("paused") ? (SHOTCLOCK * 1000) - (blueShotClockData.get("elapsed") as number) : (SHOTCLOCK * 1000) - (blueShotClockData.get("elapsed") as number) - (Date.now() - (blueShotClockData.get("timestamp") as number));
-        const elapsedTime = blueShotClockData.get("paused") ? (blueShotClockData.get("elapsed") as number) : (blueShotClockData.get("elapsed") as number) + (Date.now() - (blueShotClockData.get("timestamp") as number));
+        const remainingTime = blueShotClockData.get("paused") ? (SHOTCLOCK * 1000) - (blueShotClockData.get("elapsed") as number) : (SHOTCLOCK * 1000) - (blueShotClockData.get("elapsed") as number) - ((Date.now() + timeOffset.current) - (blueShotClockData.get("timestamp") as number));
+        const elapsedTime = blueShotClockData.get("paused") ? (blueShotClockData.get("elapsed") as number) : (blueShotClockData.get("elapsed") as number) + ((Date.now() + timeOffset.current) - (blueShotClockData.get("timestamp") as number));
         if (remainingTime >= 0) {
             const remainingSeconds = Math.floor(remainingTime / 1000 % 60) + "";
             setBlueShotClockText({
@@ -648,7 +682,7 @@ export default function Dashboard(props: any) {
             clearInterval(blueShotClockInterval.current);
             if (blueShotClockInterval.current != null) {
                 ydoc.transact((_y) => {
-                    blueShotClockData.set("timestamp", Date.now());
+                    blueShotClockData.set("timestamp", (Date.now() + timeOffset.current));
                     blueShotClockData.set("elapsed", (SHOTCLOCK * 1000));
                     blueShotClockData.set("paused", true);
 
@@ -665,7 +699,7 @@ export default function Dashboard(props: any) {
     const updatePossessionClockText = () => {
         setPossessionClockPaused(possessionClockData.get("paused") as boolean);
 
-        const remainingTime = possessionClockData.get("paused") ? ((possessionClockData.get("firstPossession") ? FIRST_POSSESSION : POSSESSION) * 1000) - (possessionClockData.get("elapsed") as number) : ((possessionClockData.get("firstPossession") ? FIRST_POSSESSION : POSSESSION) * 1000) - (possessionClockData.get("elapsed") as number) - (Date.now() - (possessionClockData.get("timestamp") as number));
+        const remainingTime = possessionClockData.get("paused") ? ((possessionClockData.get("firstPossession") ? FIRST_POSSESSION : POSSESSION) * 1000) - (possessionClockData.get("elapsed") as number) : ((possessionClockData.get("firstPossession") ? FIRST_POSSESSION : POSSESSION) * 1000) - (possessionClockData.get("elapsed") as number) - ((Date.now() + timeOffset.current) - (possessionClockData.get("timestamp") as number));
         if (remainingTime >= 0) {
             const remainingSeconds = Math.floor(remainingTime / 1000 % 60) + "";
             setPossessionClockText({
@@ -734,7 +768,7 @@ export default function Dashboard(props: any) {
                 possessionData.set("nextPossession", "blue");
                 possessionData.set("currentPossession", "red");
 
-                redShotClockData.set("timestamp", Date.now());
+                redShotClockData.set("timestamp", (Date.now() + timeOffset.current));
                 redShotClockData.set("elapsed", redShotClockData.get("elapsed") as number);
                 redShotClockData.set("paused", false);
             })
@@ -744,8 +778,8 @@ export default function Dashboard(props: any) {
     const stopRedShotClock = () => {
         if (!redShotClockData.get("paused")) {
             ydoc.transact((_y) => {
-                const elapsed = (Date.now() - (redShotClockData.get("timestamp") as number)) + (redShotClockData.get("elapsed") as number)
-                redShotClockData.set("timestamp", Date.now());
+                const elapsed = ((Date.now() + timeOffset.current) - (redShotClockData.get("timestamp") as number)) + (redShotClockData.get("elapsed") as number)
+                redShotClockData.set("timestamp", (Date.now() + timeOffset.current));
                 redShotClockData.set("elapsed", elapsed);
                 redShotClockData.set("paused", true);
             })
@@ -762,7 +796,7 @@ export default function Dashboard(props: any) {
 
     const resetRedShotClock = () => {
         ydoc.transact((_y) => {
-            redShotClockData.set("timestamp", Date.now());
+            redShotClockData.set("timestamp", (Date.now() + timeOffset.current));
             redShotClockData.set("elapsed", 0);
             redShotClockData.set("paused", true);
         })
@@ -787,7 +821,7 @@ export default function Dashboard(props: any) {
                 possessionData.set("nextPossession", "red");
                 possessionData.set("currentPossession", "blue");
 
-                blueShotClockData.set("timestamp", Date.now());
+                blueShotClockData.set("timestamp", (Date.now() + timeOffset.current));
                 blueShotClockData.set("elapsed", blueShotClockData.get("elapsed") as number);
                 blueShotClockData.set("paused", false);
             })
@@ -797,8 +831,8 @@ export default function Dashboard(props: any) {
     const stopBlueShotClock = () => {
         if (!blueShotClockData.get("paused")) {
             ydoc.transact((_y) => {
-                const elapsed = (Date.now() - (blueShotClockData.get("timestamp") as number)) + (blueShotClockData.get("elapsed") as number)
-                blueShotClockData.set("timestamp", Date.now());
+                const elapsed = ((Date.now() + timeOffset.current) - (blueShotClockData.get("timestamp") as number)) + (blueShotClockData.get("elapsed") as number)
+                blueShotClockData.set("timestamp", (Date.now() + timeOffset.current));
                 blueShotClockData.set("elapsed", elapsed);
                 blueShotClockData.set("paused", true);
             })
@@ -816,7 +850,7 @@ export default function Dashboard(props: any) {
     const resetBlueShotClock = () => {
         console.log("Reset Blue Shot Clock")
         ydoc.transact((_y) => {
-            blueShotClockData.set("timestamp", Date.now());
+            blueShotClockData.set("timestamp", (Date.now() + timeOffset.current));
             blueShotClockData.set("elapsed", 0);
             blueShotClockData.set("paused", true);
         })
@@ -840,7 +874,7 @@ export default function Dashboard(props: any) {
             ydoc.transact((_y) => {
                 possessionData.set("currentPossession", "possession");
 
-                possessionClockData.set("timestamp", Date.now());
+                possessionClockData.set("timestamp", (Date.now() + timeOffset.current));
                 possessionClockData.set("elapsed", possessionClockData.get("elapsed") as number);
                 possessionClockData.set("paused", false);
             })
@@ -850,8 +884,8 @@ export default function Dashboard(props: any) {
     const stopPossessionClock = () => {
         if (!possessionClockData.get("paused")) {
             ydoc.transact((_y) => {
-                const elapsed = (Date.now() - (possessionClockData.get("timestamp") as number)) + (possessionClockData.get("elapsed") as number)
-                possessionClockData.set("timestamp", Date.now());
+                const elapsed = ((Date.now() + timeOffset.current) - (possessionClockData.get("timestamp") as number)) + (possessionClockData.get("elapsed") as number)
+                possessionClockData.set("timestamp", (Date.now() + timeOffset.current));
                 possessionClockData.set("elapsed", elapsed);
                 possessionClockData.set("paused", true);
             })
@@ -868,7 +902,7 @@ export default function Dashboard(props: any) {
 
     const resetPossessionClock = () => {
         ydoc.transact((_y) => {
-            possessionClockData.set("timestamp", Date.now());
+            possessionClockData.set("timestamp", (Date.now() + timeOffset.current));
             possessionClockData.set("elapsed", 0);
             possessionClockData.set("paused", true);
         })
@@ -1150,7 +1184,7 @@ export default function Dashboard(props: any) {
                 </GridItem>
                 <GridItem rowSpan={1} colSpan={1} m={"1vw"}>
                     <Box textAlign={"end"} fontSize={"0.6em"} textColor={"white"}>
-                        <Text textColor={onlineStatus == 1 ? 'lightgreen' : onlineStatus == 0 ? 'lightcoral' : 'orange'} userSelect={"none"}>
+                        <Text textColor={onlineStatus == 1 ? 'lightgreen' : onlineStatus == 0 ? 'lightcoral' : 'orange'} userSelect={"none"} onClick={(e) => { onlineStatus == 2 && setTimeOffsetModal(true) }} style={{ cursor: onlineStatus == 2 ? "pointer" : "auto" }}>
                             {onlineStatus == 1 ? "Connected" : onlineStatus == 0 ? "Disconnected" : "Large Time Diff"} <FontAwesomeIcon icon={faCircleDot} />
                         </Text>
                         <Button onClick={() => setGameSettingsModal(true)} colorScheme="green" size="sm" >
@@ -1294,21 +1328,35 @@ export default function Dashboard(props: any) {
                 </ModalContent>
             </Modal>
 
-            <Modal isOpen={warningModal} onClose={() => { }} isCentered>
+            <Modal isOpen={warningModal} onClose={() => { }} isCentered size={"lg"}>
                 <ModalOverlay />
                 <ModalContent>
                     <ModalHeader>⚠️WARNING!⚠️</ModalHeader>
                     <ModalBody>
-                        <Text width={"100%"}>
-                            Scoreboard is still on beta! Changes to layout and interaction are expected.
-                            <br />
-                            This is uncharted territory, please report any bugs or issues to the developer.
-                            <br />
-                            <b>You have been warned.</b>
-                        </Text>
+                        <Text>Scoreboard is still on beta! Changes to layout and interaction are expected.</Text>
+                        <Text>This is uncharted territory, please report any bugs or issues to the developer.</Text>
+                        <Text fontSize={"1.2em"} fontWeight={"bold"}>You have been warned.</Text>
                     </ModalBody>
                     <ModalFooter>
                         <Button colorScheme='red' mr={3} onClick={() => { setWarningModal(false) }}>
+                            Close
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
+
+            <Modal isOpen={timeOffsetModal} onClose={() => { }} isCentered size={"lg"}>
+                <ModalOverlay />
+                <ModalContent>
+                    <ModalHeader>Large Time Difference</ModalHeader>
+                    <ModalBody>
+                        <Text>We have detected a large time difference between your device and the server.</Text>
+                        <Text>We have temporarily adjusted the clock to match the server time.</Text>
+                        <Text>However, this method is not as accurate as changing the system to sync with an NTP server.</Text>
+                        <Text>Please consult Google or person with technical knowledge to adjust your system time.</Text>
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button colorScheme='red' mr={3} onClick={() => { setTimeOffsetModal(false) }}>
                             Close
                         </Button>
                     </ModalFooter>
