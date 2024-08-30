@@ -16,7 +16,6 @@ import { useEffect, useRef, useState } from "react";
 import * as Y from "yjs";
 import Teams from "../props/dashboard/teams.json";
 import { deepMerge } from "@/app/helpers/deepMerge";
-import getServerTimestamp from "../helpers/serverTimestamp";
 
 
 export default function Dashboard(props: any) {
@@ -48,14 +47,18 @@ export default function Dashboard(props: any) {
     const timeSyncRef = useRef([]);
     const timeOffset = useRef(0);
 
+
+
     const getTimeOffset = async () => {
         const startTime = Date.now();
-        getServerTimestamp().then((response) => {
-            const endTime = Date.now();
-            const time = response;
-            const offset = (endTime - startTime) / 2;
-            timeOffset.current = time - endTime + offset;
-            console.log("Time Offset", timeOffset.current);
+        fetch("/api/timeSync").then((response) => {
+            response.text().then((data) => {
+                const endTime = Date.now();
+                const time = parseInt(data);
+                const offset = (endTime - startTime) / 2;
+                timeOffset.current = time - endTime + offset;
+                console.log("Time Offset", timeOffset.current);
+            })
         }).catch((error) => {
             console.error("Error fetching time sync", error);
             timeOffset.current = 0;
