@@ -1,4 +1,4 @@
-import { GAME_STAGES, GAME_STAGES_TEXT } from "@/common/gameStages";
+import { GAME_STAGES, GAME_STAGES_TEXT } from "@/app/common/gameStages";
 import { Box, Button, ButtonGroup } from "@chakra-ui/react";
 import "@fontsource-variable/source-code-pro";
 

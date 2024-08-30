@@ -1,12 +1,12 @@
 'use client'
 
-import { FIRST_POSSESSION, GAME_STAGES, GAME_STAGES_TIME, POSSESSION, SHOTCLOCK } from "@/common/gameStages";
-import { Counter } from "@/props/dashboard/Counter";
-import HistoryList from "@/props/dashboard/HistoryList";
-import { ScoreDisplay } from "@/props/dashboard/ScoreDisplay";
-import { PossessionClock, ShotClock } from "@/props/dashboard/ShotClock";
-import TimerBox from "@/props/dashboard/TimerBox";
-import { YJsClient } from "@/yjsClient/yjsClient";
+import { FIRST_POSSESSION, GAME_STAGES, GAME_STAGES_TIME, POSSESSION, SHOTCLOCK } from "@/app/common/gameStages";
+import { Counter } from "@/app/props/dashboard/Counter";
+import HistoryList from "@/app/props/dashboard/HistoryList";
+import { ScoreDisplay } from "@/app/props/dashboard/ScoreDisplay";
+import { PossessionClock, ShotClock } from "@/app/props/dashboard/ShotClock";
+import TimerBox from "@/app/props/dashboard/TimerBox";
+import { YJsClient } from "@/app/yjsClient/yjsClient";
 import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, Flex, Grid, GridItem, Image, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, NumberDecrementStepper, NumberIncrementStepper, NumberInput, NumberInputField, NumberInputStepper, Radio, RadioGroup, Stack, Switch, Tab, Table, TableContainer, TabList, TabPanels, Tabs, Tbody, Td, Text, Textarea, Th, Thead, Tr, useToast } from "@chakra-ui/react";
 import "@fontsource-variable/quicksand";
 import Head from 'next/head';
@@ -15,7 +15,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useEffect, useRef, useState } from "react";
 import * as Y from "yjs";
 import Teams from "../props/dashboard/teams.json";
-import { deepMerge } from "@/helpers/deepMerge";
+import { deepMerge } from "@/app/helpers/deepMerge";
+import getServerTimestamp from "../helpers/serverTimestamp";
 
 
 export default function Dashboard(props: any) {
@@ -41,20 +42,20 @@ export default function Dashboard(props: any) {
         }
     }, [])
 
+    const buildVersion = process.env.CF_PAGES_COMMIT_SHA || null;
+
     // [Sys] TimeSync Functions and States
     const timeSyncRef = useRef([]);
     const timeOffset = useRef(0);
 
     const getTimeOffset = async () => {
         const startTime = Date.now();
-        fetch("/api/timeSync").then((response) => {
-            response.text().then((data) => {
-                const endTime = Date.now();
-                const time = parseInt(data);
-                const offset = (endTime - startTime) / 2;
-                timeOffset.current = time - endTime + offset;
-                console.log("Time Offset", timeOffset.current);
-            })
+        getServerTimestamp().then((response) => {
+            const endTime = Date.now();
+            const time = response;
+            const offset = (endTime - startTime) / 2;
+            timeOffset.current = time - endTime + offset;
+            console.log("Time Offset", timeOffset.current);
         }).catch((error) => {
             console.error("Error fetching time sync", error);
             timeOffset.current = 0;
@@ -1402,15 +1403,10 @@ export default function Dashboard(props: any) {
                     </ModalBody>
 
                     <ModalFooter>
-                        {props.buildVersion ? <Text fontSize={"0.75rem"}>Version: {(props.buildVersion as string).substring(0, 6)}</Text> : <Text fontSize={"0.75rem"}>Version: Development</Text>}
+                        {buildVersion ? <Text fontSize={"0.75rem"}>Version: {(buildVersion as string).substring(0, 6)}</Text> : <Text fontSize={"0.75rem"}>Version: Development</Text>}
                     </ModalFooter>
                 </ModalContent>
             </Modal>
         </>
     )
 }
-
-export const getStaticProps = (async () => {
-    const buildVersion = process.env.CF_PAGES_COMMIT_SHA || null;
-    return { props: { buildVersion } }
-})
