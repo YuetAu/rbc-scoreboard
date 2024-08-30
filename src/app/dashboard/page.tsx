@@ -1164,7 +1164,7 @@ export default function Dashboard(props: any) {
 
                 <GridItem rowSpan={1} colSpan={1} m={"1vw"}>
                     <Box fontSize={"0.6em"} textColor={"white"}>
-                        <Text><span style={{ userSelect: "none" }}>GameID: </span>{gameID}</Text>
+                        <Text><span style={{ userSelect: "none" }}>GameID: </span><span style={{ cursor: "pointer" }} onClick={() => { navigator.clipboard.writeText(gameID).then(() => toast({ title: "GameID Copied!", status: "success", duration: 1000 })) }}>{gameID}</span></Text>
                         <Button onClick={forceReset} colorScheme="red" size="sm" >
                             Force Reset
                         </Button>
