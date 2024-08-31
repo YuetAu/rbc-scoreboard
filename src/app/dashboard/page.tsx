@@ -1332,7 +1332,7 @@ export default function Dashboard(props: any) {
                 </ModalContent>
             </Modal>
 
-            <Modal isOpen={warningModal} onClose={() => { }} isCentered size={"lg"}>
+            <Modal isOpen={false} onClose={() => { }} isCentered size={"lg"}>
                 <ModalOverlay />
                 <ModalContent>
                     <ModalHeader>⚠️WARNING!⚠️</ModalHeader>
