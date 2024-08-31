@@ -76,15 +76,8 @@ export default function Dashboard(props: any) {
         timeOffset.current = totalOffset / syncAttempts;
         console.log("Final Time Offset:", timeOffset.current);
 
-        if (timeOffset.current > 1000 || timeOffset.current < -1000) {
-            setOnlineStatus(2);
-        }
-    };
-
-
-    useEffect(() => {
-        getTimeOffset();
         if (timeOffset.current > 10000 || timeOffset.current < -10000) {
+            setOnlineStatus(2);
             if (timeSyncType.current != 2) {
                 timeSyncInterval.current && clearInterval(timeSyncInterval.current);
                 timeSyncInterval.current = setInterval(getTimeOffset, 20 * 1000);
@@ -103,7 +96,11 @@ export default function Dashboard(props: any) {
                 timeSyncType.current = 0;
             }
         }
-        return () => clearInterval(timeSyncInterval.current);
+    };
+
+
+    useEffect(() => {
+        setTimeout(getTimeOffset, 500);
     }, [])
 
     // [Core] GameID Functions and States
@@ -155,22 +152,23 @@ export default function Dashboard(props: any) {
 
     useEffect(() => {
         const localGameSettingsJSON = localStorage.getItem("gameSettings");
-        if (localGameSettingsJSON && !isFirstReadSettings.current) {
+        if (!isFirstReadSettings.current) {
             try {
-                const localGameSettings = JSON.parse(localGameSettingsJSON);
+                const localGameSettings = JSON.parse(localGameSettingsJSON!);
                 const mergedSettings = deepMerge(gameSettings, localGameSettings);
+                if (mergedSettings.changeLogs < changeLogs[0].internalCode) {
+                    console.log(mergedSettings.changeLogs, changeLogs[0].internalCode);
+                    setChangeLogsModal(true);
+                }
                 setGameSettings(mergedSettings);
                 localStorage.setItem("gameSettings", JSON.stringify(mergedSettings));
             } catch (error) {
                 localStorage.setItem("gameSettings", JSON.stringify(gameSettings));
+                setChangeLogsModal(true);
             }
             isFirstReadSettings.current = true;
         } else {
             localStorage.setItem("gameSettings", JSON.stringify(gameSettings));
-        }
-
-        if (gameSettings.changeLogs < changeLogs[0].internalCode) {
-            setChangeLogsModal(true);
         }
 
         gameSettingsRef.current = gameSettings;
@@ -1390,7 +1388,7 @@ export default function Dashboard(props: any) {
                         })}
                     </ModalBody>
                     <ModalFooter>
-                        <Button colorScheme='teal' mr={3} onClick={() => { setChangeLogsModal(false); setGameSettings({ ...gameSettings, changeLogs: changeLogs[0].internalCode }) }}>
+                        <Button colorScheme='teal' mr={3} onClick={() => { setGameSettings({ ...gameSettings, changeLogs: changeLogs[0].internalCode }); setChangeLogsModal(false); }}>
                             Close
                         </Button>
                     </ModalFooter>

@@ -1,8 +1,5 @@
 // Helper function to deeply merge objects
 export const deepMerge = (target: any, source: any): any => {
-    console.log("target", target);
-    console.log("source", source);
-
     if (typeof source !== "object" || source === null) {
         return source;
     }
@@ -20,8 +17,6 @@ export const deepMerge = (target: any, source: any): any => {
             Object.assign(output, { [key]: source[key] });
         }
     });
-
-    console.log("output", output);
 
     return output;
 };
