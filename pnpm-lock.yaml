@@ -69,8 +69,8 @@ importers:
         specifier: ^9.0.1
         version: 9.0.1(@types/react@18.3.5)(react@18.3.1)
       y-partykit:
-        specifier: ^0.0.28
-        version: 0.0.28
+        specifier: ^0.0.32
+        version: 0.0.32(react@18.3.1)(y-protocols@1.0.6(yjs@13.6.18))(yjs@13.6.18)
       y-webrtc:
         specifier: ^10.3.0
         version: 10.3.0(yjs@13.6.18)
@@ -3366,8 +3366,15 @@ packages:
   xycolors@0.1.2:
     resolution: {integrity: sha512-iUIDKoRUq/6Nfkiwv/PqxR6ENzgLkaaOeWwY54CtObpEwmvQHCvsgxd5xIGfEF/QU75H2quxIffOoU4tf2kKDg==}
 
-  y-partykit@0.0.28:
-    resolution: {integrity: sha512-CuYUE6HyQ1T4f/GTv+HDwbl9wX5LIiyJIn8ozxK/OiAQcVLPSdjcCpNE1AOFRd2YoIp1Z18bvk8KuF6mrB067w==}
+  y-partykit@0.0.32:
+    resolution: {integrity: sha512-qkB5nN0Q5LnnTtc0Y4fhlv2hn1aI9jpPTyYhyxL2P+22R0voJ/5SocvLNpiVXQcFYS1ztLQBW40VukJcDzEryw==}
+    peerDependencies:
+      react: ^18.2.0
+      y-protocols: ^1.0.6
+      yjs: ^13.6.16
+    peerDependenciesMeta:
+      react:
+        optional: true
 
   y-protocols@1.0.6:
     resolution: {integrity: sha512-vHRF2L6iT3rwj1jub/K5tYcTT/mEYDUppgNPXwp8fmLpui9f7Yeq3OEtTLVF012j39QnV+KEQpNqoN7CWU7Y9Q==}
@@ -5380,7 +5387,7 @@ snapshots:
       eslint: 8.57.0
       eslint-import-resolver-node: 0.3.9
       eslint-import-resolver-typescript: 3.6.3(@typescript-eslint/parser@6.21.0(eslint@8.57.0)(typescript@5.5.4))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.29.1(eslint@8.57.0))(eslint@8.57.0)
-      eslint-plugin-import: 2.29.1(@typescript-eslint/parser@6.21.0(eslint@8.57.0)(typescript@5.5.4))(eslint-import-resolver-typescript@3.6.3(@typescript-eslint/parser@6.21.0(eslint@8.57.0)(typescript@5.5.4))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.29.1(eslint@8.57.0))(eslint@8.57.0))(eslint@8.57.0)
+      eslint-plugin-import: 2.29.1(@typescript-eslint/parser@6.21.0(eslint@8.57.0)(typescript@5.5.4))(eslint-import-resolver-typescript@3.6.3)(eslint@8.57.0)
       eslint-plugin-jsx-a11y: 6.9.0(eslint@8.57.0)
       eslint-plugin-react: 7.35.0(eslint@8.57.0)
       eslint-plugin-react-hooks: 4.6.2(eslint@8.57.0)
@@ -5411,7 +5418,7 @@ snapshots:
       is-bun-module: 1.1.0
       is-glob: 4.0.3
     optionalDependencies:
-      eslint-plugin-import: 2.29.1(@typescript-eslint/parser@6.21.0(eslint@8.57.0)(typescript@5.5.4))(eslint-import-resolver-typescript@3.6.3(@typescript-eslint/parser@6.21.0(eslint@8.57.0)(typescript@5.5.4))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.29.1(eslint@8.57.0))(eslint@8.57.0))(eslint@8.57.0)
+      eslint-plugin-import: 2.29.1(@typescript-eslint/parser@6.21.0(eslint@8.57.0)(typescript@5.5.4))(eslint-import-resolver-typescript@3.6.3)(eslint@8.57.0)
     transitivePeerDependencies:
       - '@typescript-eslint/parser'
       - eslint-import-resolver-node
@@ -5429,7 +5436,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-import@2.29.1(@typescript-eslint/parser@6.21.0(eslint@8.57.0)(typescript@5.5.4))(eslint-import-resolver-typescript@3.6.3(@typescript-eslint/parser@6.21.0(eslint@8.57.0)(typescript@5.5.4))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.29.1(eslint@8.57.0))(eslint@8.57.0))(eslint@8.57.0):
+  eslint-plugin-import@2.29.1(@typescript-eslint/parser@6.21.0(eslint@8.57.0)(typescript@5.5.4))(eslint-import-resolver-typescript@3.6.3)(eslint@8.57.0):
     dependencies:
       array-includes: 3.1.8
       array.prototype.findlastindex: 1.2.5
@@ -7375,13 +7382,14 @@ snapshots:
 
   xycolors@0.1.2: {}
 
-  y-partykit@0.0.28:
+  y-partykit@0.0.32(react@18.3.1)(y-protocols@1.0.6(yjs@13.6.18))(yjs@13.6.18):
     dependencies:
       lib0: 0.2.97
       lodash.debounce: 4.0.8
-      react: 18.3.1
       y-protocols: 1.0.6(yjs@13.6.18)
       yjs: 13.6.18
+    optionalDependencies:
+      react: 18.3.1
 
   y-protocols@1.0.6(yjs@13.6.18):
     dependencies:
