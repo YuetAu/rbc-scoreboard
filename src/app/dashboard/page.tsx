@@ -1190,13 +1190,9 @@ export default function Dashboard(props: any) {
                         <Text textColor={onlineStatus == 1 ? 'lightgreen' : onlineStatus == 0 ? 'lightcoral' : 'orange'} userSelect={"none"} onClick={(e) => { onlineStatus == 2 && setTimeOffsetModal(true) }} style={{ cursor: onlineStatus == 2 ? "pointer" : "auto" }}>
                             {onlineStatus == 1 ? "Connected" : onlineStatus == 0 ? "Disconnected" : "Large Time Diff"} <FontAwesomeIcon icon={faCircleDot} />
                         </Text>
-                        <Flex flexDirection={"column"} textAlign={"end"} alignSelf={"end"} alignItems={"end"}>
-                            <Button onClick={() => setGameSettingsModal(true)} colorScheme="green" size="sm">
-                                Game Setting
-                            </Button>
-                            <NextLink href='/feedback' target="_blank" passHref>
-                                <Button as="a" colorScheme="green" size="sm">Feedback</Button>
-                            </NextLink>
+                        <Flex flexDirection={"column"} textAlign={"end"} alignSelf={"end"} alignItems={"end"} rowGap={"0.3rem"}>
+                            <Button onClick={() => setGameSettingsModal(true)} colorScheme="green" size="sm">Game Setting</Button>
+                            <Button as="a" href="/feedback" target="_blank" colorScheme="green" size="sm">Feedback</Button>
                         </Flex>
                     </Box>
                 </GridItem>
