@@ -1,5 +1,6 @@
-import { Box, Flex, List, ListItem, Select } from "@chakra-ui/react";
-import { useEffect, useRef, useState } from "react";
+import { TEAMS } from "@/app/common/teams";
+import { Box, Flex, List, ListItem } from "@chakra-ui/react";
+import React, { useRef, useState } from "react";
 
 
 export function ScoreDisplay(props: any) {
@@ -25,7 +26,7 @@ export function ScoreDisplay(props: any) {
               <br />
               {props.team.ename}
             </Box>
-            {dropDownOpen && <TeamDropDownList teams={props.teams} setTeam={props.setTeam} color={props.color} currentTeam={props.team.ename} setOpen={setDropDownOpen} parent={scoreDisplayRef} />}
+            {dropDownOpen && <TeamDropDownList setTeam={props.setTeam} color={props.color} currentTeam={props.team.ename} setOpen={setDropDownOpen} parent={scoreDisplayRef} />}
             <Box my={"3rem"} style={{ fontSize: "4rem" }}>
               {props.score}
             </Box>
@@ -65,31 +66,43 @@ function TeamDropDownList(props: any) {
       }}
     >
       <List>
-        {props.teams?.map((item: any, index: number) => (
-          <ListItem
-            key={index}
-            paddingY={2}
-            marginX={2}
-            color="#ACB9C4"
-            cursor="pointer"
-            fontWeight="500"
-            fontSize="1.5rem"
-            lineHeight="1.5rem"
-            textTransform="capitalize"
-            onClick={() => {
-              props.setTeam(item, props.color);
-              props.setOpen(false);
-            }}
-            style={{ transition: "all .125s ease" }}
-            _hover={{ bg: "gray.50", color: "#396070" }}
-            sx={
-              item?.ename === props.currentTeam
-                ? { backgroundColor: "gray.100", color: "#396070" }
-                : {}
-            }
-          >
-            {item?.ename}
-          </ListItem>
+        {Object.keys(TEAMS).map((region: string) => (
+          <React.Fragment key={region}>
+            <ListItem
+              backgroundColor="gray.300"
+              color="#396070"
+              fontWeight="bold"
+              fontSize="1rem"
+            >
+              {region}
+            </ListItem>
+            {TEAMS[region as keyof typeof TEAMS].map((team) => (
+              <ListItem
+                key={team.ename}
+                paddingY={2}
+                marginX={2}
+                color="#ACB9C4"
+                cursor="pointer"
+                fontWeight="500"
+                fontSize="1.5rem"
+                lineHeight="1.5rem"
+                textTransform="capitalize"
+                onClick={() => {
+                  props.setTeam(team, props.color);
+                  props.setOpen(false);
+                }}
+                style={{ transition: "all .125s ease" }}
+                _hover={{ bg: "gray.50", color: "#396070" }}
+                sx={
+                  team?.ename === props.currentTeam
+                    ? { backgroundColor: "gray.100", color: "#396070" }
+                    : {}
+                }
+              >
+                {team?.ename}
+              </ListItem>
+            ))}
+          </React.Fragment>
         ))}
       </List>
     </Box>

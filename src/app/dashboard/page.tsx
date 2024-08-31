@@ -17,8 +17,6 @@ import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import * as Y from "yjs";
 import { changeLogs } from "../common/changeLogs";
-import Teams from "../props/dashboard/teams.json";
-import NextLink from 'next/link';
 
 
 export default function Dashboard(props: any) {
@@ -1199,13 +1197,13 @@ export default function Dashboard(props: any) {
 
                 <GridItem rowSpan={6} colSpan={1} m={"1vw"} mr={0}>
                     <Flex flexDirection={"column"} gap={5} alignItems={"center"} height={"100%"} justifyContent={"center"}>
-                        <ScoreDisplay color={"blue"} team={teamState.blue} editable={true} score={scores.bluePoints} teams={Teams} setTeam={updateTeam} />
+                        <ScoreDisplay color={"blue"} team={teamState.blue} editable={true} score={scores.bluePoints} setTeam={updateTeam} />
                         <HistoryList history={historyState} color={"blue"} />
                     </Flex>
                 </GridItem>
                 <GridItem rowSpan={6} colSpan={1} m={"1vw"} ml={0}>
                     <Flex flexDirection={"column"} gap={5} alignItems={"center"} height={"100%"} justifyContent={"center"}>
-                        <ScoreDisplay color={"red"} team={teamState.red} editable={true} score={scores.redPoints} teams={Teams} setTeam={updateTeam} />
+                        <ScoreDisplay color={"red"} team={teamState.red} editable={true} score={scores.redPoints} setTeam={updateTeam} />
                         <HistoryList history={historyState} team="RED" color={"red"} />
                     </Flex>
                 </GridItem>
