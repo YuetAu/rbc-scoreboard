@@ -11,7 +11,7 @@ This scoreboard is based on 2024/08/21 Rule Book. It will be updated as soon as 
 
 Hope you enjoy it!
 
-![Tutorial Image](/tutorial.png)
+![Tutorial Image](/Tutorial.png)
         `,
         date: "2024-09-01",
         author: "Yuet"
