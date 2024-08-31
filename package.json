@@ -20,7 +20,7 @@
     "@fortawesome/free-regular-svg-icons": "^6.6.0",
     "@fortawesome/free-solid-svg-icons": "^6.6.0",
     "@fortawesome/react-fontawesome": "^0.2.2",
-    "@million/lint": "1.0.0-rc.26",
+    "@million/lint": "1.0.0-rc.84",
     "framer-motion": "^10.18.0",
     "next": "14.1.1",
     "partykit": "^0.0.104",
