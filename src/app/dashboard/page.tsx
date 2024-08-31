@@ -16,6 +16,8 @@ import { useEffect, useRef, useState } from "react";
 import * as Y from "yjs";
 import Teams from "../props/dashboard/teams.json";
 import { deepMerge } from "@/app/helpers/deepMerge";
+import ReactMarkdown from "react-markdown";
+import { changeLogs } from "../common/changeLogs";
 
 
 export default function Dashboard(props: any) {
@@ -146,8 +148,10 @@ export default function Dashboard(props: any) {
     // [Features] GameSetting Functions and States
     const isFirstReadSettings = useRef(false);
     const [gameSettingsModal, setGameSettingsModal] = useState(false);
-    const [gameSettings, setGameSettings] = useState({ sounds: { preGameCountdown: true, endGameCountdown: true, shotClock8sTone: true, shotClockEndTone: true }, stages: { PREP: 60, GAME: 120, END: 0 } });
+    const [gameSettings, setGameSettings] = useState({ sounds: { preGameCountdown: true, endGameCountdown: true, shotClock8sTone: true, shotClockEndTone: true }, stages: { PREP: 60, GAME: 120, END: 0 }, changeLogs: 0 });
     const gameSettingsRef = useRef(gameSettings);
+
+    const [changeLogsModal, setChangeLogsModal] = useState(false);
 
     useEffect(() => {
         const localGameSettingsJSON = localStorage.getItem("gameSettings");
@@ -163,6 +167,10 @@ export default function Dashboard(props: any) {
             isFirstReadSettings.current = true;
         } else {
             localStorage.setItem("gameSettings", JSON.stringify(gameSettings));
+        }
+
+        if (gameSettings.changeLogs < changeLogs[0].internalCode) {
+            setChangeLogsModal(true);
         }
 
         gameSettingsRef.current = gameSettings;
@@ -1363,7 +1371,33 @@ export default function Dashboard(props: any) {
                 </ModalContent>
             </Modal>
 
-            <Modal isOpen={gameSettingsModal} onClose={() => { setGameSettingsModal(false) }} isCentered>
+            <Modal isOpen={changeLogsModal} onClose={() => { }} isCentered size={"lg"} scrollBehavior={"inside"}>
+                <ModalOverlay />
+                <ModalContent>
+                    <ModalHeader>Change Log</ModalHeader>
+                    <ModalBody>
+                        {changeLogs.map((log, index) => {
+                            return (
+                                <Box key={index} mb={"1rem"}>
+                                    <Text fontSize={"0.8em"} as={"sub"}>{log.version}</Text>
+                                    <Text fontWeight={"bold"}>{log.date}</Text>
+                                    <ReactMarkdown className={"markdown"}>
+                                        {log.content}
+                                    </ReactMarkdown>
+                                    <Text fontSize={"1.1em"} as={"i"}>- {log.author}</Text>
+                                </Box>
+                            )
+                        })}
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button colorScheme='teal' mr={3} onClick={() => { setChangeLogsModal(false); setGameSettings({ ...gameSettings, changeLogs: changeLogs[0].internalCode }) }}>
+                            Close
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal >
+
+            <Modal isOpen={gameSettingsModal} onClose={() => { setGameSettingsModal(false) }} isCentered size={"lg"}>
                 <ModalOverlay />
                 <ModalContent>
                     <ModalHeader>Game Settings</ModalHeader>
@@ -1445,7 +1479,8 @@ export default function Dashboard(props: any) {
                                     </AccordionButton>
                                 </h2>
                                 <AccordionPanel>
-                                    <Button onClick={() => { navigator.clipboard.writeText(JSON.stringify(gameProps.toJSON())).then(() => toast({ title: "GameProps Copied!", status: "success", duration: 1000 })) }} colorScheme="blue" size={"sm"}>Copy Game Props</Button>
+                                    <Button onClick={() => { navigator.clipboard.writeText(JSON.stringify(gameProps.toJSON())).then(() => toast({ title: "GameProps Copied!", status: "success", duration: 1000 })) }} colorScheme="blue" size={"sm"} m={"0.5em"}>Copy Game Props</Button>
+                                    <Button onClick={() => { setChangeLogsModal(true) }} colorScheme="teal" size={"sm"} m={"0.5em"}>Change Logs</Button>
                                 </AccordionPanel>
                             </AccordionItem>
                         </Accordion>
