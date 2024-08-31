@@ -59,18 +59,40 @@ export const TEAMS = {
     ],
     "Mainland China": [
         {
-            "cname": "北科大 MEI",
+            "cname": "北科大",
             "ename": "USTB MEI"
         },
         {
-            "cname": "北航 BR",
+            "cname": "北航",
             "ename": "BUAA BR"
+        },
+        {
+            "cname": "华南理工",
+            "ename": "SCUT Robot IC"
+        },
+        {
+            "cname": "电科",
+            "ename": "UESTC LIMITI"
+        },
+        {
+            "cname": "东北",
+            "ename": "NEU Action"
         }
     ],
     "Japan": [
         {
-            "cname": "東京大学 RoboTech",
+            "cname": "東京大学",
             "ename": "UTokyo RoboTech"
         },
-    ]
+        {
+            "cname": "豊橋",
+            "ename": "TUT☆RC"
+        }
+    ],
+    "Malaysia": [
+        {
+            "cname": "馬來西亞理工",
+            "ename": "UTM Robocon"
+        }
+    ],
 }
