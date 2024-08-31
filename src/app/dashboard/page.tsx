@@ -1,23 +1,24 @@
 'use client'
 
 import { FIRST_POSSESSION, GAME_STAGES, GAME_STAGES_TIME, POSSESSION, SHOTCLOCK } from "@/app/common/gameStages";
+import { deepMerge } from "@/app/helpers/deepMerge";
 import { Counter } from "@/app/props/dashboard/Counter";
 import HistoryList from "@/app/props/dashboard/HistoryList";
 import { ScoreDisplay } from "@/app/props/dashboard/ScoreDisplay";
 import { PossessionClock, ShotClock } from "@/app/props/dashboard/ShotClock";
 import TimerBox from "@/app/props/dashboard/TimerBox";
 import { YJsClient } from "@/app/yjsClient/yjsClient";
-import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, Flex, Grid, GridItem, Image, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, NumberDecrementStepper, NumberIncrementStepper, NumberInput, NumberInputField, NumberInputStepper, Radio, RadioGroup, Stack, Switch, Tab, Table, TableContainer, TabList, TabPanels, Tabs, Tbody, Td, Text, Textarea, Th, Thead, Tr, useToast } from "@chakra-ui/react";
+import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, Flex, Grid, GridItem, Image, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, NumberDecrementStepper, NumberIncrementStepper, NumberInput, NumberInputField, NumberInputStepper, Switch, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tr, useToast } from "@chakra-ui/react";
 import "@fontsource-variable/quicksand";
-import Head from 'next/head';
-import { faCircleDot, faVideoCamera } from '@fortawesome/free-solid-svg-icons';
+import { faCircleDot } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import Head from 'next/head';
 import { useEffect, useRef, useState } from "react";
-import * as Y from "yjs";
-import Teams from "../props/dashboard/teams.json";
-import { deepMerge } from "@/app/helpers/deepMerge";
 import ReactMarkdown from "react-markdown";
+import * as Y from "yjs";
 import { changeLogs } from "../common/changeLogs";
+import Teams from "../props/dashboard/teams.json";
+import NextLink from 'next/link'
 
 
 export default function Dashboard(props: any) {
@@ -1193,9 +1194,14 @@ export default function Dashboard(props: any) {
                         <Text textColor={onlineStatus == 1 ? 'lightgreen' : onlineStatus == 0 ? 'lightcoral' : 'orange'} userSelect={"none"} onClick={(e) => { onlineStatus == 2 && setTimeOffsetModal(true) }} style={{ cursor: onlineStatus == 2 ? "pointer" : "auto" }}>
                             {onlineStatus == 1 ? "Connected" : onlineStatus == 0 ? "Disconnected" : "Large Time Diff"} <FontAwesomeIcon icon={faCircleDot} />
                         </Text>
-                        <Button onClick={() => setGameSettingsModal(true)} colorScheme="green" size="sm" >
-                            Game Setting
-                        </Button>
+                        <Flex flexDirection={"column"} textAlign={"end"} alignSelf={"end"} alignItems={"end"}>
+                            <Button onClick={() => setGameSettingsModal(true)} colorScheme="green" size="sm">
+                                Game Setting
+                            </Button>
+                            <NextLink href='/feedback' target="_blank" passHref>
+                                <Button as="a" colorScheme="green" size="sm">Feedback</Button>
+                            </NextLink>
+                        </Flex>
                     </Box>
                 </GridItem>
 
