@@ -18,7 +18,7 @@ export function ShotClock(props: any) {
                 onContextMenu={(e) => { e.preventDefault(); props.resetClock(); props.startClock(); }}
             >
                 <Text fontSize={"0.5em"}>Shot Clock</Text>
-                <Text fontSize={"0.8em"} margin={"0.2rem"}>{props.timeText.seconds}</Text>
+                <Text fontSize={"0.8em"} margin={"0.2rem"} fontFamily={"'Source Code Pro Variable', sans-serif"}>{props.timeText.seconds}.{props.timeText.milliseconds}</Text>
             </Box>
         </Flex>
     )
@@ -40,7 +40,7 @@ export function PossessionClock(props: any) {
                 onContextMenu={(e) => { e.preventDefault(); }}
             >
                 <Text fontSize={"0.5em"}>Possession</Text>
-                <Text fontSize={"0.8em"} margin={"0.2rem"}>{props.timeText.seconds}</Text>
+                <Text fontSize={"0.8em"} margin={"0.2rem"} fontFamily={"'Source Code Pro Variable', sans-serif"}>{props.timeText.seconds}.{props.timeText.milliseconds}</Text>
             </Box>
         </Flex>
     )

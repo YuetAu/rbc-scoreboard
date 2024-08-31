@@ -122,13 +122,6 @@ export default function Dashboard(props: any) {
             setPossessionData(yJsClient.getYDoc().getMap("possessionData") as Y.Map<any>);
             setGameIDModal(false);
             yJsClient.getYPartyProvider().on("status", connectionEventHandler);
-
-            for (const stage in gameSettings.stages) {
-                ydoc.transact((_y: any) => {
-                    const gamePropsSettings = gameProps.get("settings") as Y.Map<number>;
-                    gamePropsSettings.set(stage, Number(gameSettings.stages[stage as keyof typeof gameSettings.stages]));
-                })
-            }
         }
     }
 
@@ -144,7 +137,7 @@ export default function Dashboard(props: any) {
     // [Features] GameSetting Functions and States
     const isFirstReadSettings = useRef(false);
     const [gameSettingsModal, setGameSettingsModal] = useState(false);
-    const [gameSettings, setGameSettings] = useState({ sounds: { preGameCountdown: true, endGameCountdown: true, shotClock8sTone: true, shotClockEndTone: true }, stages: { PREP: 60, GAME: 120, END: 0 }, changeLogs: 0 });
+    const [gameSettings, setGameSettings] = useState({ sounds: { preGameCountdown: true, endGameCountdown: true, shotClock8sTone: true, shotClockEndTone: true }, stages: { PREP: 60, GAME: 120, END: 0 }, changeLogs: 0, behaviour: { possessionAfterScored: true } });
     const gameSettingsRef = useRef(gameSettings);
 
     const [changeLogsModal, setChangeLogsModal] = useState(false);
@@ -156,7 +149,6 @@ export default function Dashboard(props: any) {
                 const localGameSettings = JSON.parse(localGameSettingsJSON!);
                 const mergedSettings = deepMerge(gameSettings, localGameSettings);
                 if (mergedSettings.changeLogs < changeLogs[0].internalCode) {
-                    console.log(mergedSettings.changeLogs, changeLogs[0].internalCode);
                     setChangeLogsModal(true);
                 }
                 setGameSettings(mergedSettings);
@@ -299,8 +291,8 @@ export default function Dashboard(props: any) {
         // To ensure every clock show the same time when stopped
         const elapsedTime = clockData.get("paused") ? clockData.get("elapsed") as number : (clockData.get("elapsed") as number) + ((Date.now() + timeOffset.current) - (clockData.get("timestamp") as number));
         const remainingTime = clockData.get("paused")
-            ? (syncGameSettingsRef.current[clockData.get("stage") as keyof typeof syncGameSettingsRef.current] * 1000) - (clockData.get("elapsed") as number)
-            : (syncGameSettingsRef.current[clockData.get("stage") as keyof typeof syncGameSettingsRef.current] * 1000) - (clockData.get("elapsed") as number) - ((Date.now() + timeOffset.current) - (clockData.get("timestamp") as number));
+            ? (syncGameSettingsRef.current.stages[clockData.get("stage") as keyof typeof syncGameSettingsRef.current.stages] * 1000) - (clockData.get("elapsed") as number)
+            : (syncGameSettingsRef.current.stages[clockData.get("stage") as keyof typeof syncGameSettingsRef.current.stages] * 1000) - (clockData.get("elapsed") as number) - ((Date.now() + timeOffset.current) - (clockData.get("timestamp") as number));
 
         // Check if still have remaining time in the current stage
         if (remainingTime >= 0) {
@@ -604,9 +596,9 @@ export default function Dashboard(props: any) {
         }
     }, [possessionData]);
 
-    const [redShotClockText, setRedShotClockText] = useState({ seconds: "00" });
-    const [blueShotClockText, setBlueShotClockText] = useState({ seconds: "00" });
-    const [possessionClockText, setPossessionClockText] = useState({ seconds: "00" });
+    const [redShotClockText, setRedShotClockText] = useState({ seconds: "00", milliseconds: "00" });
+    const [blueShotClockText, setBlueShotClockText] = useState({ seconds: "00", milliseconds: "00" });
+    const [possessionClockText, setPossessionClockText] = useState({ seconds: "00", milliseconds: "00" });
     const redShotClockInterval = useRef<any>(null);
     const blueShotClockInterval = useRef<any>(null);
     const possessionClockInterval = useRef<any>(null);
@@ -622,8 +614,10 @@ export default function Dashboard(props: any) {
         const elapsedTime = redShotClockData.get("paused") ? (redShotClockData.get("elapsed") as number) : (redShotClockData.get("elapsed") as number) + ((Date.now() + timeOffset.current) - (redShotClockData.get("timestamp") as number));
         if (remainingTime >= 0) {
             const remainingSeconds = Math.floor(remainingTime / 1000 % 60) + "";
+            const remainingMilliseconds = Math.floor((remainingTime % 1000) / 10) + "";
             setRedShotClockText({
                 seconds: remainingSeconds.length < 2 ? "0" + remainingSeconds : remainingSeconds,
+                milliseconds: remainingMilliseconds.length < 2 ? "0" + remainingMilliseconds : remainingMilliseconds
             })
 
             soundCheck("REDSHOTCLOCK", remainingTime, elapsedTime);
@@ -665,8 +659,10 @@ export default function Dashboard(props: any) {
         const elapsedTime = blueShotClockData.get("paused") ? (blueShotClockData.get("elapsed") as number) : (blueShotClockData.get("elapsed") as number) + ((Date.now() + timeOffset.current) - (blueShotClockData.get("timestamp") as number));
         if (remainingTime >= 0) {
             const remainingSeconds = Math.floor(remainingTime / 1000 % 60) + "";
+            const remainingMilliseconds = Math.floor((remainingTime % 1000) / 10) + "";
             setBlueShotClockText({
                 seconds: remainingSeconds.length < 2 ? "0" + remainingSeconds : remainingSeconds,
+                milliseconds: remainingMilliseconds.length < 2 ? "0" + remainingMilliseconds : remainingMilliseconds
             })
 
             soundCheck("BLUESHOTCLOCK", remainingTime, elapsedTime);
@@ -707,8 +703,10 @@ export default function Dashboard(props: any) {
         const remainingTime = possessionClockData.get("paused") ? ((possessionClockData.get("firstPossession") ? FIRST_POSSESSION : POSSESSION) * 1000) - (possessionClockData.get("elapsed") as number) : ((possessionClockData.get("firstPossession") ? FIRST_POSSESSION : POSSESSION) * 1000) - (possessionClockData.get("elapsed") as number) - ((Date.now() + timeOffset.current) - (possessionClockData.get("timestamp") as number));
         if (remainingTime >= 0) {
             const remainingSeconds = Math.floor(remainingTime / 1000 % 60) + "";
+            const remainingMilliseconds = Math.floor((remainingTime % 1000) / 10) + "";
             setPossessionClockText({
                 seconds: remainingSeconds.length < 2 ? "0" + remainingSeconds : remainingSeconds,
+                milliseconds: remainingMilliseconds.length < 2 ? "0" + remainingMilliseconds : remainingMilliseconds
             })
 
             soundCheck("POSSESSIONCLOCK", remainingTime);
@@ -935,10 +933,8 @@ export default function Dashboard(props: any) {
             gamePropsItems.set("blueThreePoint", 0);
             gameProps.set("items", gamePropsItems);
 
-            const gamePropsSettings = new Y.Map() as Y.Map<number>;
-            gamePropsSettings.set("PREP", 60);
-            gamePropsSettings.set("GAME", 120);
-            gamePropsSettings.set("END", 0);
+            const gamePropsSettings = new Y.Map() as Y.Map<any>;
+            gamePropsSettings.set("stages", gameSettings.stages);
             gameProps.set("settings", gamePropsSettings);
 
             gameProps.set("replay", false);
@@ -961,7 +957,7 @@ export default function Dashboard(props: any) {
         red: { cname: "征龍", ename: "War Dragon" },
         blue: { cname: "火之龍", ename: "Fiery Dragon" }
     });
-    const [syncGameSettings, setSyncGameSettings] = useState<{ PREP: number, GAME: number, END: number }>({ PREP: 60, GAME: 120, END: 0 });
+    const [syncGameSettings, setSyncGameSettings] = useState<any>({ stages: { PREP: 60, GAME: 120, END: 0 } });
     const syncGameSettingsRef = useRef(syncGameSettings);
 
     useEffect(() => {
@@ -979,25 +975,25 @@ export default function Dashboard(props: any) {
         /*
         6.7.1 Points will be awarded for successful shots based on the shooting zone and
             shooting types as follows:
- 
+     
             6.7.1.1 Three (3) points for a shot made from the 3-point zone. The robot's base
             perimeter must be fully within the 3-point zone before, during and after
             the shot including space above the zone.
- 
+     
             6.7.1.2 Two (2) points for a shot that are neither a 3-point shot nor a dunk shot.
- 
+     
             6.7.1.3 Seven (7) points for a dunk shot. 
- 
+     
         9.4.3 The offensive team will be awarded points from the designated zone where the
             foul occurred. These points will not count as a successful shot attempt.
- 
+     
             9.4.3.1 If the fouled robot’s base perimeter is fully within the 3-point zone
             including space above, or the robot’s base perimeter is on the centerline,
             the offensive team will be awarded three (3) points.
- 
+     
             9.4.3.2 If the fouled robot’s base perimeter is in the 2-point zone, the offensive
             team will be awarded two (2) points.
- 
+     
             9.4.3.3 If the fouled robot is performing a dunk shoot, the offensive team will
             be awarded seven (7) points.
         */
@@ -1024,11 +1020,11 @@ export default function Dashboard(props: any) {
         const teamYMap = gameProps.get("teams") as { red: { cname: string; ename: string; }; blue: { cname: string; ename: string; }; };
         const historyYArray = gameProps.get("history") as Y.Array<{ action: string; time: string; team: string }>;
         const itemsYMap = gameProps.get("items") as Y.Map<number>;
-        const settingsYMap = gameProps.get("settings") as Y.Map<number>;
+        const settingsYMap = gameProps.get("settings") as Y.Map<any>;
         setTeamState(teamYMap);
         setHistoryState(historyYArray.toJSON());
         setItemsState(itemsYMap.toJSON());
-        setSyncGameSettings(settingsYMap.toJSON() as { PREP: number, GAME: number, END: number });
+        setSyncGameSettings(settingsYMap.toJSON());
 
         scoreCalculation();
     });
@@ -1075,6 +1071,8 @@ export default function Dashboard(props: any) {
             historyYArray.push([{ action: `${item} ${value}`, time: historyTime || elapsedText.minutes + ":" + elapsedText.seconds + "." + elapsedText.milliseconds, team: team }])
         }
         itemsYMap.set(`${team}${item}`, value);
+
+        startPossessionClock();
     }
     // [Core] End of GameProps Functions and States
 
@@ -1093,7 +1091,7 @@ export default function Dashboard(props: any) {
             clockData.set("timestamp", 0)
             clockData.set("elapsed", 0)
             clockData.set("paused", true)
-            clockData.set("stageTrigger", false);
+            clockData.set("stageTrigger", false)
             clockData.set("init", true)
 
             redShotClockData.clear()
@@ -1135,16 +1133,20 @@ export default function Dashboard(props: any) {
             gamePropsItems.set("blueThreePoint", 0);
             gameProps.set("items", gamePropsItems);
 
-            const gamePropsSettings = new Y.Map() as Y.Map<number>;
-            gamePropsSettings.set("PREP", 60);
-            gamePropsSettings.set("GAME", 120);
-            gamePropsSettings.set("END", 0);
+            const gamePropsSettings = new Y.Map() as Y.Map<any>;
+            gamePropsSettings.set("stages", gameSettings.stages);
             gameProps.set("settings", gamePropsSettings);
 
             gameProps.set("init", true)
         })
     }
     // [Core] End of Helper Functions and States
+
+    const openSettingModal = () => {
+        const settingsYMap = gameProps.get("settings") as Y.Map<any>;
+        setSyncGameSettings(settingsYMap.toJSON());
+        setGameSettingsModal(true);
+    }
 
 
     const [warningModal, setWarningModal] = useState(false);
@@ -1189,7 +1191,7 @@ export default function Dashboard(props: any) {
                             {onlineStatus == 1 ? "Connected" : onlineStatus == 0 ? "Disconnected" : "Large Time Diff"} <FontAwesomeIcon icon={faCircleDot} />
                         </Text>
                         <Flex flexDirection={"column"} textAlign={"end"} alignSelf={"end"} alignItems={"end"} rowGap={"0.3rem"}>
-                            <Button onClick={() => setGameSettingsModal(true)} colorScheme="green" size="sm">Game Setting</Button>
+                            <Button onClick={openSettingModal} colorScheme="green" size="sm">Game Setting</Button>
                             <Button as="a" href="/feedback" target="_blank" colorScheme="green" size="sm">Feedback</Button>
                         </Flex>
                     </Box>
@@ -1434,16 +1436,16 @@ export default function Dashboard(props: any) {
                                                 </Tr>
                                             </Thead>
                                             <Tbody>
-                                                {Object.keys(gameSettings.stages).map((stage, index) => {
+                                                {Object.keys(syncGameSettings.stages).map((stage, index) => {
                                                     return (
                                                         <Tr key={index}>
                                                             <Td p={"0.5rem"}>{stage}</Td>
                                                             <Td p={"0.5rem"}>
-                                                                <NumberInput min={0} max={999} w={"5rem"} size={"sm"} value={Number(syncGameSettings[stage as keyof typeof syncGameSettings])}
+                                                                <NumberInput min={0} max={999} w={"5rem"} size={"sm"} value={Number(syncGameSettings.stages[stage as keyof typeof syncGameSettings.stages])}
                                                                     onChange={(value) => {
                                                                         ydoc.transact((_y: any) => {
-                                                                            const gamePropsSettings = gameProps.get("settings") as Y.Map<number>;
-                                                                            gamePropsSettings.set(stage, Number(value));
+                                                                            const gamePropsSettings = gameProps.get("settings") as Y.Map<any>;
+                                                                            gamePropsSettings.set("stages", { ...gamePropsSettings.toJSON().stages, [stage]: Number(value) });
                                                                         })
                                                                     }}
                                                                 >
@@ -1460,7 +1462,7 @@ export default function Dashboard(props: any) {
                                             </Tbody>
                                         </Table>
                                     </TableContainer>
-                                    <Button mt={"0.5rem"} onClick={() => { setGameSettings({ ...gameSettings, stages: { ...gameProps.get("settings").toJSON() } }) }} colorScheme="purple" size={"sm"}>Save as preference</Button>
+                                    <Button mt={"0.5rem"} onClick={() => { setGameSettings({ ...gameSettings, stages: { ...gameProps.get("settings").toJSON()["stages"] } }) }} colorScheme="purple" size={"sm"}>Save as preference</Button>
                                 </AccordionPanel>
                             </AccordionItem>
                             <AccordionItem>
@@ -1486,7 +1488,7 @@ export default function Dashboard(props: any) {
                         {buildVersion ? <Text fontSize={"0.75rem"}>Version: {(buildVersion as string).substring(0, 6)}</Text> : <Text fontSize={"0.75rem"}>Version: Development</Text>}
                     </ModalFooter> */}
                 </ModalContent>
-            </Modal>
+            </Modal >
         </>
     )
 }
