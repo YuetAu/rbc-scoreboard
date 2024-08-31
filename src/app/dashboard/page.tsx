@@ -18,7 +18,7 @@ import ReactMarkdown from "react-markdown";
 import * as Y from "yjs";
 import { changeLogs } from "../common/changeLogs";
 import Teams from "../props/dashboard/teams.json";
-import NextLink from 'next/link'
+import NextLink from 'next/link';
 
 
 export default function Dashboard(props: any) {
@@ -44,7 +44,7 @@ export default function Dashboard(props: any) {
         }
     }, [])
 
-    const buildVersion = process.env.CF_PAGES_COMMIT_SHA || null;
+    //const buildVersion = process.env.CF_PAGES_COMMIT_SHA || null;
 
     // [Sys] TimeSync Functions and States
     const timeOffset = useRef(0);
@@ -1153,10 +1153,6 @@ export default function Dashboard(props: any) {
 
     return (
         <>
-            <Head>
-                <title>{"Robocon 2025"}</title>
-            </Head>
-
             <Grid
                 h={containerHeight}
                 templateRows='repeat(7, 1fr)'
@@ -1492,9 +1488,9 @@ export default function Dashboard(props: any) {
 
                     </ModalBody>
 
-                    <ModalFooter>
+                    {/* <ModalFooter>
                         {buildVersion ? <Text fontSize={"0.75rem"}>Version: {(buildVersion as string).substring(0, 6)}</Text> : <Text fontSize={"0.75rem"}>Version: Development</Text>}
-                    </ModalFooter>
+                    </ModalFooter> */}
                 </ModalContent>
             </Modal>
         </>
