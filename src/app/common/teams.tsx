@@ -26,7 +26,7 @@ export const TEAMS = {
         },
         {
             "cname": "城大 夢成真",
-            "ename": "City DreamDevelopment"
+            "ename": "City Dream Development"
         },
         {
             "cname": "城大 夢一城",
