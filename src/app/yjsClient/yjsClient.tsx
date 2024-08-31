@@ -12,8 +12,8 @@ export class YJsClient {
     constructor(gameID: string) {
         this.gameID = gameID;
         this.ydoc = new Y.Doc();
-        this.yPartyProvider = new YPartyKitProvider("https://rt-scoreboard-party.yuetau.partykit.dev", this.gameID, this.ydoc, { connect: this.gameID ? true : false });
-        this.webrtcProvider = location.protocol == 'https:' ? new WebrtcProvider(this.gameID, this.ydoc, { password: "RT-ScoreBoardIsGreat", signaling: ["wss://wrtc1.ustrobocon.win", "wss://wrtc2.ustrobocon.win"] }) : undefined;
+        this.yPartyProvider = new YPartyKitProvider("https://rt-scoreboard-party.yuetau.partykit.dev", "RBC2025" + this.gameID, this.ydoc, { connect: this.gameID ? true : false });
+        this.webrtcProvider = location.protocol == 'https:' ? new WebrtcProvider("RBC2025" + this.gameID, this.ydoc, { password: "RT-ScoreBoardIsGreat2025", signaling: ["wss://wrtc1.ustrobocon.win", "wss://wrtc2.ustrobocon.win"] }) : undefined;
     }
 
     getYDoc() {
