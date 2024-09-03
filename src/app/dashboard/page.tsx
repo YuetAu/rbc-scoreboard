@@ -1257,19 +1257,6 @@ export default function Dashboard(props: any) {
                             </Box>
                             <Box
                                 position="absolute"
-                                left="33%"
-                                top="80%"
-                                transform="translate(-50%, -50%) scale(1)"
-                                transformOrigin='center'
-                                shadow={"lg"} rounded={"lg"} px={"0.5rem"}
-                                bgColor={"white"}
-                                fontSize={"1rem"}
-                                userSelect={"none"}
-                            >
-                                Red Offending
-                            </Box>
-                            <Box
-                                position="absolute"
                                 right="15%"
                                 top="50%"
                                 transform="translate(-50%, -50%) scale(1)"
@@ -1294,19 +1281,6 @@ export default function Dashboard(props: any) {
                                 transformOrigin='center'
                             >
                                 <Counter counter={itemsState.blueThreePoint} setCounter={(val: number) => ballScoring("ThreePoint", val, "blue")} color={"blue"} />
-                            </Box>
-                            <Box
-                                position="absolute"
-                                right="14%"
-                                top="80%"
-                                transform="translate(-50%, -50%) scale(1)"
-                                transformOrigin='center'
-                                shadow={"lg"} rounded={"lg"} px={"0.5rem"}
-                                bgColor={"white"}
-                                fontSize={"1rem"}
-                                userSelect={"none"}
-                            >
-                                Blue Offending
                             </Box>
                         </Box>
                     </Flex>
