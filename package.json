@@ -21,7 +21,7 @@
     "@fortawesome/free-solid-svg-icons": "^6.6.0",
     "@fortawesome/react-fontawesome": "^0.2.2",
     "@million/lint": "1.0.0-rc.84",
-    "framer-motion": "^11.3.31",
+    "framer-motion": "^11.4.0",
     "next": "14.2.7",
     "partykit": "^0.0.110",
     "random-word-slugs": "^0.1.7",
@@ -34,7 +34,7 @@
     "yjs": "^13.6.18"
   },
   "devDependencies": {
-    "@types/node": "^22.5.2",
+    "@types/node": "^22.5.3",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "autoprefixer": "^10.4.20",
