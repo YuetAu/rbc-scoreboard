@@ -10,6 +10,7 @@ export const metadata: Metadata = {
     authors: [{ name: 'YuetAu', url: 'https://yuetau.net' }, { name: 'BenChan', url: 'https://www.instagram.com/cheukyanzzz/' }],
     creator: 'YuetAu',
     publisher: 'YuetAu',
+    metadataBase: new URL('https://robocon2025.yuetau.net'),
     openGraph: {
         images: '/og/YuetAuRobocon.svg',
     },
