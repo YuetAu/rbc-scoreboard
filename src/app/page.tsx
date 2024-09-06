@@ -13,11 +13,7 @@ export async function generateMetadata(): Promise<Metadata> {
     let metadata = {
         metadataBase: new URL(`http://${origin}`),
         openGraph: {
-            images: [
-                {
-                    url: origin?.includes("ustrobocon.win") ? `/og/HKUSTRobocon.svg` : `/og/YuetAuRobocon.svg`,
-                }
-            ]
+            images: origin?.includes("ustrobocon.win") ? `/og/HKUSTRobocon.svg` : `/og/YuetAuRobocon.svg`,
         }
     };
     return metadata;
