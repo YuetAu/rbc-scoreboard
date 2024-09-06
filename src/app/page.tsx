@@ -12,8 +12,9 @@ export default function Home() {
 export async function generateMetadata(): Promise<Metadata> {
     const headersList = headers();
     const origin = headersList.get('host');
+    console.log(origin);
     let metadata = {
-        metadataBase: new URL(`http://${origin}`),
+        metadataBase: new URL(`https://${origin}`),
         openGraph: {
             images: origin?.includes("ustrobocon.win") ? `/og/HKUSTRobocon.svg` : `/og/YuetAuRobocon.svg`,
         }
