@@ -1,6 +1,24 @@
+import { Metadata } from 'next';
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 export default function Home() {
     redirect(`/dashboard`)
     return (<></>)
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+    const headersList = headers();
+    const origin = headersList.get('host');
+    let metadata = {
+        metadataBase: new URL(`http://${origin}`),
+        openGraph: {
+            images: [
+                {
+                    url: origin?.includes("ustrobocon.win") ? `/og/HKUSTRobocon.svg` : `/og/YuetAuRobocon.svg`,
+                }
+            ]
+        }
+    };
+    return metadata;
 }

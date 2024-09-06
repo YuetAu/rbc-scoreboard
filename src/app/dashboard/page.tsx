@@ -19,6 +19,8 @@ import * as Y from "yjs";
 import { changeLogs } from "../common/changeLogs";
 import Image from "next/image";
 import GameFieldImage from "../images/GameField.png";
+import { Metadata } from "next";
+import { headers } from "next/headers";
 
 
 export default function Dashboard(props: any) {
@@ -1468,4 +1470,20 @@ export default function Dashboard(props: any) {
             </Modal >
         </>
     )
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+    const headersList = headers();
+    const origin = headersList.get('host');
+    let metadata = {
+        metadataBase: new URL(`http://${origin}`),
+        openGraph: {
+            images: [
+                {
+                    url: origin?.includes("ustrobocon.win") ? `/og/HKUSTRobocon.svg` : `/og/YuetAuRobocon.svg`,
+                }
+            ]
+        }
+    };
+    return metadata;
 }
