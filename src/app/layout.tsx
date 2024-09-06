@@ -14,8 +14,8 @@ export const metadata: Metadata = {
         images: '/og/YuetAuRobocon.svg',
     },
     icons: {
-        icon: '/icon?<generated>',
-        apple: '/apple-icon?<generated>',
+        icon: '/logo/RandomRobot.png',
+        apple: '/logo/RandomRobot.png',
     },
 }
 

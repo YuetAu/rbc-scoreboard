@@ -8,7 +8,7 @@ import { ScoreDisplay } from "@/app/props/dashboard/ScoreDisplay";
 import { PossessionClock, ShotClock } from "@/app/props/dashboard/ShotClock";
 import TimerBox from "@/app/props/dashboard/TimerBox";
 import { YJsClient } from "@/app/yjsClient/yjsClient";
-import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, Flex, Grid, GridItem, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, NumberDecrementStepper, NumberIncrementStepper, NumberInput, NumberInputField, NumberInputStepper, Switch, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tr, useToast } from "@chakra-ui/react";
+import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, Flex, Grid, GridItem, Input, Image, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, NumberDecrementStepper, NumberIncrementStepper, NumberInput, NumberInputField, NumberInputStepper, Switch, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tr, useToast } from "@chakra-ui/react";
 import "@fontsource-variable/quicksand";
 import { faCircleDot } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -17,10 +17,6 @@ import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import * as Y from "yjs";
 import { changeLogs } from "../common/changeLogs";
-import Image from "next/image";
-import GameFieldImage from "../images/GameField.png";
-import { Metadata } from "next";
-import { headers } from "next/headers";
 
 
 export default function Dashboard(props: any) {
@@ -1166,7 +1162,7 @@ export default function Dashboard(props: any) {
                 fontFamily={"Quicksand Variable, sans-serif"}
                 fontWeight={"700"}
                 fontSize={"2rem"}
-                onContextMenu={(e) => e.preventDefault()}
+                onContextMenu={(e: any) => e.preventDefault()}
             >
 
                 <GridItem rowSpan={1} colSpan={1} m={"1vw"}>
@@ -1191,7 +1187,7 @@ export default function Dashboard(props: any) {
                 </GridItem>
                 <GridItem rowSpan={1} colSpan={1} m={"1vw"}>
                     <Box textAlign={"end"} fontSize={"0.6em"} textColor={"white"}>
-                        <Text textColor={onlineStatus == 1 ? 'lightgreen' : onlineStatus == 0 ? 'lightcoral' : 'orange'} userSelect={"none"} onClick={(e) => { onlineStatus == 2 && setTimeOffsetModal(true) }} style={{ cursor: onlineStatus == 2 ? "pointer" : "auto" }}>
+                        <Text textColor={onlineStatus == 1 ? 'lightgreen' : onlineStatus == 0 ? 'lightcoral' : 'orange'} userSelect={"none"} onClick={() => { onlineStatus == 2 && setTimeOffsetModal(true) }} style={{ cursor: onlineStatus == 2 ? "pointer" : "auto" }}>
                             {onlineStatus == 1 ? "Connected" : onlineStatus == 0 ? "Disconnected" : "Large Time Diff"} <FontAwesomeIcon icon={faCircleDot} />
                         </Text>
                         <Flex flexDirection={"column"} textAlign={"end"} alignSelf={"end"} alignItems={"end"} rowGap={"0.3rem"}>
@@ -1224,7 +1220,7 @@ export default function Dashboard(props: any) {
                     <Flex alignItems={"center"} height={"100%"} justifyContent={"center"}>
                         <Box position="relative" width="100%" height="100%">
                             <Image
-                                src={GameFieldImage}
+                                src="/GameField.png"
                                 alt="Field"
                                 style={{
                                     width: '100%',
@@ -1420,7 +1416,7 @@ export default function Dashboard(props: any) {
                                                             <Td p={"0.5rem"}>{stage}</Td>
                                                             <Td p={"0.5rem"}>
                                                                 <NumberInput min={0} max={999} w={"5rem"} size={"sm"} value={Number(syncGameSettings.stages[stage as keyof typeof syncGameSettings.stages])}
-                                                                    onChange={(value) => {
+                                                                    onChange={(value: any) => {
                                                                         ydoc.transact((_y: any) => {
                                                                             const gamePropsSettings = gameProps.get("settings") as Y.Map<any>;
                                                                             gamePropsSettings.set("stages", { ...gamePropsSettings.toJSON().stages, [stage]: Number(value) });
