@@ -2,6 +2,8 @@ import { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
+export const runtime = 'edge';
+
 export default function Home() {
     redirect(`/dashboard`)
     return (<></>)
