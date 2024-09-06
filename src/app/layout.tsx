@@ -1,10 +1,19 @@
 import './styles/globals.css'
 import { Providers } from './providers'
 import { Metadata } from 'next'
+import { headers } from "next/headers";
 
 export const metadata: Metadata = {
     title: "Robocon 2025",
     description: "The Unoffical Scoreboard for Robocon 2025",
+    keywords: ["Robocon", "2025", "Scoreboard"],
+    authors: [{ name: 'YuetAu', url: 'https://yuetau.net' }, { name: 'BenChan', url: 'https://www.instagram.com/cheukyanzzz/' }],
+    creator: 'YuetAu',
+    publisher: 'YuetAu',
+    icons: {
+        icon: '/icon?<generated>',
+        apple: '/apple-icon?<generated>',
+    },
 }
 
 export default function RootLayout({
@@ -21,4 +30,20 @@ export default function RootLayout({
             </body>
         </html>
     )
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+    const headersList = headers();
+    const origin = headersList.get('host');
+    let metadata = {
+        metadataBase: new URL(`http://${origin}`),
+        openGraph: {
+            images: [
+                {
+                    url: origin?.includes("ustrobocon.win") ? `/og/HKUSTRobocon.svg` : `/og/YuetAuRobocon.svg`,
+                }
+            ]
+        }
+    };
+    return metadata;
 }

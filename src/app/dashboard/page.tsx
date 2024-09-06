@@ -8,7 +8,7 @@ import { ScoreDisplay } from "@/app/props/dashboard/ScoreDisplay";
 import { PossessionClock, ShotClock } from "@/app/props/dashboard/ShotClock";
 import TimerBox from "@/app/props/dashboard/TimerBox";
 import { YJsClient } from "@/app/yjsClient/yjsClient";
-import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, Flex, Grid, GridItem, Image, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, NumberDecrementStepper, NumberIncrementStepper, NumberInput, NumberInputField, NumberInputStepper, Switch, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tr, useToast } from "@chakra-ui/react";
+import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, Flex, Grid, GridItem, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, NumberDecrementStepper, NumberIncrementStepper, NumberInput, NumberInputField, NumberInputStepper, Switch, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tr, useToast } from "@chakra-ui/react";
 import "@fontsource-variable/quicksand";
 import { faCircleDot } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -17,6 +17,8 @@ import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import * as Y from "yjs";
 import { changeLogs } from "../common/changeLogs";
+import Image from "next/image";
+import GameFieldImage from "../images/GameField.png";
 
 
 export default function Dashboard(props: any) {
@@ -1220,7 +1222,7 @@ export default function Dashboard(props: any) {
                     <Flex alignItems={"center"} height={"100%"} justifyContent={"center"}>
                         <Box position="relative" width="100%" height="100%">
                             <Image
-                                src="GameField.png"
+                                src={GameFieldImage}
                                 alt="Field"
                                 style={{
                                     width: '100%',
@@ -1461,6 +1463,7 @@ export default function Dashboard(props: any) {
                     {/* <ModalFooter>
                         {buildVersion ? <Text fontSize={"0.75rem"}>Version: {(buildVersion as string).substring(0, 6)}</Text> : <Text fontSize={"0.75rem"}>Version: Development</Text>}
                     </ModalFooter> */}
+
                 </ModalContent>
             </Modal >
         </>
