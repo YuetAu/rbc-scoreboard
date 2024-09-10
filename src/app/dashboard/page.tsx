@@ -10,6 +10,7 @@ import TimerBox from "@/app/props/dashboard/TimerBox";
 import { YJsClient } from "@/app/yjsClient/yjsClient";
 import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, Flex, Grid, GridItem, Input, Image, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, NumberDecrementStepper, NumberIncrementStepper, NumberInput, NumberInputField, NumberInputStepper, Switch, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tr, useToast } from "@chakra-ui/react";
 import "@fontsource-variable/quicksand";
+import '@fontsource-variable/noto-sans-tc';
 import { faCircleDot } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Head from 'next/head';
@@ -137,7 +138,27 @@ export default function Dashboard(props: any) {
     // [Features] GameSetting Functions and States
     const isFirstReadSettings = useRef(false);
     const [gameSettingsModal, setGameSettingsModal] = useState(false);
-    const [gameSettings, setGameSettings] = useState({ sounds: { preGameCountdown: true, endGameCountdown: true, shotClock8sTone: true, shotClockEndTone: true }, stages: { PREP: 60, GAME: 120, END: 0 }, changeLogs: 0, behaviour: { possessionAfterScored: true } });
+    const [gameSettings, setGameSettings] = useState(
+        {
+            sounds: {
+                preGameCountdown: true,
+                endGameCountdown: true,
+                shotClock8sTone: true,
+                shotClockEndTone: true
+            },
+            stages: {
+                PREP: 60,
+                GAME: 120,
+                END: 0
+            },
+            changeLogs: 0,
+            behaviour: {
+                possessionAfterScored: true,
+            },
+            layout: {
+                smDevice: false,
+            }
+        });
     const gameSettingsRef = useRef(gameSettings);
 
     const [changeLogsModal, setChangeLogsModal] = useState(false);
@@ -1159,7 +1180,7 @@ export default function Dashboard(props: any) {
                 templateColumns='repeat(4, 1fr)'
                 bgColor={"gray.600"}
                 overflow={"hidden"}
-                fontFamily={"Quicksand Variable, sans-serif"}
+                fontFamily={"Quicksand Variable, Noto Sans TC Variable, sans-serif"}
                 fontWeight={"700"}
                 fontSize={"2rem"}
                 onContextMenu={(e: any) => e.preventDefault()}
@@ -1235,7 +1256,7 @@ export default function Dashboard(props: any) {
                                 transform="translate(-50%, -50%) scale(1)"
                                 transformOrigin='center'
                             >
-                                <Counter counter={itemsState.redDunk} setCounter={(val: number) => ballScoring("Dunk", val, "red")} color={"red"} />
+                                <Counter counter={itemsState.redDunk} setCounter={(val: number) => ballScoring("Dunk", val, "red")} color={"red"} smDevice={gameSettings.layout.smDevice} />
                             </Box>
                             <Box
                                 position="absolute"
@@ -1244,7 +1265,7 @@ export default function Dashboard(props: any) {
                                 transform="translate(-50%, -50%) scale(1)"
                                 transformOrigin='center'
                             >
-                                <Counter counter={itemsState.redTwoPoint} setCounter={(val: number) => ballScoring("TwoPoint", val, "red")} color={"red"} />
+                                <Counter counter={itemsState.redTwoPoint} setCounter={(val: number) => ballScoring("TwoPoint", val, "red")} color={"red"} smDevice={gameSettings.layout.smDevice} />
                             </Box>
                             <Box
                                 position="absolute"
@@ -1253,7 +1274,7 @@ export default function Dashboard(props: any) {
                                 transform="translate(-50%, -50%) scale(1)"
                                 transformOrigin='center'
                             >
-                                <Counter counter={itemsState.redThreePoint} setCounter={(val: number) => ballScoring("ThreePoint", val, "red")} color={"red"} />
+                                <Counter counter={itemsState.redThreePoint} setCounter={(val: number) => ballScoring("ThreePoint", val, "red")} color={"red"} smDevice={gameSettings.layout.smDevice} />
                             </Box>
                             <Box
                                 position="absolute"
@@ -1262,7 +1283,7 @@ export default function Dashboard(props: any) {
                                 transform="translate(-50%, -50%) scale(1)"
                                 transformOrigin='center'
                             >
-                                <Counter counter={itemsState.blueDunk} setCounter={(val: number) => ballScoring("Dunk", val, "blue")} color={"blue"} />
+                                <Counter counter={itemsState.blueDunk} setCounter={(val: number) => ballScoring("Dunk", val, "blue")} color={"blue"} smDevice={gameSettings.layout.smDevice} />
                             </Box>
                             <Box
                                 position="absolute"
@@ -1271,7 +1292,7 @@ export default function Dashboard(props: any) {
                                 transform="translate(-50%, -50%) scale(1)"
                                 transformOrigin='center'
                             >
-                                <Counter counter={itemsState.blueTwoPoint} setCounter={(val: number) => ballScoring("TwoPoint", val, "blue")} color={"blue"} />
+                                <Counter counter={itemsState.blueTwoPoint} setCounter={(val: number) => ballScoring("TwoPoint", val, "blue")} color={"blue"} smDevice={gameSettings.layout.smDevice} />
                             </Box>
                             <Box
                                 position="absolute"
@@ -1280,7 +1301,7 @@ export default function Dashboard(props: any) {
                                 transform="translate(-50%, -50%) scale(1)"
                                 transformOrigin='center'
                             >
-                                <Counter counter={itemsState.blueThreePoint} setCounter={(val: number) => ballScoring("ThreePoint", val, "blue")} color={"blue"} />
+                                <Counter counter={itemsState.blueThreePoint} setCounter={(val: number) => ballScoring("ThreePoint", val, "blue")} color={"blue"} smDevice={gameSettings.layout.smDevice} />
                             </Box>
                         </Box>
                     </Flex>
@@ -1389,6 +1410,19 @@ export default function Dashboard(props: any) {
                                     <br />
                                     <Flex my="0.5rem"><Switch colorScheme='teal' size='md' isChecked={gameSettings.sounds.shotClock8sTone} onChange={() => { setGameSettings({ ...gameSettings, sounds: { ...gameSettings.sounds, shotClock8sTone: !gameSettings.sounds.shotClock8sTone } }) }} /> <Box mt={"-0.2rem"} ml={"0.5rem"}>ShotClock 8s Tone</Box></Flex>
                                     <Flex my="0.5rem"><Switch colorScheme='teal' size='md' isChecked={gameSettings.sounds.shotClockEndTone} onChange={() => { setGameSettings({ ...gameSettings, sounds: { ...gameSettings.sounds, shotClockEndTone: !gameSettings.sounds.shotClockEndTone } }) }} /> <Box mt={"-0.2rem"} ml={"0.5rem"}>ShotClock/PossessionClock End Tone</Box></Flex>
+                                </AccordionPanel>
+                            </AccordionItem>
+                            <AccordionItem>
+                                <h2>
+                                    <AccordionButton>
+                                        <Box as='span' flex='1' textAlign='left'>
+                                            Layout
+                                        </Box>
+                                        <AccordionIcon />
+                                    </AccordionButton>
+                                </h2>
+                                <AccordionPanel>
+                                    <Flex my="0.5rem"><Switch colorScheme='teal' size='md' isChecked={gameSettings.layout.smDevice} onChange={() => { setGameSettings({ ...gameSettings, layout: { ...gameSettings.layout, smDevice: !gameSettings.layout.smDevice } }) }} /> <Box mt={"-0.2rem"} ml={"0.5rem"}>Enable Helper Button</Box></Flex>
                                 </AccordionPanel>
                             </AccordionItem>
                             <AccordionItem>
