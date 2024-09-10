@@ -1071,6 +1071,14 @@ export default function Dashboard(props: any) {
             })
             return;
         }
+        if (!possessionClockData.get("paused") as boolean) {
+            toast({
+                title: "No editing during possession change.",
+                status: 'error',
+                duration: 500,
+            })
+            return;
+        }
 
         if ((itemsYMap.get(`${team}${item}`) as number) > value) {
             const indicesToDelete: number[] = [];
