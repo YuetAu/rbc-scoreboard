@@ -93,10 +93,12 @@ export const TEAMS = {
         {
             "cname": "馬來西亞理工",
             "ename": "UTM Robocon"
-        },
+        }
+    ],
+    "Vietnam": [
         {
             "cname": "雒鴻大學",
             "ename": "Lạc Hồng University",
         }
-    ],
+    ]
 }
