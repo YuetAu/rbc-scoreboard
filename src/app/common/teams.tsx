@@ -85,7 +85,7 @@ export const TEAMS = {
             "ename": "UTokyo RoboTech"
         },
         {
-            "cname": "豊橋",
+            "cname": "豊橋技科大",
             "ename": "TUT☆RC"
         }
     ],
@@ -93,6 +93,10 @@ export const TEAMS = {
         {
             "cname": "馬來西亞理工",
             "ename": "UTM Robocon"
+        },
+        {
+            "cname": "雒鴻大學",
+            "ename": "Lạc Hồng University",
         }
     ],
 }
