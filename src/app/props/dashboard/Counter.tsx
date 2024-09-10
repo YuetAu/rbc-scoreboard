@@ -16,8 +16,8 @@ export function Counter(props: any) {
                 userSelect: "none",
                 cursor: "pointer",
             }}
-                onClick={(e) => { props.smDevice ? e.preventDefault() : e.preventDefault(); props.setCounter(props.counter + 1); }}
-                onContextMenu={(e) => { props.disableLeftClick || props.smDevice ? e.preventDefault() : e.preventDefault(); props.setCounter(props.counter - 1 > 0 ? props.counter - 1 : 0); }}
+                onClick={() => { !props.smDevice ? props.setCounter(props.counter + 1) : true }}
+                onContextMenu={() => { !props.disableLeftClick && !props.smDevice ? props.setCounter(props.counter - 1 > 0 ? props.counter - 1 : 0) : true }}
             >
                 {props.counter}
                 {props.smDevice && (<>
@@ -35,7 +35,7 @@ export function Counter(props: any) {
                             userSelect: "none",
                             cursor: "pointer",
                         }}
-                        onClick={(e) => { e.preventDefault(); props.setCounter(props.counter - 1); }}
+                        onClick={(e) => { console.log("Minus"); e.preventDefault(); props.setCounter(props.counter - 1 > 0 ? props.counter - 1 : 0); }}
                     >
                         {"-"}
                     </Box>
@@ -53,7 +53,7 @@ export function Counter(props: any) {
                             userSelect: "none",
                             cursor: "pointer",
                         }}
-                        onClick={(e) => { e.preventDefault(); props.setCounter(props.counter + 1); }}
+                        onClick={(e) => { console.log("Plus"); e.preventDefault(); props.setCounter(props.counter + 1); }}
                     >
                         {"+"}
                     </Box>
