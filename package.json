@@ -13,6 +13,7 @@
     "@chakra-ui/react": "^2.8.2",
     "@emotion/react": "^11.13.3",
     "@emotion/styled": "^11.13.0",
+    "@fontsource-variable/noto-sans-tc": "^5.0.7",
     "@fontsource-variable/quicksand": "^5.0.19",
     "@fontsource-variable/source-code-pro": "^5.0.20",
     "@fortawesome/fontawesome-svg-core": "^6.6.0",
