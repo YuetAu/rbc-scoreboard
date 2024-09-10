@@ -324,7 +324,7 @@ export default function Dashboard(props: any) {
             // For On-screen clock display
             const remainingMinutes = Math.floor(remainingTime / 60000) + "";
             const remainingSeconds = Math.floor(remainingTime / 1000 % 60) + "";
-            const remainingMilliseconds = remainingTime % 1000 + "";
+            const remainingMilliseconds = Math.floor(remainingTime % 1000) + "";
             setClockText({
                 minutes: remainingMinutes.length < 2 ? "0" + remainingMinutes : remainingMinutes,
                 seconds: remainingSeconds.length < 2 ? "0" + remainingSeconds : remainingSeconds,
@@ -335,7 +335,7 @@ export default function Dashboard(props: any) {
             // For history entries
             const elapsedMinutes = Math.floor(elapsedTime / 60000) + "";
             const elapsedSeconds = Math.floor(elapsedTime / 1000 % 60) + "";
-            const elapsedMilliseconds = elapsedTime % 1000 + "";
+            const elapsedMilliseconds = Math.floor(elapsedTime % 1000) + "";
             setElapsedText({
                 minutes: elapsedMinutes.length < 2 ? "0" + elapsedMinutes : elapsedMinutes,
                 seconds: elapsedSeconds.length < 2 ? "0" + elapsedSeconds : elapsedSeconds,
