@@ -418,6 +418,13 @@ export default function Dashboard(props: any) {
                     stopClock();
                     resetStage();
                 }
+
+                // Stop all clock when game end to add points if needed
+                if (newGameStage == "END") {
+                    stopPossessionClock();
+                    stopRedShotClock();
+                    stopBlueShotClock();
+                }
             }
         }
     }
