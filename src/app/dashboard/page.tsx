@@ -13,7 +13,6 @@ import "@fontsource-variable/quicksand";
 import '@fontsource-variable/noto-sans-tc';
 import { faCircleDot } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import Head from 'next/head';
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import * as Y from "yjs";
@@ -1206,7 +1205,22 @@ export default function Dashboard(props: any) {
 
                 <GridItem rowSpan={1} colSpan={1} m={"1vw"}>
                     <Box fontSize={"0.6em"} textColor={"white"}>
-                        <Text><span style={{ userSelect: "none" }}>GameID: </span><span style={{ cursor: "pointer" }} onClick={() => { navigator.clipboard.writeText(gameID).then(() => toast({ title: "GameID Copied!", status: "success", duration: 1000 })) }}>{gameID}</span></Text>
+                        <Flex flexDir="row">
+                            <Text userSelect="none">{"GameID:"}</Text>
+                            <Text
+                                cursor="pointer"
+                                textShadow="0 0 16px white"
+                                color="transparent"
+                                _hover={{ textShadow: "none", color: "white" }}
+                                onClick={() => {
+                                    navigator.clipboard.writeText(gameID).then(() =>
+                                        toast({ title: "GameID Copied!", status: "success", duration: 1000 })
+                                    );
+                                }}
+                            >
+                                {gameID}
+                            </Text>
+                        </Flex>
                         <Button onClick={forceReset} colorScheme="red" size="sm" >
                             Force Reset
                         </Button>
