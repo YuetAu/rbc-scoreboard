@@ -3,13 +3,6 @@ import { useEffect, useRef } from "react";
 
 export default function HistoryList(props: any) {
 
-    const scrollRef = useRef<HTMLDivElement>(null);
-    useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-        }
-    }, [props.history]);
-
 
     return (
         <Flex width={"100%"} alignItems={"center"} justifyContent={"center"}>
@@ -36,7 +29,6 @@ export default function HistoryList(props: any) {
                     </Thead>
                 </Table>
                 <div
-                    ref={scrollRef}
                     style={{
                         overflowY: "scroll",
                         height: "calc(100% - 1.5rem)",
