@@ -18,6 +18,7 @@ import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import * as Y from "yjs";
 import { changeLogs } from "../common/changeLogs";
+import { MarkdownComponents } from "../helpers/markdown";
 
 
 export default function Dashboard(props: any) {
@@ -1387,7 +1388,7 @@ export default function Dashboard(props: any) {
                                 <Box key={index} mb={"1rem"}>
                                     <Text fontSize={"0.8em"} as={"sub"}>{log.version}</Text>
                                     <Text fontWeight={"bold"}>{log.date}</Text>
-                                    <ReactMarkdown className={"markdown"}>
+                                    <ReactMarkdown className={"markdown"} components={MarkdownComponents}>
                                         {log.content}
                                     </ReactMarkdown>
                                     <Text fontSize={"1.1em"} as={"i"}>- {log.author}</Text>
