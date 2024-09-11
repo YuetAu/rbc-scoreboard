@@ -21,8 +21,8 @@ export default function HistoryList(props: any) {
                 <Table variant="striped" size="sm">
                     <Thead>
                         <Tr>
-                            <Th>Action</Th>
-                            <Th>Time</Th>
+                            <Th width={"50%"}>Action</Th>
+                            <Th width={"50%"}>Time</Th>
                         </Tr>
                     </Thead>
                 </Table>
@@ -40,8 +40,8 @@ export default function HistoryList(props: any) {
                                 if (item.team === props.color) {
                                     return (
                                         <Tr key={`${Date.now()}${item.action}${item.time}${String(Math.floor(10000000 + Math.random() * 90000000))}`}>
-                                            <Td>{item.action}</Td>
-                                            <Td>{item.time}</Td>
+                                            <Td width={"50%"}>{item.action}</Td>
+                                            <Td width={"50%"}>{item.time}</Td>
                                         </Tr>
                                     )
                                 }
