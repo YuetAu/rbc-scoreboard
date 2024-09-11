@@ -1109,7 +1109,9 @@ export default function Dashboard(props: any) {
         }
         itemsYMap.set(`${team}${item}`, value);
 
-        startPossessionClock();
+        if (clockData.get("stage") as string === "GAME") {
+            startPossessionClock();
+        }
     }
     // [Core] End of GameProps Functions and States
 
