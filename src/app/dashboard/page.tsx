@@ -1248,9 +1248,9 @@ export default function Dashboard(props: any) {
                 </GridItem>
                 <GridItem rowSpan={1} colSpan={2} m={"1vw"}>
                     <Flex flexDir={"row"} justifyContent={"space-between"}>
-                        <ShotClock color={"blue"} timeText={blueShotClockText} startClock={startBlueShotClock} resetClock={resetBlueShotClock} clockPaused={blueShotClockPaused} possessionClockPaused={possessionClockPaused} possessionData={possessionData} />
-                        <PossessionClock timeText={possessionClockText} startClock={startPossessionClock} resetClock={resetPossessionClock} />
-                        <ShotClock color={"red"} timeText={redShotClockText} startClock={startRedShotClock} resetClock={resetRedShotClock} clockPaused={redShotClockPaused} possessionClockPaused={possessionClockPaused} possessionData={possessionData} />
+                        <ShotClock color={"blue"} timeText={blueShotClockText} startClock={startBlueShotClock} resetClock={resetBlueShotClock} clockPaused={blueShotClockPaused} possessionClockPaused={possessionClockPaused} possessionData={possessionData} smDevice={gameSettings.layout.smDevice} />
+                        <PossessionClock timeText={possessionClockText} startClock={startPossessionClock} resetClock={resetPossessionClock} clockPaused={possessionClockPaused} smDevice={gameSettings.layout.smDevice} />
+                        <ShotClock color={"red"} timeText={redShotClockText} startClock={startRedShotClock} resetClock={resetRedShotClock} clockPaused={redShotClockPaused} possessionClockPaused={possessionClockPaused} possessionData={possessionData} smDevice={gameSettings.layout.smDevice} />
                     </Flex>
                 </GridItem>
                 <GridItem rowSpan={5} colSpan={2} m={"1vw"}>

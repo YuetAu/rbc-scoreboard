@@ -5,6 +5,7 @@ export function ShotClock(props: any) {
     return (
         <Flex>
             <Box shadow={"lg"} rounded={"lg"} style={{
+                position: "relative",
                 textAlign: "center",
                 lineHeight: "1.8rem",
                 backgroundColor: props.color == "red" ? "#F56565" : props.color == "blue" ? "#11B5E4" : props.color == "gold" ? "#F9A825" : "white",
@@ -14,33 +15,99 @@ export function ShotClock(props: any) {
                 userSelect: "none",
                 cursor: "pointer",
             }}
-                onClick={(e) => { e.preventDefault(); props.possessionData.set("nextPossession", props.color) }}
-                onContextMenu={(e) => { e.preventDefault(); props.resetClock(); props.startClock(); }}
+                onClick={(e) => { !props.smDevice ? props.possessionData.set("nextPossession", props.color) : true }}
+                onContextMenu={() => { if (!props.smDevice) { props.resetClock(); props.startClock(); } }}
             >
                 <Text fontSize={"0.5em"}>Shot Clock</Text>
                 <Text fontSize={"0.8em"} margin={"0.2rem"} fontFamily={"'Source Code Pro Variable', sans-serif"}>{props.timeText.seconds}.{props.timeText.milliseconds}</Text>
+                {props.smDevice && (<>
+                    <Box
+                        position={"absolute"}
+                        top={"4.5rem"}
+                        left={"-0.5rem"}
+                        width={"8rem"}
+                        zIndex={5}
+                        backgroundColor={props.possessionData.get("nextPossession") == props.color ? "gray.500" : "white"}
+                        shadow={"md"} rounded={"sm"} style={{
+                            fontSize: "1rem",
+                            textAlign: "center",
+                            lineHeight: "2rem",
+                            color: "black",
+                            //width: "2rem",
+                            userSelect: "none",
+                            cursor: "pointer",
+                        }}
+                        onClick={() => { props.possessionData.set("nextPossession", props.color); }}
+                    >
+                        {"Next Possession"}
+                    </Box>
+                    <Box
+                        position={"absolute"}
+                        top={"7rem"}
+                        left={"-0.5rem"}
+                        width={"8rem"}
+                        zIndex={5}
+                        backgroundColor={props.clockPaused ? "white" : "gray.500"}
+                        shadow={"md"} rounded={"sm"} style={{
+                            fontSize: "1rem",
+                            textAlign: "center",
+                            lineHeight: "2rem",
+                            color: "black",
+                            //width: "2rem",
+                            userSelect: "none",
+                            cursor: "pointer",
+                        }}
+                        onClick={() => { if (props.clockPaused) { props.resetClock(); props.startClock(); } }}
+                    >
+                        {"Start Now"}
+                    </Box>
+                </>)}
             </Box>
-        </Flex>
+        </Flex >
     )
 }
 
 export function PossessionClock(props: any) {
     return (
         <Flex>
-            <Box shadow={"lg"} rounded={"lg"} style={{
-                textAlign: "center",
-                lineHeight: "1.8rem",
-                backgroundColor: "white",
-                color: "black",
-                width: "7rem",
-                userSelect: "none",
-                cursor: "pointer",
-            }}
-                onClick={(e) => { e.preventDefault(); props.resetClock(); props.startClock(); }}
-                onContextMenu={(e) => { e.preventDefault(); }}
+            <Box shadow={"lg"} rounded={"lg"}
+                backgroundColor={"white"}
+                style={{
+                    position: "relative",
+                    textAlign: "center",
+                    lineHeight: "1.8rem",
+                    color: "black",
+                    width: "7rem",
+                    userSelect: "none",
+                    cursor: "pointer",
+                }}
+                onClick={(e) => { if (!props.smDevice) { props.resetClock(); props.startClock(); } }}
             >
                 <Text fontSize={"0.5em"}>Possession</Text>
                 <Text fontSize={"0.8em"} margin={"0.2rem"} fontFamily={"'Source Code Pro Variable', sans-serif"}>{props.timeText.seconds}.{props.timeText.milliseconds}</Text>
+
+                {props.smDevice && (<>
+                    <Box
+                        position={"absolute"}
+                        top={"4.5rem"}
+                        left={"-0.5rem"}
+                        width={"8rem"}
+                        zIndex={5}
+                        backgroundColor={props.clockPaused ? "white" : "gray.500"}
+                        shadow={"md"} rounded={"sm"} style={{
+                            fontSize: "1rem",
+                            textAlign: "center",
+                            lineHeight: "2rem",
+                            color: "black",
+                            //width: "2rem",
+                            userSelect: "none",
+                            cursor: "pointer",
+                        }}
+                        onClick={() => { if (props.clockPaused) { props.resetClock(); props.startClock(); } }}
+                    >
+                        {"Start Now"}
+                    </Box>
+                </>)}
             </Box>
         </Flex>
     )
