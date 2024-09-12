@@ -435,6 +435,15 @@ export default function Dashboard(props: any) {
 
     // [Core] Start of Clock Helper Function
     const startClock = () => {
+        // Start Clock Pre-check
+        if (clockData.get("stage") == "GAME") {
+            switch (possessionData.get("currentPossession") as string) {
+                case "possession":
+                    startPossessionClock();
+                    return;
+            }
+        }
+
         console.log("Clock Started")
         ydoc.transact((_y) => {
             clockData.set("stage", clockData.get("stage") as string);
@@ -444,6 +453,7 @@ export default function Dashboard(props: any) {
             clockData.set("paused", false);
         })
 
+        // Start Clock After-check
         if (clockData.get("stage") == "GAME") {
             switch (possessionData.get("currentPossession") as string) {
                 case "red":
@@ -451,10 +461,6 @@ export default function Dashboard(props: any) {
                     break;
                 case "blue":
                     startBlueShotClock();
-                    break;
-                case "possession":
-                    startPossessionClock();
-                    stopClock();
                     break;
             }
         }
