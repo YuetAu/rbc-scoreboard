@@ -319,7 +319,7 @@ export default function Dashboard(props: any) {
         if (remainingTime >= 0) {
 
             // Check if the stage is just started
-            if (!clockData.get("stageTrigger")) {
+            if (!clockData.get("stageTrigger") && !clockData.get("paused") as boolean) {
                 clockData.set("stageTrigger", true);
                 console.log(`Just Started ${clockData.get("stage") as string}`);
 
