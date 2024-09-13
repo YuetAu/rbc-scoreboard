@@ -13,11 +13,12 @@ import "@fontsource-variable/quicksand";
 import '@fontsource-variable/noto-sans-tc';
 import { faCircleDot } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { useEffect, useRef, useState } from "react";
+import { AwaitedReactNode, JSXElementConstructor, Key, ReactElement, ReactNode, ReactPortal, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import * as Y from "yjs";
 import { changeLogs } from "../common/changeLogs";
 import { MarkdownComponents } from "../helpers/markdown";
+import { generateSlug } from "random-word-slugs";
 
 
 export default function Dashboard(props: any) {
@@ -103,12 +104,13 @@ export default function Dashboard(props: any) {
         setTimeout(getTimeOffset, 500);
     }, [])
 
-    // [Core] GameID Functions and States
+    // [Core] GameID Functions and States]
     const [gameID, setGameID] = useState("");
     const [gameIDModal, setGameIDModal] = useState(true);
     const gameIDInput = useRef<HTMLInputElement>(null);
     const [ydoc, setYDoc] = useState<Y.Doc>(new Y.Doc());
     const [onlineStatus, setOnlineStatus] = useState(0);
+    const [roomClient, setRoomClient] = useState<any>([]);
 
     const submitGameID = (gameID?: string) => {
         if (gameID) {
@@ -123,8 +125,26 @@ export default function Dashboard(props: any) {
             setPossessionData(yJsClient.getYDoc().getMap("possessionData") as Y.Map<any>);
             setGameIDModal(false);
             yJsClient.getYPartyProvider().on("status", connectionEventHandler);
+
+            yJsClient.getYPartyProvider().awareness.on("change", () => {
+                console.log("YParty Room Clients:", yJsClient.getYPartyProvider().awareness.getStates());
+            });
+
+            yJsClient.getWebrtcProvider() && yJsClient.getWebrtcProvider().awareness.on("change", () => {
+                console.log("YWebRTC Room Clients:", yJsClient.getWebrtcProvider().awareness.getStates());
+            });
+            /* awareness.on("change", () => {
+                const newRoomClient: any[] = [];
+                for (const [key, value] of awareness.getStates()) {
+                    newRoomClient.push({ nickname: value.nickname, id: key });
+                }
+                setRoomClient(newRoomClient);
+                console.log("Room Clients:", newRoomClient);
+            });
+            awareness.setLocalStateField("nickname", gameSettingsRef.current.device.nickname); */
         }
     }
+
 
     const connectionEventHandler = (event: any) => {
         if (event.status == "connected") {
@@ -157,6 +177,9 @@ export default function Dashboard(props: any) {
             },
             layout: {
                 smDevice: false,
+            },
+            device: {
+                nickname: "",
             }
         });
     const gameSettingsRef = useRef(gameSettings);
@@ -171,6 +194,9 @@ export default function Dashboard(props: any) {
                 const mergedSettings = deepMerge(gameSettings, localGameSettings);
                 if (mergedSettings.changeLogs < changeLogs[0].internalCode) {
                     setChangeLogsModal(true);
+                }
+                if (mergedSettings.device.nickname == "") {
+                    mergedSettings.device.nickname = generateSlug(3, { format: "title" });
                 }
                 setGameSettings(mergedSettings);
                 localStorage.setItem("gameSettings", JSON.stringify(mergedSettings));
@@ -1247,7 +1273,7 @@ export default function Dashboard(props: any) {
                 <GridItem rowSpan={1} colSpan={1} m={"1vw"}>
                     <Box textAlign={"end"} fontSize={"0.6em"} textColor={"white"}>
                         <Text textColor={onlineStatus == 1 ? 'lightgreen' : onlineStatus == 0 ? 'lightcoral' : 'orange'} userSelect={"none"} onClick={() => { onlineStatus == 2 && setTimeOffsetModal(true) }} style={{ cursor: onlineStatus == 2 ? "pointer" : "auto" }}>
-                            {onlineStatus == 1 ? "Connected" : onlineStatus == 0 ? "Disconnected" : "Large Time Diff"} <FontAwesomeIcon icon={faCircleDot} />
+                            {onlineStatus == 1 ? roomClient.length + "Connected" : onlineStatus == 0 ? "Disconnected" : "Large Time Diff"} <FontAwesomeIcon icon={faCircleDot} />
                         </Text>
                         <Flex flexDirection={"column"} textAlign={"end"} alignSelf={"end"} alignItems={"end"} rowGap={"0.3rem"}>
                             <Button onClick={openSettingModal} colorScheme="green" size="sm">Game Setting</Button>
@@ -1509,6 +1535,25 @@ export default function Dashboard(props: any) {
                                         </Table>
                                     </TableContainer>
                                     <Button mt={"0.5rem"} onClick={() => { setGameSettings({ ...gameSettings, stages: { ...gameProps.get("settings").toJSON()["stages"] } }) }} colorScheme="purple" size={"sm"}>Save as preference</Button>
+                                </AccordionPanel>
+                            </AccordionItem>
+                            <AccordionItem>
+                                <h2>
+                                    <AccordionButton>
+                                        <Box as='span' flex='1' textAlign='left'>
+                                            Room
+                                        </Box>
+                                        <AccordionIcon />
+                                    </AccordionButton>
+                                </h2>
+                                <AccordionPanel>
+                                    {roomClient.map((client: any, index: any) => {
+                                        return (
+                                            <Flex key={index} my="0.5rem" justifyContent="space-between">
+                                                <Text> {client.nickname}</Text>
+                                            </Flex>
+                                        )
+                                    })}
                                 </AccordionPanel>
                             </AccordionItem>
                             <AccordionItem>
