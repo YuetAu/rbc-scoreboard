@@ -13,8 +13,10 @@ export async function getTURNToken() {
                     "Authorization":
                         `Bearer ${process.env.CLOUDFLARE_TURN_API_KEY}`,
                 },
+                body: JSON.stringify({ ttl: 86400 }),
             },
         );
+        //console.log(res);
         const data = await res.json();
         return data;
     } catch (error) {
