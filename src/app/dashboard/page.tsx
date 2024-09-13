@@ -100,13 +100,8 @@ export default function Dashboard(props: any) {
         }
     };
 
-    const turnToken = getTURNToken();
-    console.log("Server TURN Token:", turnToken);
-
-
     useEffect(() => {
         setTimeout(getTimeOffset, 500);
-        console.log("TURN Token:", turnToken);
     }, [])
 
     // [Core] GameID Functions and States]
@@ -119,6 +114,9 @@ export default function Dashboard(props: any) {
 
     const submitGameID = (gameID?: string) => {
         if (gameID) {
+            getTURNToken().then((data) => {
+                console.log(data);
+            })
             const yJsClient = new YJsClient(gameID);
             setGameID(gameID);
             setYDoc(yJsClient.getYDoc());
