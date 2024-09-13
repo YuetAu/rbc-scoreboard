@@ -19,6 +19,7 @@ import * as Y from "yjs";
 import { changeLogs } from "../common/changeLogs";
 import { MarkdownComponents } from "../helpers/markdown";
 import { generateSlug } from "random-word-slugs";
+import { getTURNToken } from "../helpers/turnToken";
 
 
 export default function Dashboard(props: any) {
@@ -106,26 +107,6 @@ export default function Dashboard(props: any) {
             console.log(data);
         })
     }, [])
-
-
-    async function getTURNToken() {
-        'use server'
-        // Mutate data
-        try {
-            const res = await fetch(`https://rtc.live.cloudflare.com/v1/turn/keys/${process.env.CLOUDFLARE_TURN_TOKEN}/credentials/generate`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${process.env.CLOUDFLARE_TURN_API_KEY}`
-                },
-            })
-            const data = await res.json()
-            return data
-        } catch (error) {
-            console.error(error)
-            return false
-        }
-    }
 
     // [Core] GameID Functions and States]
     const [gameID, setGameID] = useState("");
