@@ -100,12 +100,13 @@ export default function Dashboard(props: any) {
         }
     };
 
+    const turnToken = getTURNToken();
+    console.log("Server TURN Token:", turnToken);
+
 
     useEffect(() => {
         setTimeout(getTimeOffset, 500);
-        getTURNToken().then((data) => {
-            console.log(data);
-        })
+        console.log("TURN Token:", turnToken);
     }, [])
 
     // [Core] GameID Functions and States]

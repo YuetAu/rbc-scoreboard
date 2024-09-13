@@ -1,6 +1,6 @@
 "use server";
-export const runtime = "edge";
 import { unstable_noStore as noStore } from "next/cache";
+import "server-only";
 
 export async function getTURNToken() {
     noStore();
