@@ -21,7 +21,7 @@ const withSerwist = withSerwistInit({
   swDest: "public/sw.js",
   cacheOnNavigation: true,
   additionalPrecacheEntries: [
-    { url: "/manifest.json", revision: getFileHash("app/manifest.json") },
+    { url: "/manifest.json", revision: getFileHash("src/app/manifest.json") },
     ...publicScan.map((f) => ({
       // Replace "/" with your `nextConfig.basePath` if applicable.
       url: path.posix.join("/", f),
