@@ -8,7 +8,7 @@ import { ScoreDisplay } from "@/app/props/dashboard/ScoreDisplay";
 import { PossessionClock, ShotClock } from "@/app/props/dashboard/ShotClock";
 import TimerBox from "@/app/props/dashboard/TimerBox";
 import { YJsClient } from "@/app/yjsClient/yjsClient";
-import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, Flex, Grid, GridItem, Input, Image, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, NumberDecrementStepper, NumberIncrementStepper, NumberInput, NumberInputField, NumberInputStepper, Switch, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tr, useToast } from "@chakra-ui/react";
+import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, Flex, Grid, GridItem, Input, Image, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, NumberDecrementStepper, NumberIncrementStepper, NumberInput, NumberInputField, NumberInputStepper, Switch, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tr, useToast, VStack, SimpleGrid, Popover, PopoverTrigger, PopoverContent, PopoverArrow, PopoverCloseButton, PopoverBody } from "@chakra-ui/react";
 import "@fontsource-variable/quicksand";
 import '@fontsource-variable/noto-sans-tc';
 import { faCircleDot } from '@fortawesome/free-solid-svg-icons';
@@ -20,6 +20,7 @@ import { changeLogs } from "../common/changeLogs";
 import { MarkdownComponents } from "../helpers/markdown";
 import { generateSlug } from "random-word-slugs";
 import { getTURNToken } from "../helpers/turnToken";
+import { generateFromString } from 'generate-avatar'
 
 
 export default function Dashboard(props: any) {
@@ -108,6 +109,7 @@ export default function Dashboard(props: any) {
     const [gameID, setGameID] = useState("");
     const [gameIDModal, setGameIDModal] = useState(true);
     const gameIDInput = useRef<HTMLInputElement>(null);
+    const [yJsClient, setYJsClient] = useState<YJsClient | null>(null);
     const [ydoc, setYDoc] = useState<Y.Doc>(new Y.Doc());
     const [onlineStatus, setOnlineStatus] = useState(0);
     const [roomClient, setRoomClient] = useState<any>([]);
@@ -119,6 +121,7 @@ export default function Dashboard(props: any) {
             })
             const yJsClient = new YJsClient(gameID);
             setGameID(gameID);
+            setYJsClient(yJsClient);
             setYDoc(yJsClient.getYDoc());
             setClockData(yJsClient.getYDoc().getMap("clockData") as Y.Map<any>);
             setGameProps(yJsClient.getYDoc().getMap("gameProps") as Y.Map<any>);
@@ -129,22 +132,24 @@ export default function Dashboard(props: any) {
             setGameIDModal(false);
             yJsClient.getYPartyProvider().on("status", connectionEventHandler);
 
-            yJsClient.getYPartyProvider().awareness.on("change", () => {
+            /* yJsClient.getYPartyProvider().awareness.on("change", () => {
                 console.log("YParty Room Clients:", yJsClient.getYPartyProvider().awareness.getStates());
             });
 
             yJsClient.getWebrtcProvider() && yJsClient.getWebrtcProvider().awareness.on("change", () => {
                 console.log("YWebRTC Room Clients:", yJsClient.getWebrtcProvider().awareness.getStates());
-            });
-            /* awareness.on("change", () => {
+            }); */
+            yJsClient.getYPartyProvider().awareness.on("change", () => {
                 const newRoomClient: any[] = [];
-                for (const [key, value] of awareness.getStates()) {
-                    newRoomClient.push({ nickname: value.nickname, id: key });
+                for (const [key, value] of yJsClient.getYPartyProvider().awareness.getStates()) {
+                    newRoomClient.push({ nickname: value.nickname, id: key, uuid: value.uuid });
                 }
                 setRoomClient(newRoomClient);
                 console.log("Room Clients:", newRoomClient);
             });
-            awareness.setLocalStateField("nickname", gameSettingsRef.current.device.nickname); */
+            yJsClient.getYPartyProvider().awareness.setLocalStateField("nickname", gameSettingsRef.current.device.nickname);
+            yJsClient.getYPartyProvider().awareness.setLocalStateField("uuid", gameSettingsRef.current.device.uuid);
+
         }
     }
 
@@ -183,6 +188,7 @@ export default function Dashboard(props: any) {
             },
             device: {
                 nickname: "",
+                uuid: "",
             }
         });
     const gameSettingsRef = useRef(gameSettings);
@@ -200,6 +206,9 @@ export default function Dashboard(props: any) {
                 }
                 if (mergedSettings.device.nickname == "") {
                     mergedSettings.device.nickname = generateSlug(3, { format: "title" });
+                }
+                if (mergedSettings.device.uuid == "") {
+                    mergedSettings.device.uuid = window.crypto.randomUUID() + "-U-" + Date.now().toString(16);
                 }
                 setGameSettings(mergedSettings);
                 localStorage.setItem("gameSettings", JSON.stringify(mergedSettings));
@@ -1221,8 +1230,22 @@ export default function Dashboard(props: any) {
         setGameSettingsModal(true);
     }
 
+    const nicknameInputRef = useRef<HTMLInputElement>(null);
+    const [nicknamePopover, setNicknamePopover] = useState(false);
 
-    const [warningModal, setWarningModal] = useState(false);
+    const handleNicknameChange = () => {
+        if (nicknameInputRef.current) {
+            const newNickname = nicknameInputRef.current.value.trim();
+            if (newNickname) {
+                setGameSettings((prev: any) => ({ ...prev, device: { ...prev.device, nickname: newNickname } }));
+                yJsClient && yJsClient.getYPartyProvider().awareness.setLocalStateField("nickname", newNickname);
+                setNicknamePopover(false);
+            }
+        } else {
+            setNicknamePopover(false)
+        }
+
+    }
 
     return (
         <>
@@ -1387,13 +1410,14 @@ export default function Dashboard(props: any) {
                     </ModalBody>
 
                     <ModalFooter>
-                        <Button colorScheme='blue' mr={3} onClick={() => { submitGameID(gameIDInput.current?.value || String(Math.floor(10000000 + Math.random() * 90000000))); setWarningModal(true) }}>
+                        <Button colorScheme='blue' mr={3} onClick={() => { submitGameID(gameIDInput.current?.value || String(Math.floor(10000000 + Math.random() * 90000000))); }}>
                             Submit
                         </Button>
                     </ModalFooter>
                 </ModalContent>
             </Modal>
 
+            {/* 
             <Modal isOpen={false} onClose={() => { }} isCentered size={"lg"}>
                 <ModalOverlay />
                 <ModalContent>
@@ -1409,7 +1433,7 @@ export default function Dashboard(props: any) {
                         </Button>
                     </ModalFooter>
                 </ModalContent>
-            </Modal>
+            </Modal> */}
 
             <Modal isOpen={timeOffsetModal} onClose={() => { }} isCentered size={"lg"}>
                 <ModalOverlay />
@@ -1550,13 +1574,56 @@ export default function Dashboard(props: any) {
                                     </AccordionButton>
                                 </h2>
                                 <AccordionPanel>
-                                    {roomClient.map((client: any, index: any) => {
-                                        return (
-                                            <Flex key={index} my="0.5rem" justifyContent="space-between">
-                                                <Text> {client.nickname}</Text>
-                                            </Flex>
-                                        )
-                                    })}
+                                    <Box>
+                                        <Popover isOpen={nicknamePopover} onClose={() => { setNicknamePopover(false) }}>
+                                            <PopoverTrigger>
+                                                <Button size="sm" onClick={() => { setNicknamePopover((prev) => !prev) }} py={2}>Change Nickname</Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent>
+                                                <PopoverArrow />
+                                                <PopoverBody>
+                                                    <Input
+                                                        ref={nicknameInputRef}
+                                                        placeholder="New nickname"
+                                                        size="sm"
+                                                        mb={2}
+                                                    />
+                                                    <Button size="sm" onClick={handleNicknameChange}>Save</Button>
+                                                </PopoverBody>
+                                            </PopoverContent>
+                                        </Popover>
+                                        <SimpleGrid columns={2} spacing={4} py={2}>
+                                            {roomClient.map((client: any, index: number) => (
+                                                <Flex
+                                                    key={index}
+                                                    alignItems="center"
+                                                    bg="gray.50"
+                                                    p={3}
+                                                    borderRadius="md"
+                                                    boxShadow="sm"
+                                                    transition="all 0.3s"
+                                                    _hover={{ bg: "gray.100", transform: "translateY(-2px)" }}
+                                                >
+                                                    <Box
+                                                        borderRadius="full"
+                                                        overflow="hidden"
+                                                        boxSize="40px"
+                                                        mr={3}
+                                                        boxShadow="md"
+                                                        flexShrink={0}
+                                                    >
+                                                        <Image
+                                                            src={`data:image/svg+xml;utf8,${generateFromString(client.uuid)}`}
+                                                            alt={`${client.nickname}'s avatar`}
+                                                        />
+                                                    </Box>
+                                                    <Text fontWeight="medium" fontSize="sm" isTruncated>
+                                                        {client.nickname}
+                                                    </Text>
+                                                </Flex>
+                                            ))}
+                                        </SimpleGrid>
+                                    </Box>
                                 </AccordionPanel>
                             </AccordionItem>
                             <AccordionItem>
