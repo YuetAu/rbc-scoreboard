@@ -2,9 +2,9 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import withSerwistInit from "@serwist/next";
-import globSync from "glob";
+import { glob } from "glob";
 
-const publicScan = globSync(["**/*"], {
+const publicScan = glob.sync(["**/*"], {
   nodir: true,
   cwd: "public",
   ignore: ["swe-worker-*.js", "sw.js", "sw.js.map"],
