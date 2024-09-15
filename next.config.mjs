@@ -4,8 +4,6 @@ import path from "node:path";
 import withSerwistInit from "@serwist/next";
 import globSync from "glob";
 
-import withSerwistInit from "@serwist/next";
-
 const publicScan = globSync(["**/*"], {
   nodir: true,
   cwd: "public",
