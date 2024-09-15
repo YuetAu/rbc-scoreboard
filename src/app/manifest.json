@@ -1,0 +1,16 @@
+{
+    "name": "Robocon 2025 Unofficial Scoreboard",
+    "short_name": "RBC 2025",
+    "icons": [
+      {
+        "src": "/logo/RandomRobot.png",
+        "sizes": "512x512",
+        "type": "image/png"
+      }
+    ],
+    "theme_color": "#FFFFFF",
+    "background_color": "#FFFFFF",
+    "start_url": "/dashboard",
+    "display": "standalone",
+    "orientation": "landscape"
+  }

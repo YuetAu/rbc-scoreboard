@@ -37,3 +37,7 @@ next-env.d.ts
 
 # Million Lint
 .million
+
+# Serwist
+public/sw*
+public/swe-worker*
