@@ -130,9 +130,9 @@ export default function Dashboard(props: any) {
     const submitGameID = useCallback(async (gameID?: string) => {
         if (gameID) {
 
-            const turnServer = await getTURNToken();
+            //const turnServer = await getTURNToken();
 
-            const yJsClient = new YJsClient(gameID, turnServer);
+            const yJsClient = new YJsClient(gameID);
             setGameID(gameID);
             setYJsClient(yJsClient);
             setYDoc(yJsClient.getYDoc());

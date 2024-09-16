@@ -48,13 +48,6 @@ export default function HistoryList(props: any) {
                                     )
                                 }
                             })}
-                            {props.history.filter((item: any) => item.team === props.team).length >= 8 && (
-                                <>
-                                    <Tr><Td></Td></Tr>
-                                    <Tr><Td></Td></Tr>
-                                    <Tr><Td></Td></Tr>
-                                </>
-                            )}
                         </Tbody>
                     </Table>
                 </div>
