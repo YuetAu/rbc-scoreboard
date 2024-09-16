@@ -13,7 +13,7 @@ import "@fontsource-variable/quicksand";
 import '@fontsource-variable/noto-sans-tc';
 import { faCircleDot } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { AwaitedReactNode, JSXElementConstructor, Key, ReactElement, ReactNode, ReactPortal, useEffect, useRef, useState } from "react";
+import { AwaitedReactNode, JSXElementConstructor, Key, ReactElement, ReactNode, ReactPortal, useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import * as Y from "yjs";
 import { changeLogs } from "../common/changeLogs";
@@ -114,11 +114,12 @@ export default function Dashboard(props: any) {
     const [onlineStatus, setOnlineStatus] = useState(0);
     const [roomClient, setRoomClient] = useState<any>([]);
 
-    const submitGameID = (gameID?: string) => {
+    const submitGameID = useCallback(async (gameID?: string) => {
         if (gameID) {
-            getTURNToken().then((data) => {
-                console.log(data);
-            })
+
+            const turnToken = await getTURNToken();
+            console.log("TURN Token:", turnToken);
+
             const yJsClient = new YJsClient(gameID);
             setGameID(gameID);
             setYJsClient(yJsClient);
@@ -151,7 +152,7 @@ export default function Dashboard(props: any) {
             yJsClient.getYPartyProvider().awareness.setLocalStateField("uuid", gameSettingsRef.current.device.uuid);
 
         }
-    }
+    }, []);
 
 
     const connectionEventHandler = (event: any) => {
