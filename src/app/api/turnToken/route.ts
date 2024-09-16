@@ -18,9 +18,13 @@ export async function GET(request: Request) {
         );
         //console.log(res);
         const data = await res.json();
-        return { success: true, data };
+        return new Response(JSON.stringify({ success: true, data }), {
+            headers: { "Content-Type": "application/json" },
+        });
     } catch (error) {
         console.error(error);
-        return { success: false, data: null };
+        return new Response(JSON.stringify({ success: false, data: null }), {
+            headers: { "Content-Type": "application/json" },
+        });
     }
 }
