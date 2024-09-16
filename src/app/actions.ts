@@ -1,9 +1,11 @@
 "use server";
-import { unstable_noStore as noStore } from "next/cache";
-import "server-only";
+
+export const runtime = "edge";
+export const revalidate = false;
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 export async function getTURNToken() {
-    noStore();
     try {
         const res = await fetch(
             `https://rtc.live.cloudflare.com/v1/turn/keys/${process.env.CLOUDFLARE_TURN_TOKEN}/credentials/generate`,
