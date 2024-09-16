@@ -226,7 +226,14 @@ export default function Dashboard(props: any) {
                 setGameSettings(mergedSettings);
                 localStorage.setItem("gameSettings", JSON.stringify(mergedSettings));
             } catch (error) {
-                localStorage.setItem("gameSettings", JSON.stringify(gameSettings));
+                var mergedSettings = { ...gameSettings };
+                if (mergedSettings.device.nickname == "") {
+                    mergedSettings.device.nickname = generateSlug(3, { format: "title" });
+                }
+                if (mergedSettings.device.uuid == "") {
+                    mergedSettings.device.uuid = window.crypto.randomUUID() + "-U-" + Date.now().toString(16);
+                }
+                localStorage.setItem("gameSettings", JSON.stringify(mergedSettings));
                 setChangeLogsModal(true);
             }
             isFirstReadSettings.current = true;

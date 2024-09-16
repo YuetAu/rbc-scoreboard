@@ -16,9 +16,8 @@ export class YJsClient {
         this.awareness = new awarenessProtocol.Awareness(this.ydoc);
         this.yPartyProvider = new YPartyKitProvider("https://rt-scoreboard-party.yuetau.partykit.dev", "RBC2025" + this.gameID, this.ydoc, { connect: this.gameID ? true : false, awareness: this.awareness });
 
-        console.log(turnServer);
         if (location.protocol == 'https:') {
-            this.webrtcProvider = new WebrtcProvider("RBC2025" + this.gameID, this.ydoc, { password: "RT-ScoreBoardIsGreat2025", signaling: ["wss://wrtc1.ustrobocon.win", "wss://wrtc2.ustrobocon.win"], peerOpts: { config: { ...turnServer || undefined } }, awareness: this.awareness })
+            this.webrtcProvider = new WebrtcProvider("RBC2025" + this.gameID, this.ydoc, { password: "RT-ScoreBoardIsGreat2025", signaling: ["wss://wrtc1.ustrobocon.win", "wss://wrtc2.ustrobocon.win"], awareness: this.awareness })
         };
     }
 
