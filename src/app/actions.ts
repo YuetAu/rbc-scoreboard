@@ -1,11 +1,10 @@
-"use server";
-
 export const runtime = "edge";
 export const revalidate = false;
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 
 export async function getTURNToken() {
+    "use server";
     try {
         const res = await fetch(
             `https://rtc.live.cloudflare.com/v1/turn/keys/${process.env.CLOUDFLARE_TURN_TOKEN}/credentials/generate`,
