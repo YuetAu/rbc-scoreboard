@@ -19,7 +19,7 @@ import * as Y from "yjs";
 import { changeLogs } from "../common/changeLogs";
 import { MarkdownComponents } from "../helpers/markdown";
 import { generateSlug } from "random-word-slugs";
-import { getTURNToken } from "./actions";
+import { getTURNToken } from "../actions";
 import { generateFromString } from 'generate-avatar'
 
 
