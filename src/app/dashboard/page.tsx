@@ -19,7 +19,6 @@ import * as Y from "yjs";
 import { changeLogs } from "../common/changeLogs";
 import { MarkdownComponents } from "../helpers/markdown";
 import { generateSlug } from "random-word-slugs";
-import { getTURNToken } from "../actions";
 import { generateFromString } from 'generate-avatar'
 
 
@@ -102,7 +101,7 @@ export default function Dashboard(props: any) {
     };
 
     useEffect(() => {
-        setTimeout(getTimeOffset, 500);
+        setTimeout(getTimeOffset, 1000);
     }, [])
 
     // [Core] GameID Functions and States]
@@ -114,13 +113,26 @@ export default function Dashboard(props: any) {
     const [onlineStatus, setOnlineStatus] = useState(0);
     const [roomClient, setRoomClient] = useState<any>([]);
 
+    const getTURNToken = async () => {
+        try {
+            const res = await fetch("/api/turnToken");
+            const data = await res.json();
+            if (data.success) {
+                return data.data;
+            }
+            return false
+        } catch (error) {
+            console.error(error);
+            return false;
+        }
+    }
+
     const submitGameID = useCallback(async (gameID?: string) => {
         if (gameID) {
 
-            const turnToken = await getTURNToken();
-            console.log("TURN Token:", turnToken);
+            const turnServer = await getTURNToken();
 
-            const yJsClient = new YJsClient(gameID);
+            const yJsClient = new YJsClient(gameID, turnServer);
             setGameID(gameID);
             setYJsClient(yJsClient);
             setYDoc(yJsClient.getYDoc());
