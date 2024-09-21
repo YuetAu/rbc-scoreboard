@@ -113,20 +113,6 @@ export default function Dashboard(props: any) {
     const [onlineStatus, setOnlineStatus] = useState(0);
     const [roomClient, setRoomClient] = useState<any>([]);
 
-    const getTURNToken = async () => {
-        try {
-            const res = await fetch("/api/turnToken");
-            const data = await res.json();
-            if (data.success) {
-                return data.data;
-            }
-            return false
-        } catch (error) {
-            console.error(error);
-            return false;
-        }
-    }
-
     const submitGameID = useCallback(async (gameID?: string) => {
         if (gameID) {
 

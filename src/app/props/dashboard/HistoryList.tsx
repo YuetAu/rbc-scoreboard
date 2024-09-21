@@ -27,7 +27,7 @@ export default function HistoryList(props: any) {
                         </Tr>
                     </Thead>
                 </Table>
-                <div
+                <Box
                     style={{
                         overflowY: "scroll",
                         height: "calc(100% - 1.5rem)",
@@ -49,7 +49,7 @@ export default function HistoryList(props: any) {
                             })}
                         </Tbody>
                     </Table>
-                </div>
+                </Box>
             </Box>
         </Flex>
     );
