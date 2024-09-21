@@ -13,13 +13,12 @@ import "@fontsource-variable/quicksand";
 import '@fontsource-variable/noto-sans-tc';
 import { faCircleDot } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { AwaitedReactNode, JSXElementConstructor, Key, ReactElement, ReactNode, ReactPortal, useEffect, useRef, useState } from "react";
+import { AwaitedReactNode, JSXElementConstructor, Key, ReactElement, ReactNode, ReactPortal, useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import * as Y from "yjs";
 import { changeLogs } from "../common/changeLogs";
 import { MarkdownComponents } from "../helpers/markdown";
 import { generateSlug } from "random-word-slugs";
-import { getTURNToken } from "../helpers/turnToken";
 import { generateFromString } from 'generate-avatar'
 
 
@@ -102,7 +101,7 @@ export default function Dashboard(props: any) {
     };
 
     useEffect(() => {
-        setTimeout(getTimeOffset, 500);
+        setTimeout(getTimeOffset, 1000);
     }, [])
 
     // [Core] GameID Functions and States]
@@ -114,11 +113,11 @@ export default function Dashboard(props: any) {
     const [onlineStatus, setOnlineStatus] = useState(0);
     const [roomClient, setRoomClient] = useState<any>([]);
 
-    const submitGameID = (gameID?: string) => {
+    const submitGameID = useCallback(async (gameID?: string) => {
         if (gameID) {
-            getTURNToken().then((data) => {
-                console.log(data);
-            })
+
+            //const turnServer = await getTURNToken();
+
             const yJsClient = new YJsClient(gameID);
             setGameID(gameID);
             setYJsClient(yJsClient);
@@ -151,7 +150,7 @@ export default function Dashboard(props: any) {
             yJsClient.getYPartyProvider().awareness.setLocalStateField("uuid", gameSettingsRef.current.device.uuid);
 
         }
-    }
+    }, []);
 
 
     const connectionEventHandler = (event: any) => {
@@ -213,7 +212,14 @@ export default function Dashboard(props: any) {
                 setGameSettings(mergedSettings);
                 localStorage.setItem("gameSettings", JSON.stringify(mergedSettings));
             } catch (error) {
-                localStorage.setItem("gameSettings", JSON.stringify(gameSettings));
+                var mergedSettings = { ...gameSettings };
+                if (mergedSettings.device.nickname == "") {
+                    mergedSettings.device.nickname = generateSlug(3, { format: "title" });
+                }
+                if (mergedSettings.device.uuid == "") {
+                    mergedSettings.device.uuid = window.crypto.randomUUID() + "-U-" + Date.now().toString(16);
+                }
+                localStorage.setItem("gameSettings", JSON.stringify(mergedSettings));
                 setChangeLogsModal(true);
             }
             isFirstReadSettings.current = true;

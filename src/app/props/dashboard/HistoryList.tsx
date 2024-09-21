@@ -1,5 +1,4 @@
-import { Box, Flex, Table, Thead, Tbody, Tr, Th, Td, TableCaption, TableContainer } from "@chakra-ui/react";
-import { useEffect, useRef } from "react";
+import { Box, Flex, Table, Tbody, Td, Th, Thead, Tr } from "@chakra-ui/react";
 
 export default function HistoryList(props: any) {
 
@@ -28,7 +27,7 @@ export default function HistoryList(props: any) {
                         </Tr>
                     </Thead>
                 </Table>
-                <div
+                <Box
                     style={{
                         overflowY: "scroll",
                         height: "calc(100% - 1.5rem)",
@@ -48,16 +47,9 @@ export default function HistoryList(props: any) {
                                     )
                                 }
                             })}
-                            {props.history.filter((item: any) => item.team === props.team).length >= 8 && (
-                                <>
-                                    <Tr><Td></Td></Tr>
-                                    <Tr><Td></Td></Tr>
-                                    <Tr><Td></Td></Tr>
-                                </>
-                            )}
                         </Tbody>
                     </Table>
-                </div>
+                </Box>
             </Box>
         </Flex>
     );
