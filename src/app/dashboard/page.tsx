@@ -118,7 +118,7 @@ export default function Dashboard(props: any) {
 
             //const turnServer = await getTURNToken();
 
-            const yJsClient = new YJsClient(gameID);
+            const yJsClient = new YJsClient(gameID, connectionEventHandler);
             setGameID(gameID);
             setYJsClient(yJsClient);
             setYDoc(yJsClient.getYDoc());
@@ -129,25 +129,17 @@ export default function Dashboard(props: any) {
             setPossessionClockData(yJsClient.getYDoc().getMap("possessionClockData") as Y.Map<any>);
             setPossessionData(yJsClient.getYDoc().getMap("possessionData") as Y.Map<any>);
             setGameIDModal(false);
-            yJsClient.getYPartyProvider().on("status", connectionEventHandler);
 
-            /* yJsClient.getYPartyProvider().awareness.on("change", () => {
-                console.log("YParty Room Clients:", yJsClient.getYPartyProvider().awareness.getStates());
-            });
-
-            yJsClient.getWebrtcProvider() && yJsClient.getWebrtcProvider().awareness.on("change", () => {
-                console.log("YWebRTC Room Clients:", yJsClient.getWebrtcProvider().awareness.getStates());
-            }); */
-            yJsClient.getYPartyProvider().awareness.on("change", () => {
+            yJsClient.getAwareness().on("change", () => {
                 const newRoomClient: any[] = [];
-                for (const [key, value] of yJsClient.getYPartyProvider().awareness.getStates()) {
+                for (const [key, value] of yJsClient.getAwareness().getStates()) {
                     newRoomClient.push({ nickname: value.nickname, id: key, uuid: value.uuid });
                 }
                 setRoomClient(newRoomClient);
                 console.log("Room Clients:", newRoomClient);
             });
-            yJsClient.getYPartyProvider().awareness.setLocalStateField("nickname", gameSettingsRef.current.device.nickname);
-            yJsClient.getYPartyProvider().awareness.setLocalStateField("uuid", gameSettingsRef.current.device.uuid);
+            yJsClient.getAwareness().setLocalStateField("nickname", gameSettingsRef.current.device.nickname);
+            yJsClient.getAwareness().setLocalStateField("uuid", gameSettingsRef.current.device.uuid);
 
         }
     }, []);

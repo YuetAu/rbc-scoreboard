@@ -18,18 +18,40 @@ const getTURNToken = async () => {
         return false;
     }
 }
+const getPartykitToken = async (): Promise<Record<string, string>> => {
+    try {
+        const res = await fetch("/api/partykitToken");
+        const data = await res.json();
+        if (data.success) {
+            return { token: data.token } as Record<string, string>;
+        }
+        return {};
+    } catch (error) {
+        console.error(error);
+        return {};
+    }
+}
 export class YJsClient {
     gameID: string;
     ydoc: Y.Doc;
     awareness: awarenessProtocol.Awareness;
-    yPartyProvider: YPartyKitProvider;
+    yPartyProvider: any;
     webrtcProvider: any;
 
-    constructor(gameID: string, turnServer?: any) {
+    constructor(gameID: string, connEvtHandler: any) {
         this.gameID = gameID;
         this.ydoc = new Y.Doc();
         this.awareness = new awarenessProtocol.Awareness(this.ydoc);
-        this.yPartyProvider = new YPartyKitProvider("https://rt-scoreboard-party.yuetau.partykit.dev", "RBC2025" + this.gameID, this.ydoc, { connect: this.gameID ? true : false, awareness: this.awareness });
+        getPartykitToken().then((params) => {
+            this.yPartyProvider = new YPartyKitProvider("https://rt-scoreboard-party.yuetau.partykit.dev", "RBC2025" + this.gameID, this.ydoc, {
+                connect: this.gameID ? true : false,
+                awareness: this.awareness,
+                params: params
+            });
+            this.yPartyProvider.on("status", (event: any) => {
+                connEvtHandler(event);
+            });
+        });
 
         //if (location.protocol == 'https:') {
         getTURNToken().then((turnToken) => {
