@@ -1,5 +1,4 @@
-import { Box, Flex, Table, Thead, Tbody, Tr, Th, Td, TableCaption, TableContainer } from "@chakra-ui/react";
-import { useEffect, useRef } from "react";
+import { Box, Flex, Table, Tbody, Td, Th, Thead, Tr } from "@chakra-ui/react";
 
 export default function HistoryList(props: any) {
 
