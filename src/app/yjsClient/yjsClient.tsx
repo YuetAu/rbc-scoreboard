@@ -1,4 +1,5 @@
 import { get } from "http";
+import { url } from "inspector";
 import YPartyKitProvider from "y-partykit/provider";
 import * as awarenessProtocol from 'y-protocols/awareness.js'
 import { WebrtcProvider } from "y-webrtc";
@@ -30,12 +31,16 @@ export class YJsClient {
         this.awareness = new awarenessProtocol.Awareness(this.ydoc);
         this.yPartyProvider = new YPartyKitProvider("https://rt-scoreboard-party.yuetau.partykit.dev", "RBC2025" + this.gameID, this.ydoc, { connect: this.gameID ? true : false, awareness: this.awareness });
 
-        if (location.protocol == 'https:') {
-            getTURNToken().then((turnToken) => {
-                console.log(turnToken);
-                this.webrtcProvider = new WebrtcProvider("RBC2025" + this.gameID, this.ydoc, { password: "RT-ScoreBoardIsGreat2025", signaling: ["wss://wrtc1.ustrobocon.win", "wss://wrtc2.ustrobocon.win"], awareness: this.awareness, peerOpts: { config: { iceServer: [turnToken.iceServers] } } });
+        //if (location.protocol == 'https:') {
+        getTURNToken().then((turnToken) => {
+            console.log(turnToken);
+            this.webrtcProvider = new WebrtcProvider("RBC2025" + this.gameID, this.ydoc, {
+                password: "RT-ScoreBoardIsGreat2025", signaling: ["wss://wrtc1.ustrobocon.win", "wss://wrtc2.ustrobocon.win"], awareness: this.awareness, peerOpts: {
+                    config: { iceServers: [turnToken.iceServers, { urls: "stun:stun.miwifi.com:3478" }, { urls: "stun:stun.l.google.com:19302" }] },
+                }
             });
-        };
+        });
+        //};
     }
 
     getYDoc() {
