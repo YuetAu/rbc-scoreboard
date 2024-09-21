@@ -21,8 +21,10 @@ export function ScoreDisplay(props: any) {
       >
         {props.editable ?
           (<Box mt={"1rem"} p={"0"}>
-            <Box mt={"1rem"} onClick={() => { setDropDownOpen(!dropDownOpen) }} style={{ cursor: "pointer" }} whitespace={"pre-wrap"}>
-              {`${props.team.cname}\n${props.team.ename}`}
+            <Box mt={"1rem"} onClick={() => { setDropDownOpen(!dropDownOpen) }} style={{ cursor: "pointer" }}>
+              {props.team.cname}
+              <br />
+              {props.team.ename}
             </Box>
             {dropDownOpen && <TeamDropDownList setTeam={props.setTeam} color={props.color} currentTeam={props.team.ename} setOpen={setDropDownOpen} parent={scoreDisplayRef} />}
             <Box my={"3rem"} style={{ fontSize: "4rem" }}>
@@ -30,8 +32,10 @@ export function ScoreDisplay(props: any) {
             </Box>
           </Box>) :
           (<>
-            <Box mt={"1rem"} whitespace={"pre-wrap"}>
-              {`${props.team.cname}\n${props.team.ename}`}
+            <Box mt={"1rem"}>
+              {props.team.cname}
+              <br />
+              {props.team.ename}
             </Box>
             <Box my={"3rem"} style={{ fontSize: "4rem" }}>
               {props.score}
