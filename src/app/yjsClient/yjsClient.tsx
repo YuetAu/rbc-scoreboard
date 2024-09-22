@@ -46,7 +46,7 @@ export class YJsClient {
         this.gameID = gameID;
         this.ydoc = new Y.Doc();
         this.awareness = new awarenessProtocol.Awareness(this.ydoc);
-        getPartykitToken(uuid ?? "Unknown", "RBC2025" + this.gameID).then((token) => {
+        getPartykitToken(uuid ?? "Unknown").then((token) => {
             this.yPartyProvider = new YPartyKitProvider("https://rt-scoreboard-party.yuetau.partykit.dev", "RBC2025" + this.gameID, this.ydoc, {
                 connect: this.gameID ? true : false,
                 awareness: this.awareness,
