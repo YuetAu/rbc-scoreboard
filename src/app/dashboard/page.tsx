@@ -118,7 +118,7 @@ export default function Dashboard(props: any) {
 
             //const turnServer = await getTURNToken();
 
-            const yJsClient = new YJsClient(gameID, connectionEventHandler);
+            const yJsClient = new YJsClient(gameID, connectionEventHandler, gameSettingsRef.current.device.uuid);
             setGameID(gameID);
             setYJsClient(yJsClient);
             setYDoc(yJsClient.getYDoc());

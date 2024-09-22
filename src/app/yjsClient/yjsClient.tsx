@@ -18,17 +18,21 @@ const getTURNToken = async () => {
         return false;
     }
 }
-const getPartykitToken = async (): Promise<Record<string, string>> => {
+const getPartykitToken = async (uuid: string) => {
     try {
-        const res = await fetch("/api/partykitToken");
+        const res = await fetch("/api/partykitToken", {
+            method: "POST",
+            body: JSON.stringify({ uuid }),
+            headers: { "Content-Type": "application/json" }
+        });
         const data = await res.json();
         if (data.success) {
-            return { token: data.token } as Record<string, string>;
+            return data.token
         }
-        return {};
+        return false;
     } catch (error) {
         console.error(error);
-        return {};
+        return false;
     }
 }
 export class YJsClient {
@@ -38,15 +42,15 @@ export class YJsClient {
     yPartyProvider: any;
     webrtcProvider: any;
 
-    constructor(gameID: string, connEvtHandler: any) {
+    constructor(gameID: string, connEvtHandler: any, uuid: any) {
         this.gameID = gameID;
         this.ydoc = new Y.Doc();
         this.awareness = new awarenessProtocol.Awareness(this.ydoc);
-        getPartykitToken().then((params) => {
+        getPartykitToken(uuid ?? "Unknown", "RBC2025" + this.gameID).then((token) => {
             this.yPartyProvider = new YPartyKitProvider("https://rt-scoreboard-party.yuetau.partykit.dev", "RBC2025" + this.gameID, this.ydoc, {
                 connect: this.gameID ? true : false,
                 awareness: this.awareness,
-                params: params
+                params: { token: token }
             });
             this.yPartyProvider.on("status", (event: any) => {
                 connEvtHandler(event);
