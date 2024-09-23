@@ -594,10 +594,11 @@ export default function Dashboard(props: any) {
         const nextStage = GAME_STAGES[index + skipStage];
         const remainingTime = GAME_STAGES_TIME[index + skipStage] * 1000;
 
+        let override = false;
         if (nextStage == "GAME") {
             if (possessionData.get("currentPossession") == "possession") {
                 startPossessionClock(true);
-                return;
+                override = true;
             }
         }
 
@@ -607,7 +608,7 @@ export default function Dashboard(props: any) {
             clockData.set("timestamp", (Date.now() + timeOffset.current));
             clockData.set("elapsed", 0);
             clockData.set("stageTrigger", false);
-            clockData.set("paused", remainingTime > 0 ? false : true);
+            clockData.set("paused", override ?? remainingTime > 0 ? false : true);
         })
         toast({
             title: `Skip stage ${clockData.get("stage") as string}`,

@@ -48,6 +48,20 @@ export default class YjsServer implements Party.Server {
     ctx: Party.ExecutionContext,
   ) {
     try {
+      request.headers.set(
+        "X-COUNTRY",
+        request.cf?.country as string ?? "Unknown",
+      );
+      request.headers.set("X-ASN", request.cf?.asn as string ?? "Unknown");
+      request.headers.set("X-COLO", request.cf?.colo as string ?? "Unknown");
+      request.headers.set(
+        "X-IP",
+        request.headers.get("CF-Connecting-IP") ?? "Unknown",
+      );
+      request.headers.set(
+        "X-USER-AGENT",
+        request.headers.get("User-Agent") ?? "Unknown",
+      );
       const token = new URL(request.url).searchParams.get("token") ?? "";
       const payload = await verifyToken(token, lobby);
       if (payload && payload.uuid) {
@@ -94,6 +108,11 @@ export default class YjsServer implements Party.Server {
       "action": "CONNECT",
       "gameID": await this.party.storage.get("roomID"),
       "userID": uuid,
+      "country": request.headers.get("X-COUNTRY"),
+      "asn": request.headers.get("X-ASN"),
+      "colo": request.headers.get("X-COLO"),
+      "ip": request.headers.get("X-IP"),
+      "userAgent": request.headers.get("X-USER-AGENT"),
     });
     return onConnect(conn, this.party, {
       callback: {
