@@ -28,6 +28,7 @@ async function logger(body: any) {
     body: JSON.stringify(body),
     headers: { "Content-Type": "application/json" },
   });
+  return;
 }
 
 export default class YjsServer implements Party.Server {
@@ -77,6 +78,7 @@ export default class YjsServer implements Party.Server {
       "startTime",
       Date.now().toString(),
     );
+    return;
   }
 
   async onConnect(
@@ -103,7 +105,7 @@ export default class YjsServer implements Party.Server {
   async onClose(conn: Party.Connection) {
     console.log("onDisconnect", conn.id);
     const uuid = await (conn.state as any).uuid;
-    await logger({
+    logger({
       "action": "DISCONNECT",
       "gameID": await this.party.storage.get("roomID"),
       "userID": uuid,
@@ -112,12 +114,14 @@ export default class YjsServer implements Party.Server {
     });
 
     if (Array.from(this.party.getConnections()).length === 0) {
-      await logger({
+      logger({
         "action": "END",
         "gameID": await this.party.storage.get("roomID"),
         "timeSpent": Date.now() -
           parseInt(await this.party.storage.get("startTime") ?? "0"),
       });
+      return;
     }
+    return;
   }
 }

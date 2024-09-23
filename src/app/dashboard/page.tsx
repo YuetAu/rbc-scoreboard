@@ -593,6 +593,14 @@ export default function Dashboard(props: any) {
         if (index + skipStage > GAME_STAGES.length - 1) { stopClock(); return; }
         const nextStage = GAME_STAGES[index + skipStage];
         const remainingTime = GAME_STAGES_TIME[index + skipStage] * 1000;
+
+        if (nextStage == "GAME") {
+            if (possessionData.get("currentPossession") == "possession") {
+                startPossessionClock();
+                return;
+            }
+        }
+
         console.log(`Skip stage to ${nextStage}`);
         ydoc.transact((_y) => {
             clockData.set("stage", nextStage);
