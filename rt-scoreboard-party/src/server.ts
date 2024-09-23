@@ -67,6 +67,7 @@ export default class YjsServer implements Party.Server {
       this.party.id.slice(7)
     }-${crypto.randomUUID()}-${Date.now()}`;
     await logger({
+      "uuid": crypto.randomUUID(),
       "action": "START",
       "gameID": newRoomID,
     });
@@ -89,6 +90,7 @@ export default class YjsServer implements Party.Server {
     const uuid = request.headers.get("X-UUID") ?? "Unknown";
     conn.setState({ uuid, startTime: Date.now() });
     await logger({
+      "uuid": crypto.randomUUID(),
       "action": "CONNECT",
       "gameID": await this.party.storage.get("roomID"),
       "userID": uuid,
@@ -106,6 +108,7 @@ export default class YjsServer implements Party.Server {
     console.log("onDisconnect", conn.id);
     const uuid = await (conn.state as any).uuid;
     logger({
+      "uuid": crypto.randomUUID(),
       "action": "DISCONNECT",
       "gameID": await this.party.storage.get("roomID"),
       "userID": uuid,
@@ -115,6 +118,7 @@ export default class YjsServer implements Party.Server {
 
     if (Array.from(this.party.getConnections()).length === 0) {
       logger({
+        "uuid": crypto.randomUUID(),
         "action": "END",
         "gameID": await this.party.storage.get("roomID"),
         "timeSpent": Date.now() -

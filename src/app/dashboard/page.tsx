@@ -596,7 +596,7 @@ export default function Dashboard(props: any) {
 
         if (nextStage == "GAME") {
             if (possessionData.get("currentPossession") == "possession") {
-                startPossessionClock();
+                startPossessionClock(true);
                 return;
             }
         }
@@ -937,8 +937,8 @@ export default function Dashboard(props: any) {
         })
     }
 
-    const startPossessionClock = () => {
-        if (clockData.get("stage") as string === "PREP") {
+    const startPossessionClock = (override = false) => {
+        if (clockData.get("stage") as string === "PREP" && !override) {
             toast({
                 title: "No editing in PREP stage.",
                 status: 'error',
