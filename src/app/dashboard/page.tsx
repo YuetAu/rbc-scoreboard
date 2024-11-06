@@ -20,6 +20,7 @@ import { changeLogs } from "../common/changeLogs";
 import { MarkdownComponents } from "../helpers/markdown";
 import { generateSlug } from "random-word-slugs";
 import { generateFromString } from 'generate-avatar'
+import { StatePicker } from "../props/dashboard/StatePicker";
 
 
 export default function Dashboard(props: any) {
@@ -124,10 +125,6 @@ export default function Dashboard(props: any) {
             setYDoc(yJsClient.getYDoc());
             setClockData(yJsClient.getYDoc().getMap("clockData") as Y.Map<any>);
             setGameProps(yJsClient.getYDoc().getMap("gameProps") as Y.Map<any>);
-            setRedShotClockData(yJsClient.getYDoc().getMap("redShotClockData") as Y.Map<any>);
-            setBlueShotClockData(yJsClient.getYDoc().getMap("blueShotClockData") as Y.Map<any>);
-            setPossessionClockData(yJsClient.getYDoc().getMap("possessionClockData") as Y.Map<any>);
-            setPossessionData(yJsClient.getYDoc().getMap("possessionData") as Y.Map<any>);
             setGameIDModal(false);
 
             yJsClient.getAwareness().on("change", () => {
@@ -268,25 +265,6 @@ export default function Dashboard(props: any) {
                     startSound.play();
                 }
                 break;
-            case "REDSHOTCLOCK":
-            case "BLUESHOTCLOCK":
-                if (elapsedTime && gameSettingsRef.current.sounds.shotClock8sTone) {
-                    const secondsElapsed = Math.ceil(elapsedTime / 1000);
-                    if (secondsElapsed == 8 && !lastTone2Second.current && tone2Sound) {
-                        tone2Sound.play();
-                        lastTone2Second.current = true;
-                    } else {
-                        lastTone2Second.current = false;
-                    }
-                }
-                break;
-            case "REDSHOTCLOCKEND":
-            case "BLUESHOTCLOCKEND":
-            case "POSSESSIONCLOCKEND":
-                if (toneSound && gameSettingsRef.current.sounds.shotClockEndTone) {
-                    toneSound.play();
-                }
-                break;
             case "END":
                 break;
         }
@@ -358,23 +336,6 @@ export default function Dashboard(props: any) {
             if (!clockData.get("stageTrigger") && !clockData.get("paused") as boolean) {
                 clockData.set("stageTrigger", true);
                 console.log(`Just Started ${clockData.get("stage") as string}`);
-
-                switch (clockData.get("stage") as string) {
-                    case "GAME":
-                        switch (possessionData.get("currentPossession") as string) {
-                            case "red":
-                                startRedShotClock();
-                                break;
-                            case "blue":
-                                startBlueShotClock();
-                                break;
-                            case "possession":
-                                startPossessionClock();
-                                stopClock();
-                                break;
-                        }
-                        break;
-                }
             }
 
             // Calculate remainingTime from seconds to human-readable text
@@ -454,13 +415,6 @@ export default function Dashboard(props: any) {
                     stopClock();
                     resetStage();
                 }
-
-                // Stop all clock when game end to add points if needed
-                if (newGameStage == "END") {
-                    stopPossessionClock();
-                    stopRedShotClock();
-                    stopBlueShotClock();
-                }
             }
         }
     }
@@ -471,15 +425,6 @@ export default function Dashboard(props: any) {
 
     // [Core] Start of Clock Helper Function
     const startClock = () => {
-        // Start Clock Pre-check
-        if (clockData.get("stage") == "GAME") {
-            switch (possessionData.get("currentPossession") as string) {
-                case "possession":
-                    startPossessionClock();
-                    return;
-            }
-        }
-
         console.log("Clock Started")
         ydoc.transact((_y) => {
             clockData.set("stage", clockData.get("stage") as string);
@@ -488,18 +433,6 @@ export default function Dashboard(props: any) {
             clockData.set("stageTrigger", clockData.get("stageTrigger") as boolean);
             clockData.set("paused", false);
         })
-
-        // Start Clock After-check
-        if (clockData.get("stage") == "GAME") {
-            switch (possessionData.get("currentPossession") as string) {
-                case "red":
-                    startRedShotClock();
-                    break;
-                case "blue":
-                    startBlueShotClock();
-                    break;
-            }
-        }
 
         toast({
             title: "Clock Started",
@@ -524,9 +457,6 @@ export default function Dashboard(props: any) {
             clockData.set("paused", true);
         })
 
-        stopRedShotClock();
-        stopBlueShotClock();
-
         toast({
             title: "Clock Stopped",
             status: 'success',
@@ -541,7 +471,6 @@ export default function Dashboard(props: any) {
     }
 
     const toggleClock = () => {
-        if (!possessionClockData.get("paused") as boolean) { return; }
         if (clockData.get("paused") as boolean) {
             startClock();
         } else {
@@ -557,23 +486,6 @@ export default function Dashboard(props: any) {
             clockData.set("elapsed", 0);
             clockData.set("stageTrigger", false);
             clockData.set("paused", true);
-
-            redShotClockData.set("timestamp", (Date.now() + timeOffset.current));
-            redShotClockData.set("elapsed", 0);
-            redShotClockData.set("paused", true);
-
-            blueShotClockData.set("timestamp", (Date.now() + timeOffset.current));
-            blueShotClockData.set("elapsed", 0);
-            blueShotClockData.set("paused", true);
-
-            possessionClockData.set("timestamp", (Date.now() + timeOffset.current));
-            possessionClockData.set("elapsed", 0);
-            possessionClockData.set("firstPossession", true);
-            possessionClockData.set("paused", true);
-
-            possessionData.set("currentPossession", "possession");
-            possessionData.set("nextPossession", "red");
-
         })
         toast({
             title: `Reset stage ${clockData.get("stage") as string}`,
@@ -584,23 +496,12 @@ export default function Dashboard(props: any) {
 
     const changeStage = (skipStage: number) => {
 
-        resetBlueShotClock();
-        resetRedShotClock();
-        resetPossessionClock();
-
         const index = GAME_STAGES.indexOf(clockData.get("stage") as string);
         if (index + skipStage < 0) { stopClock(); return; }
         if (index + skipStage > GAME_STAGES.length - 1) { stopClock(); return; }
         const nextStage = GAME_STAGES[index + skipStage];
         const remainingTime = GAME_STAGES_TIME[index + skipStage] * 1000;
 
-        let override = false;
-        if (nextStage == "GAME") {
-            if (possessionData.get("currentPossession") == "possession") {
-                startPossessionClock(true);
-                override = true;
-            }
-        }
 
         console.log(`Skip stage to ${nextStage}`);
         ydoc.transact((_y) => {
@@ -608,7 +509,7 @@ export default function Dashboard(props: any) {
             clockData.set("timestamp", (Date.now() + timeOffset.current));
             clockData.set("elapsed", 0);
             clockData.set("stageTrigger", false);
-            clockData.set("paused", override ?? remainingTime > 0 ? false : true);
+            clockData.set("paused", remainingTime > 0 ? false : true);
         })
         toast({
             title: `Skip stage ${clockData.get("stage") as string}`,
@@ -620,379 +521,6 @@ export default function Dashboard(props: any) {
     // [Core] End of Clock Helper Function
     // [Core] End of Clock Functions and States
 
-
-    // [Feature] Start of ShotClock Functions and States
-    const [redShotClockData, setRedShotClockData] = useState(ydoc.getMap("redShotClockData") as Y.Map<any>);
-    const [blueShotClockData, setBlueShotClockData] = useState(ydoc.getMap("blueShotClockData") as Y.Map<any>);
-    const [possessionClockData, setPossessionClockData] = useState(ydoc.getMap("possessionClockData") as Y.Map<any>);
-    const [possessionData, setPossessionData] = useState(ydoc.getMap("possessionData") as Y.Map<any>);
-
-    useEffect(() => {
-        if (redShotClockData.get("init") == undefined) {
-            console.log("Initializing Red Shot Clock Data")
-            ydoc.transact((_y) => {
-                redShotClockData.set("timestamp", 0)
-                redShotClockData.set("elapsed", 0)
-                redShotClockData.set("paused", true)
-                redShotClockData.set("init", true)
-            })
-        }
-    }, [redShotClockData]);
-
-    useEffect(() => {
-        if (blueShotClockData.get("init") == undefined) {
-            console.log("Initializing Blue Shot Clock Data")
-            ydoc.transact((_y) => {
-                blueShotClockData.set("timestamp", 0)
-                blueShotClockData.set("elapsed", 0)
-                blueShotClockData.set("paused", true)
-                blueShotClockData.set("init", true)
-            })
-        }
-    }, [blueShotClockData]);
-
-    useEffect(() => {
-        if (possessionClockData.get("init") == undefined) {
-            console.log("Initializing Possession Clock Data")
-            ydoc.transact((_y) => {
-                possessionClockData.set("timestamp", 0)
-                possessionClockData.set("elapsed", 0)
-                possessionClockData.set("paused", true)
-                possessionClockData.set("firstPossession", true)
-                possessionClockData.set("init", true)
-            })
-        }
-    }, [possessionClockData]);
-
-    useEffect(() => {
-        if (possessionData.get("init") == undefined) {
-            console.log("Initializing Possession Data")
-            ydoc.transact((_y) => {
-                possessionData.set("currentPossession", "possession")
-                possessionData.set("nextPossession", "red")
-                possessionData.set("init", true)
-            })
-        }
-    }, [possessionData]);
-
-    const [redShotClockText, setRedShotClockText] = useState({ seconds: "00", milliseconds: "00" });
-    const [blueShotClockText, setBlueShotClockText] = useState({ seconds: "00", milliseconds: "00" });
-    const [possessionClockText, setPossessionClockText] = useState({ seconds: "00", milliseconds: "00" });
-    const redShotClockInterval = useRef<any>(null);
-    const blueShotClockInterval = useRef<any>(null);
-    const possessionClockInterval = useRef<any>(null);
-
-    const [redShotClockPaused, setRedShotClockPaused] = useState(true);
-    const [blueShotClockPaused, setBlueShotClockPaused] = useState(true);
-    const [possessionClockPaused, setPossessionClockPaused] = useState(true);
-
-    const updateRedShotClockText = () => {
-        setRedShotClockPaused(redShotClockData.get("paused") as boolean);
-
-        const remainingTime = redShotClockData.get("paused") ? (SHOTCLOCK * 1000) - (redShotClockData.get("elapsed") as number) : (SHOTCLOCK * 1000) - (redShotClockData.get("elapsed") as number) - ((Date.now() + timeOffset.current) - (redShotClockData.get("timestamp") as number));
-        const elapsedTime = redShotClockData.get("paused") ? (redShotClockData.get("elapsed") as number) : (redShotClockData.get("elapsed") as number) + ((Date.now() + timeOffset.current) - (redShotClockData.get("timestamp") as number));
-        if (remainingTime >= 0) {
-            const remainingSeconds = Math.floor(remainingTime / 1000 % 60) + "";
-            const remainingMilliseconds = Math.floor((remainingTime % 1000) / 10) + "";
-            setRedShotClockText({
-                seconds: remainingSeconds.length < 2 ? "0" + remainingSeconds : remainingSeconds,
-                milliseconds: remainingMilliseconds.length < 2 ? "0" + remainingMilliseconds : remainingMilliseconds
-            })
-
-            soundCheck("REDSHOTCLOCK", remainingTime, elapsedTime);
-
-            if (!(redShotClockData.get("paused") as boolean)) {
-                if (redShotClockInterval.current == null) {
-                    const tmpRedShotClockInterval = setInterval(updateRedShotClockText, 100);
-                    redShotClockInterval.current = tmpRedShotClockInterval;
-                }
-            } else {
-                clearInterval(redShotClockInterval.current);
-                redShotClockInterval.current = null;
-            }
-        } else {
-
-            soundCheck("REDSHOTCLOCKEND", 0);
-
-            clearInterval(redShotClockInterval.current);
-            if (redShotClockInterval.current != null) {
-                ydoc.transact((_y) => {
-                    redShotClockData.set("timestamp", (Date.now() + timeOffset.current));
-                    redShotClockData.set("elapsed", (SHOTCLOCK * 1000));
-                    redShotClockData.set("paused", true);
-
-                    possessionData.set("currentPossession", "possession");
-                })
-            }
-            redShotClockInterval.current = null;
-            stopClock();
-            console.log("Red Shot Clock Timeout")
-        }
-    }
-    redShotClockData.observeDeep(updateRedShotClockText);
-
-    const updateBlueShotClockText = () => {
-        setBlueShotClockPaused(blueShotClockData.get("paused") as boolean);
-
-        const remainingTime = blueShotClockData.get("paused") ? (SHOTCLOCK * 1000) - (blueShotClockData.get("elapsed") as number) : (SHOTCLOCK * 1000) - (blueShotClockData.get("elapsed") as number) - ((Date.now() + timeOffset.current) - (blueShotClockData.get("timestamp") as number));
-        const elapsedTime = blueShotClockData.get("paused") ? (blueShotClockData.get("elapsed") as number) : (blueShotClockData.get("elapsed") as number) + ((Date.now() + timeOffset.current) - (blueShotClockData.get("timestamp") as number));
-        if (remainingTime >= 0) {
-            const remainingSeconds = Math.floor(remainingTime / 1000 % 60) + "";
-            const remainingMilliseconds = Math.floor((remainingTime % 1000) / 10) + "";
-            setBlueShotClockText({
-                seconds: remainingSeconds.length < 2 ? "0" + remainingSeconds : remainingSeconds,
-                milliseconds: remainingMilliseconds.length < 2 ? "0" + remainingMilliseconds : remainingMilliseconds
-            })
-
-            soundCheck("BLUESHOTCLOCK", remainingTime, elapsedTime);
-
-            if (!(blueShotClockData.get("paused") as boolean)) {
-                if (blueShotClockInterval.current == null) {
-                    const tmpBlueShotClockInterval = setInterval(updateBlueShotClockText, 100);
-                    blueShotClockInterval.current = tmpBlueShotClockInterval;
-                }
-            } else {
-                clearInterval(blueShotClockInterval.current);
-                blueShotClockInterval.current = null;
-            }
-        } else {
-
-            soundCheck("BLUESHOTCLOCKEND", 0);
-
-            clearInterval(blueShotClockInterval.current);
-            if (blueShotClockInterval.current != null) {
-                ydoc.transact((_y) => {
-                    blueShotClockData.set("timestamp", (Date.now() + timeOffset.current));
-                    blueShotClockData.set("elapsed", (SHOTCLOCK * 1000));
-                    blueShotClockData.set("paused", true);
-
-                    possessionData.set("currentPossession", "possession");
-                })
-            }
-            blueShotClockInterval.current = null;
-            stopClock();
-            console.log("Blue Shot Clock Timeout")
-        }
-    }
-    blueShotClockData.observeDeep(updateBlueShotClockText);
-
-    const updatePossessionClockText = () => {
-        setPossessionClockPaused(possessionClockData.get("paused") as boolean);
-
-        const remainingTime = possessionClockData.get("paused") ? ((possessionClockData.get("firstPossession") ? FIRST_POSSESSION : POSSESSION) * 1000) - (possessionClockData.get("elapsed") as number) : ((possessionClockData.get("firstPossession") ? FIRST_POSSESSION : POSSESSION) * 1000) - (possessionClockData.get("elapsed") as number) - ((Date.now() + timeOffset.current) - (possessionClockData.get("timestamp") as number));
-        if (remainingTime >= 0) {
-            const remainingSeconds = Math.floor(remainingTime / 1000 % 60) + "";
-            const remainingMilliseconds = Math.floor((remainingTime % 1000) / 10) + "";
-            setPossessionClockText({
-                seconds: remainingSeconds.length < 2 ? "0" + remainingSeconds : remainingSeconds,
-                milliseconds: remainingMilliseconds.length < 2 ? "0" + remainingMilliseconds : remainingMilliseconds
-            })
-
-            soundCheck("POSSESSIONCLOCK", remainingTime);
-
-            if (!(possessionClockData.get("paused") as boolean)) {
-                if (possessionClockInterval.current == null) {
-                    const tmpPossessionClockInterval = setInterval(updatePossessionClockText, 100);
-                    possessionClockInterval.current = tmpPossessionClockInterval;
-                }
-            } else {
-                clearInterval(possessionClockInterval.current);
-                possessionClockInterval.current = null;
-            }
-        } else {
-
-            soundCheck("POSSESSIONCLOCKEND", 0);
-
-            clearInterval(possessionClockInterval.current);
-            if (possessionClockInterval.current != null) {
-                resetPossessionClock();
-            }
-            possessionClockInterval.current = null;
-            if (possessionClockData.get("firstPossession") as boolean) {
-                possessionClockData.set("firstPossession", false);
-            }
-            console.log("Possession Clock Timeout")
-            possessionData.set("currentPossession", possessionData.get("nextPossession") as string);
-
-        }
-    }
-    possessionClockData.observeDeep(updatePossessionClockText);
-
-    possessionData.observeDeep(() => {
-        if (clockData.get("stage") == "GAME") {
-            switch (possessionData.get("currentPossession") as string) {
-                case "red":
-                    startRedShotClock();
-                    break;
-                case "blue":
-                    startBlueShotClock();
-                    break;
-            }
-        }
-    });
-
-    const startRedShotClock = () => {
-        if (clockData.get("stage") as string === "PREP") {
-            toast({
-                title: "No editing in PREP stage.",
-                status: 'error',
-                duration: 500,
-            })
-            return;
-        }
-        if (clockData.get("paused")) {
-            startClock();
-        }
-        if (redShotClockData.get("paused")) {
-            resetBlueShotClock();
-            resetPossessionClock();
-            ydoc.transact((_y) => {
-                possessionData.set("nextPossession", "blue");
-                possessionData.set("currentPossession", "red");
-
-                redShotClockData.set("timestamp", (Date.now() + timeOffset.current));
-                redShotClockData.set("elapsed", redShotClockData.get("elapsed") as number);
-                redShotClockData.set("paused", false);
-            })
-        }
-    }
-
-    const stopRedShotClock = () => {
-        if (!redShotClockData.get("paused")) {
-            ydoc.transact((_y) => {
-                const elapsed = ((Date.now() + timeOffset.current) - (redShotClockData.get("timestamp") as number)) + (redShotClockData.get("elapsed") as number)
-                redShotClockData.set("timestamp", (Date.now() + timeOffset.current));
-                redShotClockData.set("elapsed", elapsed);
-                redShotClockData.set("paused", true);
-            })
-        }
-    }
-
-    const toggleRedShotClock = () => {
-        if (redShotClockData.get("paused") as boolean) {
-            startRedShotClock();
-        } else {
-            stopRedShotClock();
-        }
-    }
-
-    const resetRedShotClock = () => {
-        ydoc.transact((_y) => {
-            redShotClockData.set("timestamp", (Date.now() + timeOffset.current));
-            redShotClockData.set("elapsed", 0);
-            redShotClockData.set("paused", true);
-        })
-    }
-
-    const startBlueShotClock = () => {
-        if (clockData.get("stage") as string === "PREP") {
-            toast({
-                title: "No editing in PREP stage.",
-                status: 'error',
-                duration: 500,
-            })
-            return;
-        }
-        if (clockData.get("paused")) {
-            startClock();
-        }
-        if (blueShotClockData.get("paused")) {
-            resetRedShotClock();
-            resetPossessionClock();
-            ydoc.transact((_y) => {
-                possessionData.set("nextPossession", "red");
-                possessionData.set("currentPossession", "blue");
-
-                blueShotClockData.set("timestamp", (Date.now() + timeOffset.current));
-                blueShotClockData.set("elapsed", blueShotClockData.get("elapsed") as number);
-                blueShotClockData.set("paused", false);
-            })
-        }
-    }
-
-    const stopBlueShotClock = () => {
-        if (!blueShotClockData.get("paused")) {
-            ydoc.transact((_y) => {
-                const elapsed = ((Date.now() + timeOffset.current) - (blueShotClockData.get("timestamp") as number)) + (blueShotClockData.get("elapsed") as number)
-                blueShotClockData.set("timestamp", (Date.now() + timeOffset.current));
-                blueShotClockData.set("elapsed", elapsed);
-                blueShotClockData.set("paused", true);
-            })
-        }
-    }
-
-    const toggleBlueShotClock = () => {
-        if (blueShotClockData.get("paused") as boolean) {
-            startBlueShotClock();
-        } else {
-            stopBlueShotClock();
-        }
-    }
-
-    const resetBlueShotClock = () => {
-        console.log("Reset Blue Shot Clock")
-        ydoc.transact((_y) => {
-            blueShotClockData.set("timestamp", (Date.now() + timeOffset.current));
-            blueShotClockData.set("elapsed", 0);
-            blueShotClockData.set("paused", true);
-        })
-    }
-
-    const startPossessionClock = (override = false) => {
-        if (clockData.get("stage") as string === "PREP" && !override) {
-            toast({
-                title: "No editing in PREP stage.",
-                status: 'error',
-                duration: 500,
-            })
-            return;
-        }
-        if (!clockData.get("paused")) {
-            stopClock();
-        }
-        if (possessionClockData.get("paused")) {
-            resetRedShotClock();
-            resetBlueShotClock();
-            ydoc.transact((_y) => {
-                possessionData.set("currentPossession", "possession");
-
-                possessionClockData.set("timestamp", (Date.now() + timeOffset.current));
-                possessionClockData.set("elapsed", possessionClockData.get("elapsed") as number);
-                possessionClockData.set("paused", false);
-            })
-        }
-    }
-
-    const stopPossessionClock = () => {
-        if (!possessionClockData.get("paused")) {
-            ydoc.transact((_y) => {
-                const elapsed = ((Date.now() + timeOffset.current) - (possessionClockData.get("timestamp") as number)) + (possessionClockData.get("elapsed") as number)
-                possessionClockData.set("timestamp", (Date.now() + timeOffset.current));
-                possessionClockData.set("elapsed", elapsed);
-                possessionClockData.set("paused", true);
-            })
-        }
-    }
-
-    const togglePossessionClock = () => {
-        if (possessionClockData.get("paused") as boolean) {
-            startPossessionClock();
-        } else {
-            stopPossessionClock();
-        }
-    }
-
-    const resetPossessionClock = () => {
-        ydoc.transact((_y) => {
-            possessionClockData.set("timestamp", (Date.now() + timeOffset.current));
-            possessionClockData.set("elapsed", 0);
-            possessionClockData.set("paused", true);
-        })
-    }
-
-    // [Feature] End of ShotClock Functions and States
-
-
     // [Core] Start of GameProps Functions and States
     const [gameProps, setGameProps] = useState(ydoc.getMap("gameProps") as Y.Map<any>);
     if (gameProps.get("init") == undefined) {
@@ -1003,13 +531,20 @@ export default function Dashboard(props: any) {
             const gameHistory = new Y.Array();
             gameProps.set("history", gameHistory);
 
-            const gamePropsItems = new Y.Map() as Y.Map<number>;
-            gamePropsItems.set("redDunk", 0);
-            gamePropsItems.set("redTwoPoint", 0);
-            gamePropsItems.set("redThreePoint", 0);
-            gamePropsItems.set("blueDunk", 0);
-            gamePropsItems.set("blueTwoPoint", 0);
-            gamePropsItems.set("blueThreePoint", 0);
+            const gamePropsItems = new Y.Map() as Y.Map<any>;
+            gamePropsItems.set("redRecogn", 0);
+            gamePropsItems.set("redSUDelivered", 0);
+            gamePropsItems.set("redCUDelivered", 0);
+            gamePropsItems.set("redBuildingBlock", 0);
+            gamePropsItems.set("redSignalUnit", 0);
+            gamePropsItems.set("redConductUnit", 0);
+
+            gamePropsItems.set("blueRecogn", 0);
+            gamePropsItems.set("blueSUDelivered", 0);
+            gamePropsItems.set("blueCUDelivered", 0);
+            gamePropsItems.set("blueBuildingBlock", 0);
+            gamePropsItems.set("blueSignalUnit", 0);
+            gamePropsItems.set("blueConductUnit", 0);
             gameProps.set("items", gamePropsItems);
 
             const gamePropsSettings = new Y.Map() as Y.Map<any>;
@@ -1025,12 +560,20 @@ export default function Dashboard(props: any) {
     // Hydration Issue, just for good practice ヽ(･∀･)ﾉ
     const [historyState, setHistoryState] = useState<any[]>([]);
     const [itemsState, setItemsState] = useState<any>({
-        redDunk: 0,
-        redTwoPoint: 0,
-        redThreePoint: 0,
-        blueDunk: 0,
-        blueTwoPoint: 0,
-        blueThreePoint: 0,
+        // Change Game Props State Here
+        redRecogn: 0,
+        redSUDelivered: 0,
+        redCUDelivered: 0,
+        redBuildingBlock: 0,
+        redSignalUnit: 0,
+        redConductUnit: 0,
+
+        blueRecogn: 0,
+        blueSUDelivered: 0,
+        blueCUDelivered: 0,
+        blueBuildingBlock: 0,
+        blueSignalUnit: 0,
+        blueConductUnit: 0,
     });
     const [teamState, setTeamState] = useState<{ red: { cname: string; ename: string; }; blue: { cname: string; ename: string; }; }>({
         red: { cname: "征龍", ename: "War Dragon" },
@@ -1051,42 +594,16 @@ export default function Dashboard(props: any) {
         const historyYArray = gameProps.get("history") as Y.Array<{ action: string; time: string; team: string }>;
         const itemsYMap = gameProps.get("items") as Y.Map<number>;
 
-        /*
-        6.7.1 Points will be awarded for successful shots based on the shooting zone and
-            shooting types as follows:
-     
-            6.7.1.1 Three (3) points for a shot made from the 3-point zone. The robot's base
-            perimeter must be fully within the 3-point zone before, during and after
-            the shot including space above the zone.
-     
-            6.7.1.2 Two (2) points for a shot that are neither a 3-point shot nor a dunk shot.
-     
-            6.7.1.3 Seven (7) points for a dunk shot. 
-     
-        9.4.3 The offensive team will be awarded points from the designated zone where the
-            foul occurred. These points will not count as a successful shot attempt.
-     
-            9.4.3.1 If the fouled robot’s base perimeter is fully within the 3-point zone
-            including space above, or the robot’s base perimeter is on the centerline,
-            the offensive team will be awarded three (3) points.
-     
-            9.4.3.2 If the fouled robot’s base perimeter is in the 2-point zone, the offensive
-            team will be awarded two (2) points.
-     
-            9.4.3.3 If the fouled robot is performing a dunk shoot, the offensive team will
-            be awarded seven (7) points.
-        */
-
         let redPoints = 0;
         let bluePoints = 0;
 
-        redPoints += (itemsYMap.get("redTwoPoint") || 0) * 2;
+        /* redPoints += (itemsYMap.get("redTwoPoint") || 0) * 2;
         redPoints += (itemsYMap.get("redThreePoint") || 0) * 3;
         redPoints += (itemsYMap.get("redDunk") || 0) * 7;
 
         bluePoints += (itemsYMap.get("blueTwoPoint") || 0) * 2;
         bluePoints += (itemsYMap.get("blueThreePoint") || 0) * 3;
-        bluePoints += (itemsYMap.get("blueDunk") || 0) * 7;
+        bluePoints += (itemsYMap.get("blueDunk") || 0) * 7; */
 
 
         setScores({ redPoints, bluePoints });
@@ -1116,7 +633,7 @@ export default function Dashboard(props: any) {
         console.log(teams)
     }
 
-    const ballScoring = (item: string, value: number, team: string, historyTime?: string) => {
+    const scoringFn = (item: string, value: number, team: string, bool: boolean, historyTime?: string) => {
         const itemsYMap = gameProps.get("items") as Y.Map<number>;
         const historyYArray = gameProps.get("history") as Y.Array<{ action: string; time: string; team: string; }>;
         // Validation
@@ -1129,21 +646,17 @@ export default function Dashboard(props: any) {
             })
             return;
         }
-        if (!possessionClockData.get("paused") as boolean) {
-            toast({
-                title: "No editing during possession change.",
-                status: 'error',
-                duration: 500,
-            })
-            return;
-        }
 
         if ((itemsYMap.get(`${team}${item}`) as number) > value) {
             const indicesToDelete: number[] = [];
 
             historyYArray.forEach((val, index) => {
                 if (val.action.startsWith(`${item}`) && val.team === team) {
-                    if (Number(val.action.split(" ")[1]) >= value) {
+                    var targetValue = Number(val.action.split(" ")[1]);
+                    if (bool) {
+                        targetValue = val.action.split(" ")[1] === "YES" ? 1 : 0;
+                    }
+                    if (targetValue >= value) {
                         indicesToDelete.push(index);
                     }
                 }
@@ -1155,13 +668,13 @@ export default function Dashboard(props: any) {
         }
 
         if (value > 0) {
-            historyYArray.push([{ action: `${item} ${value}`, time: historyTime || elapsedText.minutes + ":" + elapsedText.seconds + "." + elapsedText.milliseconds, team: team }])
+            var disValue = value.toString();
+            if (bool) {
+                disValue = "YES"
+            }
+            historyYArray.push([{ action: `${item} ${disValue}`, time: historyTime || elapsedText.minutes + ":" + elapsedText.seconds + "." + elapsedText.milliseconds, team: team }])
         }
         itemsYMap.set(`${team}${item}`, value);
-
-        if (clockData.get("stage") as string === "GAME") {
-            startPossessionClock();
-        }
     }
     // [Core] End of GameProps Functions and States
 
@@ -1183,43 +696,25 @@ export default function Dashboard(props: any) {
             clockData.set("stageTrigger", false)
             clockData.set("init", true)
 
-            redShotClockData.clear()
-            blueShotClockData.clear()
-            possessionClockData.clear()
-            possessionData.clear()
-
-            redShotClockData.set("timestamp", 0)
-            redShotClockData.set("elapsed", 0)
-            redShotClockData.set("paused", true)
-            redShotClockData.set("init", true)
-
-            blueShotClockData.set("timestamp", 0)
-            blueShotClockData.set("elapsed", 0)
-            blueShotClockData.set("paused", true)
-            blueShotClockData.set("init", true)
-
-            possessionClockData.set("timestamp", 0)
-            possessionClockData.set("elapsed", 0)
-            possessionClockData.set("paused", true)
-            possessionClockData.set("firstPossession", true)
-            possessionClockData.set("init", true)
-
-            possessionData.set("currentPossession", "possession")
-            possessionData.set("nextPossession", "red")
-            possessionData.set("init", true)
-
             gameProps.set("teams", { "red": { "cname": "征龍", "ename": "War Dragon" }, "blue": { "cname": "火之龍", "ename": "Fiery Dragon" } })
 
             const gameHistory = new Y.Array();
             gameProps.set("history", gameHistory)
 
             const gamePropsItems = new Y.Map() as Y.Map<number>;
-            gamePropsItems.set("redDunk", 0);
-            gamePropsItems.set("redTwoPoint", 0);
-            gamePropsItems.set("redThreePoint", 0);
-            gamePropsItems.set("blueDunk", 0);
-            gamePropsItems.set("blueTwoPoint", 0);
-            gamePropsItems.set("blueThreePoint", 0);
+            gamePropsItems.set("redRecogn", 0);
+            gamePropsItems.set("redSUDelivered", 0);
+            gamePropsItems.set("redCUDelivered", 0);
+            gamePropsItems.set("redBuildingBlock", 0);
+            gamePropsItems.set("redSignalUnit", 0);
+            gamePropsItems.set("redConductUnit", 0);
+
+            gamePropsItems.set("blueRecogn", 0);
+            gamePropsItems.set("blueSUDelivered", 0);
+            gamePropsItems.set("blueCUDelivered", 0);
+            gamePropsItems.set("blueBuildingBlock", 0);
+            gamePropsItems.set("blueSignalUnit", 0);
+            gamePropsItems.set("blueConductUnit", 0);
             gameProps.set("items", gamePropsItems);
 
             const gamePropsSettings = new Y.Map() as Y.Map<any>;
@@ -1327,14 +822,7 @@ export default function Dashboard(props: any) {
                         <HistoryList history={historyState} team="RED" color={"red"} />
                     </Flex>
                 </GridItem>
-                <GridItem rowSpan={1} colSpan={2} m={"1vw"}>
-                    <Flex flexDir={"row"} justifyContent={"space-between"}>
-                        <ShotClock color={"blue"} timeText={blueShotClockText} startClock={startBlueShotClock} resetClock={resetBlueShotClock} clockPaused={blueShotClockPaused} possessionClockPaused={possessionClockPaused} possessionData={possessionData} smDevice={gameSettings.layout.smDevice} />
-                        <PossessionClock timeText={possessionClockText} startClock={startPossessionClock} resetClock={resetPossessionClock} clockPaused={possessionClockPaused} smDevice={gameSettings.layout.smDevice} />
-                        <ShotClock color={"red"} timeText={redShotClockText} startClock={startRedShotClock} resetClock={resetRedShotClock} clockPaused={redShotClockPaused} possessionClockPaused={possessionClockPaused} possessionData={possessionData} smDevice={gameSettings.layout.smDevice} />
-                    </Flex>
-                </GridItem>
-                <GridItem rowSpan={5} colSpan={2} m={"1vw"}>
+                <GridItem rowSpan={6} colSpan={2} m={"1vw"}>
                     <Flex alignItems={"center"} height={"100%"} justifyContent={"center"}>
                         <Box position="relative" width="100%" height="100%">
                             <Image
@@ -1348,21 +836,70 @@ export default function Dashboard(props: any) {
                             />
                             <Box
                                 position="absolute"
-                                left="20%"
-                                top="50%"
+                                right="-4%"
+                                bottom="10%"
                                 transform="translate(-50%, -50%) scale(1)"
                                 transformOrigin='center'
                             >
-                                <Counter counter={itemsState.redDunk} setCounter={(val: number) => ballScoring("Dunk", val, "red")} color={"red"} smDevice={gameSettings.layout.smDevice} />
+                                <StatePicker state={itemsState.redRecogn} setState={(val: number) => scoringFn("Recogn", val, "red", true)} color={"red"} placeholder={"Recogn"} smDevice={gameSettings.layout.smDevice} small={true} />
                             </Box>
                             <Box
+                                position="absolute"
+                                left="9.5%"
+                                bottom="10%"
+                                transform="translate(-50%, -50%) scale(1)"
+                                transformOrigin='center'
+                            >
+                                <StatePicker state={itemsState.blueRecogn} setState={(val: number) => scoringFn("Recogn", val, "blue", true)} color={"blue"} placeholder={"Recogn"} smDevice={gameSettings.layout.smDevice} small={true} />
+                            </Box>
+
+                            <Box
+                                position="absolute"
+                                right="14.5%"
+                                top="5%"
+                                transform="translate(-50%, -50%) scale(1)"
+                                transformOrigin='center'
+                            >
+                                <StatePicker state={itemsState.redCUDelivered} setState={(val: number) => scoringFn("CUDelivered", val, "red", true)} color={"red"} placeholder={"CU"} smDevice={gameSettings.layout.smDevice} small={true} />
+                            </Box>
+                            <Box
+                                position="absolute"
+                                left="21%"
+                                top="5%"
+                                transform="translate(-50%, -50%) scale(1)"
+                                transformOrigin='center'
+                            >
+                                <StatePicker state={itemsState.blueCUDelivered} setState={(val: number) => scoringFn("CUDelivered", val, "blue", true)} color={"blue"} placeholder={"CU"} smDevice={gameSettings.layout.smDevice} small={true} />
+                            </Box>
+
+                            <Box
+                                position="absolute"
+                                right="14.5%"
+                                top="14%"
+                                transform="translate(-50%, -50%) scale(1)"
+                                transformOrigin='center'
+                            >
+                                <StatePicker state={itemsState.redSUDelivered} setState={(val: number) => scoringFn("SUDelivered", val, "red", true)} color={"red"} placeholder={"SU"} smDevice={gameSettings.layout.smDevice} small={true} />
+                            </Box>
+                            <Box
+                                position="absolute"
+                                left="21%"
+                                top="14%"
+                                transform="translate(-50%, -50%) scale(1)"
+                                transformOrigin='center'
+                            >
+                                <StatePicker state={itemsState.blueSUDelivered} setState={(val: number) => scoringFn("SUDelivered", val, "blue", true)} color={"blue"} placeholder={"SU"} smDevice={gameSettings.layout.smDevice} small={true} />
+                            </Box>
+
+
+                            {/* <Box
                                 position="absolute"
                                 left="20%"
                                 top="67%"
                                 transform="translate(-50%, -50%) scale(1)"
                                 transformOrigin='center'
                             >
-                                <Counter counter={itemsState.redTwoPoint} setCounter={(val: number) => ballScoring("TwoPoint", val, "red")} color={"red"} smDevice={gameSettings.layout.smDevice} />
+                                <Counter counter={itemsState.redTwoPoint} setCounter={(val: number) => scoringFn("TwoPoint", val, "red")} color={"red"} smDevice={gameSettings.layout.smDevice} />
                             </Box>
                             <Box
                                 position="absolute"
@@ -1371,7 +908,7 @@ export default function Dashboard(props: any) {
                                 transform="translate(-50%, -50%) scale(1)"
                                 transformOrigin='center'
                             >
-                                <Counter counter={itemsState.redThreePoint} setCounter={(val: number) => ballScoring("ThreePoint", val, "red")} color={"red"} smDevice={gameSettings.layout.smDevice} />
+                                <Counter counter={itemsState.redThreePoint} setCounter={(val: number) => scoringFn("ThreePoint", val, "red")} color={"red"} smDevice={gameSettings.layout.smDevice} />
                             </Box>
                             <Box
                                 position="absolute"
@@ -1380,7 +917,7 @@ export default function Dashboard(props: any) {
                                 transform="translate(-50%, -50%) scale(1)"
                                 transformOrigin='center'
                             >
-                                <Counter counter={itemsState.blueDunk} setCounter={(val: number) => ballScoring("Dunk", val, "blue")} color={"blue"} smDevice={gameSettings.layout.smDevice} />
+                                <Counter counter={itemsState.blueDunk} setCounter={(val: number) => scoringFn("Dunk", val, "blue")} color={"blue"} smDevice={gameSettings.layout.smDevice} />
                             </Box>
                             <Box
                                 position="absolute"
@@ -1389,17 +926,17 @@ export default function Dashboard(props: any) {
                                 transform="translate(-50%, -50%) scale(1)"
                                 transformOrigin='center'
                             >
-                                <Counter counter={itemsState.blueTwoPoint} setCounter={(val: number) => ballScoring("TwoPoint", val, "blue")} color={"blue"} smDevice={gameSettings.layout.smDevice} />
+                                <Counter counter={itemsState.blueTwoPoint} setCounter={(val: number) => scoringFn("TwoPoint", val, "blue")} color={"blue"} smDevice={gameSettings.layout.smDevice} />
                             </Box>
                             <Box
                                 position="absolute"
                                 right="35%"
                                 top="67%"
                                 transform="translate(-50%, -50%) scale(1)"
-                                transformOrigin='center'
+                                transformOrigin="center"
                             >
-                                <Counter counter={itemsState.blueThreePoint} setCounter={(val: number) => ballScoring("ThreePoint", val, "blue")} color={"blue"} smDevice={gameSettings.layout.smDevice} />
-                            </Box>
+                                <Counter counter={itemsState.blueThreePoint} setCounter={(val: number) => scoringFn("ThreePoint", val, "blue")} color={"blue"} smDevice={gameSettings.layout.smDevice} />
+                            </Box> */}
                         </Box>
                     </Flex>
                 </GridItem>

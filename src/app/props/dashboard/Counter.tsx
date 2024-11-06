@@ -4,8 +4,6 @@ import { Box, Flex } from "@chakra-ui/react";
 export function Counter(props: any) {
     return (
         <Flex>
-
-
             <Box shadow={"lg"} rounded={"lg"} px={"0.5rem"} style={{
                 fontSize: props.small ? "1.7rem" : "2rem",
                 textAlign: "center",

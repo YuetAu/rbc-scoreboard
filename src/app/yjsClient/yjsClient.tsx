@@ -47,7 +47,7 @@ export class YJsClient {
         this.ydoc = new Y.Doc();
         this.awareness = new awarenessProtocol.Awareness(this.ydoc);
         getPartykitToken(uuid ?? "Unknown").then((token) => {
-            this.yPartyProvider = new YPartyKitProvider("https://rt-scoreboard-party.yuetau.partykit.dev", "RBC2025" + this.gameID, this.ydoc, {
+            this.yPartyProvider = new YPartyKitProvider("https://rt-scoreboard-party.yuetau.partykit.dev", "RDC2025" + this.gameID, this.ydoc, {
                 connect: this.gameID ? true : false,
                 awareness: this.awareness,
                 params: { token: token }
@@ -60,7 +60,7 @@ export class YJsClient {
         //if (location.protocol == 'https:') {
         getTURNToken().then((turnToken) => {
             console.log(turnToken);
-            this.webrtcProvider = new WebrtcProvider("RBC2025" + this.gameID, this.ydoc, {
+            this.webrtcProvider = new WebrtcProvider("RDC2025" + this.gameID, this.ydoc, {
                 password: "RT-ScoreBoardIsGreat2025", signaling: ["wss://wrtc1.ustrobocon.win", "wss://wrtc2.ustrobocon.win"], awareness: this.awareness, peerOpts: {
                     config: { iceServers: [turnToken.iceServers, { urls: "stun:stun.miwifi.com:3478" }, { urls: "stun:stun.l.google.com:19302" }] },
                 }
