@@ -2,10 +2,10 @@ import './styles/globals.css'
 import { Providers } from './providers'
 import { Metadata, Viewport } from 'next'
 
-const APP_NAME = "RDC 2025";
-const APP_DEFAULT_TITLE = "RDC 2025";
+const APP_NAME = "RDC 2024";
+const APP_DEFAULT_TITLE = "RDC 2024";
 const APP_TITLE_TEMPLATE = "%s - Offical Scoreboard";
-const APP_DESCRIPTION = "The Offical Scoreboard for RDC 2025";
+const APP_DESCRIPTION = "The Offical Scoreboard for RDC 2024";
 
 export const metadata: Metadata = {
     applicationName: APP_NAME,

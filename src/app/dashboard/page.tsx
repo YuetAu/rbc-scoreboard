@@ -1,25 +1,24 @@
 'use client'
 
-import { FIRST_POSSESSION, GAME_STAGES, GAME_STAGES_TIME, POSSESSION, SHOTCLOCK } from "@/app/common/gameStages";
+import { GAME_STAGES, GAME_STAGES_TIME } from "@/app/common/gameStages";
 import { deepMerge } from "@/app/helpers/deepMerge";
 import { Counter } from "@/app/props/dashboard/Counter";
 import HistoryList from "@/app/props/dashboard/HistoryList";
 import { ScoreDisplay } from "@/app/props/dashboard/ScoreDisplay";
-import { PossessionClock, ShotClock } from "@/app/props/dashboard/ShotClock";
 import TimerBox from "@/app/props/dashboard/TimerBox";
 import { YJsClient } from "@/app/yjsClient/yjsClient";
-import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, Flex, Grid, GridItem, Input, Image, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, NumberDecrementStepper, NumberIncrementStepper, NumberInput, NumberInputField, NumberInputStepper, Switch, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tr, useToast, VStack, SimpleGrid, Popover, PopoverTrigger, PopoverContent, PopoverArrow, PopoverCloseButton, PopoverBody } from "@chakra-ui/react";
-import "@fontsource-variable/quicksand";
+import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, Flex, Grid, GridItem, Image, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, NumberDecrementStepper, NumberIncrementStepper, NumberInput, NumberInputField, NumberInputStepper, Popover, PopoverArrow, PopoverBody, PopoverContent, PopoverTrigger, SimpleGrid, Switch, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tr, useToast } from "@chakra-ui/react";
 import '@fontsource-variable/noto-sans-tc';
+import "@fontsource-variable/quicksand";
 import { faCircleDot } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { AwaitedReactNode, JSXElementConstructor, Key, ReactElement, ReactNode, ReactPortal, useCallback, useEffect, useRef, useState } from "react";
+import { generateFromString } from 'generate-avatar';
+import { generateSlug } from "random-word-slugs";
+import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import * as Y from "yjs";
 import { changeLogs } from "../common/changeLogs";
 import { MarkdownComponents } from "../helpers/markdown";
-import { generateSlug } from "random-word-slugs";
-import { generateFromString } from 'generate-avatar'
 import { StatePicker } from "../props/dashboard/StatePicker";
 
 
