@@ -2,10 +2,10 @@ import './styles/globals.css'
 import { Providers } from './providers'
 import { Metadata, Viewport } from 'next'
 
-const APP_NAME = "RBC 2025";
-const APP_DEFAULT_TITLE = "Robocon 2025";
-const APP_TITLE_TEMPLATE = "%s - Unoffical Scoreboard";
-const APP_DESCRIPTION = "The Unoffical Scoreboard for Robocon 2025";
+const APP_NAME = "RDC 2025";
+const APP_DEFAULT_TITLE = "RDC 2025";
+const APP_TITLE_TEMPLATE = "%s - Offical Scoreboard";
+const APP_DESCRIPTION = "The Offical Scoreboard for RDC 2025";
 
 export const metadata: Metadata = {
     applicationName: APP_NAME,
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     formatDetection: {
         telephone: false,
     },
-    metadataBase: new URL("https://robocon2025.yuetau.net"),
+    metadataBase: new URL("https://rdc2025.ustrobocon.win"),
     openGraph: {
         type: "website",
         siteName: APP_NAME,

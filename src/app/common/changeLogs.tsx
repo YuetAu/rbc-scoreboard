@@ -5,15 +5,9 @@ export const changeLogs = [
         internalCode: 100,
         title: "First Release",
         content: `
-The first unoffical scoreboard for ABU Robocon 2025 is now released.
-
-This scoreboard is based on 2024/08/21 Rule Book. It will be updated as soon as possible after new FAQ is released.
-
-Hope you enjoy it!
-
-![Tutorial Image](/Tutorial.png)
+        RDC Scoreboard. Yay!
         `,
-        date: "2024-09-01",
+        date: "2024-11-07",
         author: "Yuet"
     }
 ]
