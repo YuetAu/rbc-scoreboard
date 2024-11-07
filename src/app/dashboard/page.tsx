@@ -163,7 +163,7 @@ export default function Dashboard(props: any) {
             },
             stages: {
                 PREP: 60,
-                GAME: 120,
+                GAME: 180,
                 END: 0
             },
             changeLogs: 0,
@@ -197,6 +197,7 @@ export default function Dashboard(props: any) {
                 if (mergedSettings.device.uuid == "") {
                     mergedSettings.device.uuid = window.crypto.randomUUID() + "-U-" + Date.now().toString(16);
                 }
+                mergedSettings.stages = gameSettings.stages; // Foce Stages
                 setGameSettings(mergedSettings);
                 localStorage.setItem("gameSettings", JSON.stringify(mergedSettings));
             } catch (error) {
@@ -1098,54 +1099,6 @@ export default function Dashboard(props: any) {
                                 </h2>
                                 <AccordionPanel>
                                     <Flex my="0.5rem"><Switch colorScheme='teal' size='md' isChecked={gameSettings.layout.smDevice} onChange={() => { setGameSettings({ ...gameSettings, layout: { ...gameSettings.layout, smDevice: !gameSettings.layout.smDevice } }) }} /> <Box mt={"-0.2rem"} ml={"0.5rem"}>Enable Helper Button</Box></Flex>
-                                </AccordionPanel>
-                            </AccordionItem>
-                            <AccordionItem>
-                                <h2>
-                                    <AccordionButton>
-                                        <Box as='span' flex='1' textAlign='left'>
-                                            Game Stages
-                                        </Box>
-                                        <AccordionIcon />
-                                    </AccordionButton>
-                                </h2>
-                                <AccordionPanel>
-                                    <TableContainer>
-                                        <Table>
-                                            <Thead>
-                                                <Tr>
-                                                    <Th>Stage</Th>
-                                                    <Th>Duration</Th>
-                                                </Tr>
-                                            </Thead>
-                                            <Tbody>
-                                                {Object.keys(syncGameSettings.stages).map((stage, index) => {
-                                                    return (
-                                                        <Tr key={index}>
-                                                            <Td p={"0.5rem"}>{stage}</Td>
-                                                            <Td p={"0.5rem"}>
-                                                                <NumberInput min={0} max={999} w={"5rem"} size={"sm"} value={Number(syncGameSettings.stages[stage as keyof typeof syncGameSettings.stages])}
-                                                                    onChange={(value: any) => {
-                                                                        ydoc.transact((_y: any) => {
-                                                                            const gamePropsSettings = gameProps.get("settings") as Y.Map<any>;
-                                                                            gamePropsSettings.set("stages", { ...gamePropsSettings.toJSON().stages, [stage]: Number(value) });
-                                                                        })
-                                                                    }}
-                                                                >
-                                                                    <NumberInputField />
-                                                                    <NumberInputStepper>
-                                                                        <NumberIncrementStepper />
-                                                                        <NumberDecrementStepper />
-                                                                    </NumberInputStepper>
-                                                                </NumberInput>
-                                                            </Td>
-                                                        </Tr>
-                                                    )
-                                                })}
-                                            </Tbody>
-                                        </Table>
-                                    </TableContainer>
-                                    <Button mt={"0.5rem"} onClick={() => { setGameSettings({ ...gameSettings, stages: { ...gameProps.get("settings").toJSON()["stages"] } }) }} colorScheme="purple" size={"sm"}>Save as preference</Button>
                                 </AccordionPanel>
                             </AccordionItem>
                             <AccordionItem>
