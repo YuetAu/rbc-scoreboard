@@ -10,12 +10,14 @@ export function Counter(props: any) {
                 lineHeight: props.small ? "2rem" : "2.5rem",
                 backgroundColor: props.color == "red" ? "#F56565" : props.color == "blue" ? "#11B5E4" : props.color == "gold" ? "#F9A825" : "white",
                 color: "black",
-                width: props.counter >= 10 ? props.small ? "2.8rem" : "3.1rem" : props.small ? "2rem" : "2.5rem",
+                //width: props.counter >= 10 ? props.small ? "2.8rem" : "3.1rem" : props.small ? "2rem" : "2.5rem",
+                paddingLeft: props.small ? "0.5rem" : "0.7rem",
+                paddingRight: props.small ? "0.5rem" : "0.7rem",
                 userSelect: "none",
                 cursor: "pointer",
             }}
-                onClick={() => { !props.smDevice ? props.setCounter(props.counter + 1) : true }}
-                onContextMenu={() => { !props.disableLeftClick && !props.smDevice ? props.setCounter(props.counter - 1 > 0 ? props.counter - 1 : 0) : true }}
+                onClick={() => { !props.smDevice ? props.setCounter(props.counter + (props.step || 1)) : true }}
+                onContextMenu={() => { !props.disableLeftClick && !props.smDevice ? props.setCounter(props.counter - (props.step || 1) > 0 ? props.counter - (props.step || 1) : 0) : true }}
             >
                 {props.counter}
                 {props.smDevice && (<>

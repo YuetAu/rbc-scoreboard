@@ -538,6 +538,7 @@ export default function Dashboard(props: any) {
             gamePropsItems.set("redBuildingBlock", 0);
             gamePropsItems.set("redSignalUnit", 0);
             gamePropsItems.set("redConductUnit", 0);
+            gamePropsItems.set("redBuildingHeight", 0);
 
             gamePropsItems.set("blueRecogn", 0);
             gamePropsItems.set("blueSUDelivered", 0);
@@ -545,6 +546,7 @@ export default function Dashboard(props: any) {
             gamePropsItems.set("blueBuildingBlock", 0);
             gamePropsItems.set("blueSignalUnit", 0);
             gamePropsItems.set("blueConductUnit", 0);
+            gamePropsItems.set("blueBuildingHeight", 0);
             gameProps.set("items", gamePropsItems);
 
             const gamePropsSettings = new Y.Map() as Y.Map<any>;
@@ -567,6 +569,7 @@ export default function Dashboard(props: any) {
         redBuildingBlock: 0,
         redSignalUnit: 0,
         redConductUnit: 0,
+        redBuildingHeight: 0,
 
         blueRecogn: 0,
         blueSUDelivered: 0,
@@ -574,6 +577,7 @@ export default function Dashboard(props: any) {
         blueBuildingBlock: 0,
         blueSignalUnit: 0,
         blueConductUnit: 0,
+        blueBuildingHeight: 0,
     });
     const [teamState, setTeamState] = useState<{ red: { cname: string; ename: string; }; blue: { cname: string; ename: string; }; }>({
         red: { cname: "征龍", ename: "War Dragon" },
@@ -591,20 +595,26 @@ export default function Dashboard(props: any) {
     const greateVictoryRef = useRef<boolean>(false);
 
     const scoreCalculation = () => {
-        const historyYArray = gameProps.get("history") as Y.Array<{ action: string; time: string; team: string }>;
         const itemsYMap = gameProps.get("items") as Y.Map<number>;
 
         let redPoints = 0;
         let bluePoints = 0;
 
-        /* redPoints += (itemsYMap.get("redTwoPoint") || 0) * 2;
-        redPoints += (itemsYMap.get("redThreePoint") || 0) * 3;
-        redPoints += (itemsYMap.get("redDunk") || 0) * 7;
+        redPoints += (itemsYMap.get("redRecogn") || 0) * 50;
+        redPoints += (itemsYMap.get("redSUDelivered") || 0) * 30;
+        redPoints += (itemsYMap.get("redCUDelivered") || 0) * 20;
 
-        bluePoints += (itemsYMap.get("blueTwoPoint") || 0) * 2;
-        bluePoints += (itemsYMap.get("blueThreePoint") || 0) * 3;
-        bluePoints += (itemsYMap.get("blueDunk") || 0) * 7; */
+        bluePoints += (itemsYMap.get("blueRecogn") || 0) * 50;
+        bluePoints += (itemsYMap.get("blueSUDelivered") || 0) * 30;
+        bluePoints += (itemsYMap.get("blueCUDelivered") || 0) * 20;
 
+        redPoints += (itemsYMap.get("redBuildingBlock") || 0) * 10;
+        redPoints += (itemsYMap.get("redSignalUnit") || 0) * 30;
+        redPoints += ((itemsYMap.get("redBuildingHeight") || 0) / 100) * ((itemsYMap.get("redConductUnit") || 0) + 1) * 10;
+
+        bluePoints += (itemsYMap.get("blueBuildingBlock") || 0) * 10;
+        bluePoints += (itemsYMap.get("blueSignalUnit") || 0) * 30;
+        bluePoints += ((itemsYMap.get("blueBuildingHeight") || 0) / 100) * ((itemsYMap.get("blueConductUnit") || 0) + 1) * 10;
 
         setScores({ redPoints, bluePoints });
         return { redPoints, bluePoints }
@@ -633,7 +643,7 @@ export default function Dashboard(props: any) {
         console.log(teams)
     }
 
-    const scoringFn = (item: string, value: number, team: string, bool: boolean, historyTime?: string) => {
+    const scoringFn = (item: string, value: number, team: string, bool: boolean = false, historyTime?: string) => {
         const itemsYMap = gameProps.get("items") as Y.Map<number>;
         const historyYArray = gameProps.get("history") as Y.Array<{ action: string; time: string; team: string; }>;
         // Validation
@@ -708,6 +718,7 @@ export default function Dashboard(props: any) {
             gamePropsItems.set("redBuildingBlock", 0);
             gamePropsItems.set("redSignalUnit", 0);
             gamePropsItems.set("redConductUnit", 0);
+            gamePropsItems.set("redBuildingHeight", 0);
 
             gamePropsItems.set("blueRecogn", 0);
             gamePropsItems.set("blueSUDelivered", 0);
@@ -715,6 +726,7 @@ export default function Dashboard(props: any) {
             gamePropsItems.set("blueBuildingBlock", 0);
             gamePropsItems.set("blueSignalUnit", 0);
             gamePropsItems.set("blueConductUnit", 0);
+            gamePropsItems.set("blueBuildingHeight", 0);
             gameProps.set("items", gamePropsItems);
 
             const gamePropsSettings = new Y.Map() as Y.Map<any>;
@@ -891,52 +903,81 @@ export default function Dashboard(props: any) {
                                 <StatePicker state={itemsState.blueSUDelivered} setState={(val: number) => scoringFn("SUDelivered", val, "blue", true)} color={"blue"} placeholder={"SU"} smDevice={gameSettings.layout.smDevice} small={true} />
                             </Box>
 
+                            <Box
+                                position="absolute"
+                                right="32%"
+                                bottom="15%"
+                                transform="translate(-50%, -50%) scale(1)"
+                                transformOrigin='center'
+                            >
+                                <Counter counter={itemsState.redBuildingBlock} setCounter={(val: number) => scoringFn("BuildingBlock", val, "red")} color={"red"} smDevice={gameSettings.layout.smDevice} />
+                            </Box>
+                            <Box
+                                position="absolute"
+                                left="28%"
+                                bottom="15%"
+                                transform="translate(-50%, -50%) scale(1)"
+                                transformOrigin='center'
+                            >
+                                <Counter counter={itemsState.blueBuildingBlock} setCounter={(val: number) => scoringFn("BuildingBlock", val, "blue")} color={"blue"} smDevice={gameSettings.layout.smDevice} />
+                            </Box>
 
-                            {/* <Box
+                            <Box
                                 position="absolute"
-                                left="20%"
-                                top="67%"
+                                right="24%"
+                                bottom="16%"
                                 transform="translate(-50%, -50%) scale(1)"
                                 transformOrigin='center'
                             >
-                                <Counter counter={itemsState.redTwoPoint} setCounter={(val: number) => scoringFn("TwoPoint", val, "red")} color={"red"} smDevice={gameSettings.layout.smDevice} />
+                                <Counter counter={itemsState.redBuildingHeight} setCounter={(val: number) => scoringFn("BuildingHeight", val, "red")} color={"red"} smDevice={gameSettings.layout.smDevice} small={true} step={100} />
                             </Box>
                             <Box
                                 position="absolute"
-                                left="40%"
-                                top="67%"
+                                left="38%"
+                                bottom="16%"
                                 transform="translate(-50%, -50%) scale(1)"
                                 transformOrigin='center'
                             >
-                                <Counter counter={itemsState.redThreePoint} setCounter={(val: number) => scoringFn("ThreePoint", val, "red")} color={"red"} smDevice={gameSettings.layout.smDevice} />
+                                <Counter counter={itemsState.blueBuildingHeight} setCounter={(val: number) => scoringFn("BuildingHeight", val, "blue")} color={"blue"} smDevice={gameSettings.layout.smDevice} small={true} step={100} />
                             </Box>
+
                             <Box
                                 position="absolute"
-                                right="15%"
-                                top="50%"
+                                right="32%"
+                                bottom="7%"
                                 transform="translate(-50%, -50%) scale(1)"
                                 transformOrigin='center'
                             >
-                                <Counter counter={itemsState.blueDunk} setCounter={(val: number) => scoringFn("Dunk", val, "blue")} color={"blue"} smDevice={gameSettings.layout.smDevice} />
+                                <StatePicker state={itemsState.redConductUnit} setState={(val: number) => scoringFn("ConductUnit", val, "red", true)} color={"red"} placeholder={"CU"} smDevice={gameSettings.layout.smDevice} small={true} />
                             </Box>
                             <Box
                                 position="absolute"
-                                right="15%"
-                                top="67%"
+                                left="28%"
+                                bottom="7%"
                                 transform="translate(-50%, -50%) scale(1)"
                                 transformOrigin='center'
                             >
-                                <Counter counter={itemsState.blueTwoPoint} setCounter={(val: number) => scoringFn("TwoPoint", val, "blue")} color={"blue"} smDevice={gameSettings.layout.smDevice} />
+                                <StatePicker state={itemsState.blueConductUnit} setState={(val: number) => scoringFn("ConductUnit", val, "blue", true)} color={"blue"} placeholder={"CU"} smDevice={gameSettings.layout.smDevice} small={true} />
+                            </Box>
+
+                            <Box
+                                position="absolute"
+                                right="22%"
+                                bottom="7%"
+                                transform="translate(-50%, -50%) scale(1)"
+                                transformOrigin='center'
+                            >
+                                <StatePicker state={itemsState.redSignalUnit} setState={(val: number) => scoringFn("SignalUnit", val, "red", true)} color={"red"} placeholder={"SU"} smDevice={gameSettings.layout.smDevice} small={true} />
                             </Box>
                             <Box
                                 position="absolute"
-                                right="35%"
-                                top="67%"
+                                left="38%"
+                                bottom="7%"
                                 transform="translate(-50%, -50%) scale(1)"
-                                transformOrigin="center"
+                                transformOrigin='center'
                             >
-                                <Counter counter={itemsState.blueThreePoint} setCounter={(val: number) => scoringFn("ThreePoint", val, "blue")} color={"blue"} smDevice={gameSettings.layout.smDevice} />
-                            </Box> */}
+                                <StatePicker state={itemsState.blueSignalUnit} setState={(val: number) => scoringFn("SignalUnit", val, "blue", true)} color={"blue"} placeholder={"SU"} smDevice={gameSettings.layout.smDevice} small={true} />
+                            </Box>
                         </Box>
                     </Flex>
                 </GridItem>
