@@ -583,7 +583,7 @@ export default function Dashboard(props: any) {
         red: { cname: "征龍", ename: "War Dragon" },
         blue: { cname: "火之龍", ename: "Fiery Dragon" }
     });
-    const [syncGameSettings, setSyncGameSettings] = useState<any>({ stages: { PREP: 60, GAME: 120, END: 0 } });
+    const [syncGameSettings, setSyncGameSettings] = useState<any>({ stages: { PREP: 60, GAME: 180, END: 0 } });
     const syncGameSettingsRef = useRef(syncGameSettings);
 
     useEffect(() => {
