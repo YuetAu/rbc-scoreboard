@@ -92,11 +92,9 @@ export default function Dashboard(props: any) {
                 timeSyncType.current = 1;
             }
         } else {
-            if (timeSyncType.current != 0) {
-                timeSyncInterval.current && clearInterval(timeSyncInterval.current);
-                timeSyncInterval.current = setInterval(getTimeOffset, 120 * 1000);
-                timeSyncType.current = 0;
-            }
+            timeSyncInterval.current && clearInterval(timeSyncInterval.current);
+            timeSyncInterval.current = setInterval(getTimeOffset, 120 * 1000);
+            timeSyncType.current = 0;
         }
     };
 
@@ -592,13 +590,27 @@ export default function Dashboard(props: any) {
 
     // GameProps Main Scoring Function
     const [scores, setScores] = useState({ redPoints: 0, bluePoints: 0 });
-    const greateVictoryRef = useRef<boolean>(false);
+    const greatVictoryRef = useRef<boolean>(false);
 
     const scoreCalculation = () => {
         const itemsYMap = gameProps.get("items") as Y.Map<number>;
 
         let redPoints = 0;
         let bluePoints = 0;
+
+        /* TR:
+        For each valid Building Block in the Building Zone: 10 points
+        Successfully deliver the Signal Unit to the Building Zone: 30 points
+            If the Conduct Unit is NOT in the Building Zone,
+            For each 100mm (rounded down) between the ground and the top of the tallest valid signal tower in the Building Zone: 10 points
+            If the Conduct Unit is in the Building Zone,
+            For each 100mm (rounded down) between the ground and the top of the tallest valid signal tower in the Building Zone: 20 points
+
+        AR:
+        Correctly identified the Signal Unit and Conducting Unit: 50 points
+        Successfully deliver the Conducting Unit to the Delivery Zone: 20 points
+        Successfully deliver the Signal Unit to the Delivery Zone: 30 points
+        */
 
         redPoints += (itemsYMap.get("redRecogn") || 0) * 50;
         redPoints += (itemsYMap.get("redSUDelivered") || 0) * 30;
@@ -620,6 +632,17 @@ export default function Dashboard(props: any) {
         return { redPoints, bluePoints }
     }
 
+    const greatVictoryCalculation = () => {
+        const itemsYMap = gameProps.get("items") as Y.Map<number>;
+
+        /*The team that finishes building the Signal Tower with the bottom of the Signal Unit 600mm above the ground will achieve Great Victory, 
+        the team wins and the game ends immediately. */
+
+        if ((itemsYMap.get("blueBuildingHeight") || 0) >= 600) {
+
+        }
+
+    }
 
     // Hydration Issue, just for good practice ヽ(･∀･)ﾉ
     gameProps.observeDeep(() => {
@@ -767,7 +790,7 @@ export default function Dashboard(props: any) {
                 h={containerHeight}
                 templateRows='repeat(7, 1fr)'
                 templateColumns='repeat(4, 1fr)'
-                bgColor={"gray.600"}
+                bgColor={"gray.500"}
                 overflow={"hidden"}
                 fontFamily={"Quicksand Variable, Noto Sans TC Variable, sans-serif"}
                 fontWeight={"700"}
@@ -924,9 +947,10 @@ export default function Dashboard(props: any) {
 
                             <Box
                                 position="absolute"
-                                right="24%"
+                                left="72%"
                                 bottom="16%"
                                 transform="translate(-50%, -50%) scale(1)"
+                                textAlign={"end"}
                                 transformOrigin='center'
                             >
                                 <Counter counter={itemsState.redBuildingHeight} setCounter={(val: number) => scoringFn("BuildingHeight", val, "red")} color={"red"} smDevice={gameSettings.layout.smDevice} small={true} step={100} />
