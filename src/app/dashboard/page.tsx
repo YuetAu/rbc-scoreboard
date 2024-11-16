@@ -622,11 +622,11 @@ export default function Dashboard(props: any) {
 
         redPoints += (itemsYMap.get("redBuildingBlock") || 0) * 10;
         redPoints += (itemsYMap.get("redSignalUnit") || 0) * 30;
-        redPoints += ((itemsYMap.get("redBuildingHeight") || 0) / 100) * ((itemsYMap.get("redConductUnit") || 0) + 1) * 10;
+        redPoints += ((itemsYMap.get("redBuildingHeight") || 0) / 100) * (itemsYMap.get("redSignalUnit") || 0) * ((itemsYMap.get("redConductUnit") || 0) + 1) * 10;
 
         bluePoints += (itemsYMap.get("blueBuildingBlock") || 0) * 10;
         bluePoints += (itemsYMap.get("blueSignalUnit") || 0) * 30;
-        bluePoints += ((itemsYMap.get("blueBuildingHeight") || 0) / 100) * ((itemsYMap.get("blueConductUnit") || 0) + 1) * 10;
+        bluePoints += ((itemsYMap.get("blueBuildingHeight") || 0) / 100) * (itemsYMap.get("redSignalUnit") || 0) * ((itemsYMap.get("blueConductUnit") || 0) + 1) * 10;
 
         setScores({ redPoints, bluePoints });
         return { redPoints, bluePoints }
