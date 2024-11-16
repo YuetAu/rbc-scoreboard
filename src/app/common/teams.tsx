@@ -2,7 +2,7 @@ export const TEAMS = {
     "HKUST": [
         {
             "cname": "世一機械",
-            "ename": "ChamipONE"
+            "ename": "ChampiONE"
         },
         {
             "cname": "堆棧溢位",
