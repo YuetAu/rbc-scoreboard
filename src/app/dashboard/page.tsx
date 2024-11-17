@@ -77,7 +77,7 @@ export default function Dashboard(props: any) {
         }
 
         timeOffset.current = totalOffset / syncAttempts;
-        setTimeOffsetText(Math.round(timeOffset.current, 2).toString());
+        setTimeOffsetText(timeOffset.current.toFixed(2));
         console.log("Final Time Offset:", timeOffset.current);
 
         if (timeOffset.current > 10000 || timeOffset.current < -10000) {
