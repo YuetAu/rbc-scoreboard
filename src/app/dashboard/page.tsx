@@ -1432,7 +1432,7 @@ export default function Dashboard(props: any) {
                             <>
                                 <Text>An accurate time is needed to be able sync the actions happened in multiple computers</Text>
                                 <Text>It seems that your device is synced with the server time with only minor difference.</Text>
-                                <Text>It is great and you don't have to do anything!</Text>
+                                <Text>It is great and you don&#39;t have to do anything!</Text>
                                 <Text>However, if you want more precsion, you may adjust your computer to sync with local observatory or CloudFlare NTP services.</Text>
                                 <br />
                                 <Text>Latency: {timeOffsetText}ms (Update every few minutes)</Text>
