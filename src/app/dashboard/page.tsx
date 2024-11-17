@@ -8,18 +8,18 @@ import { ScoreDisplay } from "@/app/props/dashboard/ScoreDisplay";
 import { PossessionClock, ShotClock } from "@/app/props/dashboard/ShotClock";
 import TimerBox from "@/app/props/dashboard/TimerBox";
 import { YJsClient } from "@/app/yjsClient/yjsClient";
-import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, Flex, Grid, GridItem, Input, Image, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, NumberDecrementStepper, NumberIncrementStepper, NumberInput, NumberInputField, NumberInputStepper, Switch, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tr, useToast, VStack, SimpleGrid, Popover, PopoverTrigger, PopoverContent, PopoverArrow, PopoverCloseButton, PopoverBody } from "@chakra-ui/react";
-import "@fontsource-variable/quicksand";
+import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, Flex, Grid, GridItem, Image, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, NumberDecrementStepper, NumberIncrementStepper, NumberInput, NumberInputField, NumberInputStepper, Popover, PopoverArrow, PopoverBody, PopoverContent, PopoverTrigger, SimpleGrid, Switch, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tr, useToast } from "@chakra-ui/react";
 import '@fontsource-variable/noto-sans-tc';
+import "@fontsource-variable/quicksand";
 import { faCircleDot } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { AwaitedReactNode, JSXElementConstructor, Key, ReactElement, ReactNode, ReactPortal, useCallback, useEffect, useRef, useState } from "react";
+import { generateFromString } from 'generate-avatar';
+import { generateSlug } from "random-word-slugs";
+import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import * as Y from "yjs";
 import { changeLogs } from "../common/changeLogs";
 import { MarkdownComponents } from "../helpers/markdown";
-import { generateSlug } from "random-word-slugs";
-import { generateFromString } from 'generate-avatar'
 
 
 export default function Dashboard(props: any) {
@@ -52,6 +52,7 @@ export default function Dashboard(props: any) {
     const timeSyncInterval = useRef<any>(null);
     const timeSyncType = useRef(0);
     const [timeOffsetModal, setTimeOffsetModal] = useState(false);
+    const [timeOffsetText, setTimeOffsetText] = useState("");
 
     const getTimeOffset = async () => {
         const syncAttempts = 3; // Number of sync attempts
@@ -76,19 +77,20 @@ export default function Dashboard(props: any) {
         }
 
         timeOffset.current = totalOffset / syncAttempts;
+        setTimeOffsetText(Math.round(timeOffset.current, 2).toString());
         console.log("Final Time Offset:", timeOffset.current);
 
         if (timeOffset.current > 10000 || timeOffset.current < -10000) {
             setOnlineStatus(2);
             if (timeSyncType.current != 2) {
                 timeSyncInterval.current && clearInterval(timeSyncInterval.current);
-                timeSyncInterval.current = setInterval(getTimeOffset, 20 * 1000);
+                timeSyncInterval.current = setInterval(getTimeOffset, 2 * 1000);
                 timeSyncType.current = 2;
             }
         } else if (timeOffset.current > 1000 || timeOffset.current < -1000) {
             if (timeSyncType.current != 1) {
                 timeSyncInterval.current && clearInterval(timeSyncInterval.current);
-                timeSyncInterval.current = setInterval(getTimeOffset, 60 * 1000);
+                timeSyncInterval.current = setInterval(getTimeOffset, 15 * 1000);
                 timeSyncType.current = 1;
             }
         } else {
@@ -164,11 +166,6 @@ export default function Dashboard(props: any) {
                 endGameCountdown: true,
                 shotClock8sTone: true,
                 shotClockEndTone: true
-            },
-            stages: {
-                PREP: 60,
-                GAME: 120,
-                END: 0
             },
             changeLogs: 0,
             behaviour: {
@@ -315,16 +312,21 @@ export default function Dashboard(props: any) {
 
     // [Core] Start of Clock Functions and States
     const [clockData, setClockData] = useState(ydoc.getMap("clockData") as Y.Map<any>);
+
+    const initClockData = (clockData: Y.Map<any>) => {
+        clockData.set("stage", "PREP")
+        clockData.set("timestamp", 0)
+        clockData.set("elapsed", 0)
+        clockData.set("paused", true)
+        clockData.set("stageTrigger", false)
+        clockData.set("init", true)
+    }
+
     useEffect(() => {
         if (clockData.get("init") == undefined) {
             console.log("Initializing Clock Data")
             ydoc.transact((_y) => {
-                clockData.set("stage", "PREP")
-                clockData.set("timestamp", 0)
-                clockData.set("elapsed", 0)
-                clockData.set("paused", true)
-                clockData.set("stageTrigger", false)
-                clockData.set("init", true)
+                initClockData(clockData);
             })
         }
     }, [clockData]);
@@ -348,8 +350,11 @@ export default function Dashboard(props: any) {
         // To ensure every clock show the same time when stopped
         const elapsedTime = clockData.get("paused") ? clockData.get("elapsed") as number : (clockData.get("elapsed") as number) + ((Date.now() + timeOffset.current) - (clockData.get("timestamp") as number));
         const remainingTime = clockData.get("paused")
-            ? (syncGameSettingsRef.current.stages[clockData.get("stage") as keyof typeof syncGameSettingsRef.current.stages] * 1000) - (clockData.get("elapsed") as number)
-            : (syncGameSettingsRef.current.stages[clockData.get("stage") as keyof typeof syncGameSettingsRef.current.stages] * 1000) - (clockData.get("elapsed") as number) - ((Date.now() + timeOffset.current) - (clockData.get("timestamp") as number));
+            ? (GAME_STAGES_TIME[GAME_STAGES.indexOf(clockData.get("stage"))] * 1000) - (clockData.get("elapsed") as number)
+            : (GAME_STAGES_TIME[GAME_STAGES.indexOf(clockData.get("stage"))] * 1000) - (clockData.get("elapsed") as number) - ((Date.now() + timeOffset.current) - (clockData.get("timestamp") as number));
+
+
+        console.log(clockData.get("stage"), clockData.get("paused"), remainingTime)
 
         // Check if still have remaining time in the current stage
         if (remainingTime >= 0) {
@@ -627,50 +632,66 @@ export default function Dashboard(props: any) {
     const [possessionClockData, setPossessionClockData] = useState(ydoc.getMap("possessionClockData") as Y.Map<any>);
     const [possessionData, setPossessionData] = useState(ydoc.getMap("possessionData") as Y.Map<any>);
 
+    const initRedShotClockData = (redShotClockData: Y.Map<any>) => {
+        redShotClockData.set("timestamp", 0)
+        redShotClockData.set("elapsed", 0)
+        redShotClockData.set("paused", true)
+        redShotClockData.set("init", true)
+    }
+
     useEffect(() => {
         if (redShotClockData.get("init") == undefined) {
             console.log("Initializing Red Shot Clock Data")
             ydoc.transact((_y) => {
-                redShotClockData.set("timestamp", 0)
-                redShotClockData.set("elapsed", 0)
-                redShotClockData.set("paused", true)
-                redShotClockData.set("init", true)
+                initRedShotClockData(redShotClockData);
             })
         }
     }, [redShotClockData]);
+
+    const initBlueShotClockData = (blueShotClockData: Y.Map<any>) => {
+        blueShotClockData.set("timestamp", 0)
+        blueShotClockData.set("elapsed", 0)
+        blueShotClockData.set("paused", true)
+        blueShotClockData.set("init", true)
+    }
 
     useEffect(() => {
         if (blueShotClockData.get("init") == undefined) {
             console.log("Initializing Blue Shot Clock Data")
             ydoc.transact((_y) => {
-                blueShotClockData.set("timestamp", 0)
-                blueShotClockData.set("elapsed", 0)
-                blueShotClockData.set("paused", true)
-                blueShotClockData.set("init", true)
+                initBlueShotClockData(blueShotClockData);
             })
         }
     }, [blueShotClockData]);
+
+    const initPossessionClockData = (possessionClockData: Y.Map<any>) => {
+        possessionClockData.set("timestamp", 0)
+        possessionClockData.set("elapsed", 0)
+        possessionClockData.set("paused", true)
+        possessionClockData.set("firstPossession", true)
+        possessionClockData.set("init", true)
+    }
 
     useEffect(() => {
         if (possessionClockData.get("init") == undefined) {
             console.log("Initializing Possession Clock Data")
             ydoc.transact((_y) => {
-                possessionClockData.set("timestamp", 0)
-                possessionClockData.set("elapsed", 0)
-                possessionClockData.set("paused", true)
-                possessionClockData.set("firstPossession", true)
-                possessionClockData.set("init", true)
+                initPossessionClockData(possessionClockData);
             })
         }
     }, [possessionClockData]);
+
+    const initPossessionData = (possessionData: Y.Map<any>) => {
+        possessionData.set("currentPossession", "possession")
+        possessionData.set("nextPossession", "red")
+        possessionData.set("init", true)
+    }
 
     useEffect(() => {
         if (possessionData.get("init") == undefined) {
             console.log("Initializing Possession Data")
             ydoc.transact((_y) => {
-                possessionData.set("currentPossession", "possession")
-                possessionData.set("nextPossession", "red")
-                possessionData.set("init", true)
+                initPossessionData(possessionData);
             })
         }
     }, [possessionData]);
@@ -995,53 +1016,41 @@ export default function Dashboard(props: any) {
 
     // [Core] Start of GameProps Functions and States
     const [gameProps, setGameProps] = useState(ydoc.getMap("gameProps") as Y.Map<any>);
+
+    const initGameProps = (gameProps: Y.Map<any>) => {
+        gameProps.set("teams", { "red": { "cname": "征龍", "ename": "War Dragon" }, "blue": { "cname": "火之龍", "ename": "Fiery Dragon" } })
+
+        const gameHistory = new Y.Array();
+        gameProps.set("history", gameHistory);
+
+        const gamePropsItems = new Y.Map() as Y.Map<number>;
+        gamePropsItems.set("redDunk", 0);
+        gamePropsItems.set("redTwoPoint", 0);
+        gamePropsItems.set("redThreePoint", 0);
+        gamePropsItems.set("blueDunk", 0);
+        gamePropsItems.set("blueTwoPoint", 0);
+        gamePropsItems.set("blueThreePoint", 0);
+        gameProps.set("items", gamePropsItems);
+
+        gameProps.set("replay", false);
+
+        gameProps.set("init", true);
+    }
+
     if (gameProps.get("init") == undefined) {
         console.log("Initializing GameProps Data")
         ydoc.transact((_y) => {
-            gameProps.set("teams", { "red": { "cname": "征龍", "ename": "War Dragon" }, "blue": { "cname": "火之龍", "ename": "Fiery Dragon" } })
-
-            const gameHistory = new Y.Array();
-            gameProps.set("history", gameHistory);
-
-            const gamePropsItems = new Y.Map() as Y.Map<number>;
-            gamePropsItems.set("redDunk", 0);
-            gamePropsItems.set("redTwoPoint", 0);
-            gamePropsItems.set("redThreePoint", 0);
-            gamePropsItems.set("blueDunk", 0);
-            gamePropsItems.set("blueTwoPoint", 0);
-            gamePropsItems.set("blueThreePoint", 0);
-            gameProps.set("items", gamePropsItems);
-
-            const gamePropsSettings = new Y.Map() as Y.Map<any>;
-            gamePropsSettings.set("stages", gameSettings.stages);
-            gameProps.set("settings", gamePropsSettings);
-
-            gameProps.set("replay", false);
-
-            gameProps.set("init", true);
+            initGameProps(gameProps);
         })
     }
 
     // Hydration Issue, just for good practice ヽ(･∀･)ﾉ
     const [historyState, setHistoryState] = useState<any[]>([]);
-    const [itemsState, setItemsState] = useState<any>({
-        redDunk: 0,
-        redTwoPoint: 0,
-        redThreePoint: 0,
-        blueDunk: 0,
-        blueTwoPoint: 0,
-        blueThreePoint: 0,
-    });
+    const [itemsState, setItemsState] = useState<any>({});
     const [teamState, setTeamState] = useState<{ red: { cname: string; ename: string; }; blue: { cname: string; ename: string; }; }>({
         red: { cname: "征龍", ename: "War Dragon" },
         blue: { cname: "火之龍", ename: "Fiery Dragon" }
     });
-    const [syncGameSettings, setSyncGameSettings] = useState<any>({ stages: { PREP: 60, GAME: 120, END: 0 } });
-    const syncGameSettingsRef = useRef(syncGameSettings);
-
-    useEffect(() => {
-        syncGameSettingsRef.current = syncGameSettings;
-    }, [syncGameSettings]);
 
     // GameProps Main Scoring Function
     const [scores, setScores] = useState({ redPoints: 0, bluePoints: 0 });
@@ -1103,7 +1112,6 @@ export default function Dashboard(props: any) {
         setTeamState(teamYMap);
         setHistoryState(historyYArray.toJSON());
         setItemsState(itemsYMap.toJSON());
-        setSyncGameSettings(settingsYMap.toJSON());
 
         scoreCalculation();
     });
@@ -1176,64 +1184,28 @@ export default function Dashboard(props: any) {
             clockData.clear()
             gameProps.clear()
 
-            clockData.set("stage", "PREP")
-            clockData.set("timestamp", 0)
-            clockData.set("elapsed", 0)
-            clockData.set("paused", true)
-            clockData.set("stageTrigger", false)
-            clockData.set("init", true)
+            initClockData(clockData);
+
+            initGameProps(gameProps);
 
             redShotClockData.clear()
             blueShotClockData.clear()
             possessionClockData.clear()
             possessionData.clear()
 
-            redShotClockData.set("timestamp", 0)
-            redShotClockData.set("elapsed", 0)
-            redShotClockData.set("paused", true)
-            redShotClockData.set("init", true)
+            initRedShotClockData(redShotClockData);
 
-            blueShotClockData.set("timestamp", 0)
-            blueShotClockData.set("elapsed", 0)
-            blueShotClockData.set("paused", true)
-            blueShotClockData.set("init", true)
+            initBlueShotClockData(blueShotClockData);
 
-            possessionClockData.set("timestamp", 0)
-            possessionClockData.set("elapsed", 0)
-            possessionClockData.set("paused", true)
-            possessionClockData.set("firstPossession", true)
-            possessionClockData.set("init", true)
+            initPossessionClockData(possessionClockData);
 
-            possessionData.set("currentPossession", "possession")
-            possessionData.set("nextPossession", "red")
-            possessionData.set("init", true)
-
-            gameProps.set("teams", { "red": { "cname": "征龍", "ename": "War Dragon" }, "blue": { "cname": "火之龍", "ename": "Fiery Dragon" } })
-
-            const gameHistory = new Y.Array();
-            gameProps.set("history", gameHistory)
-
-            const gamePropsItems = new Y.Map() as Y.Map<number>;
-            gamePropsItems.set("redDunk", 0);
-            gamePropsItems.set("redTwoPoint", 0);
-            gamePropsItems.set("redThreePoint", 0);
-            gamePropsItems.set("blueDunk", 0);
-            gamePropsItems.set("blueTwoPoint", 0);
-            gamePropsItems.set("blueThreePoint", 0);
-            gameProps.set("items", gamePropsItems);
-
-            const gamePropsSettings = new Y.Map() as Y.Map<any>;
-            gamePropsSettings.set("stages", gameSettings.stages);
-            gameProps.set("settings", gamePropsSettings);
-
-            gameProps.set("init", true)
+            initPossessionData(possessionData);
         })
     }
     // [Core] End of Helper Functions and States
 
     const openSettingModal = () => {
         const settingsYMap = gameProps.get("settings") as Y.Map<any>;
-        setSyncGameSettings(settingsYMap.toJSON());
         setGameSettingsModal(true);
     }
 
@@ -1305,7 +1277,7 @@ export default function Dashboard(props: any) {
                 </GridItem>
                 <GridItem rowSpan={1} colSpan={1} m={"1vw"}>
                     <Box textAlign={"end"} fontSize={"0.6em"} textColor={"white"}>
-                        <Text textColor={onlineStatus == 1 ? 'lightgreen' : onlineStatus == 0 ? 'lightcoral' : 'orange'} userSelect={"none"} onClick={() => { onlineStatus == 2 && setTimeOffsetModal(true) }} style={{ cursor: onlineStatus == 2 ? "pointer" : "auto" }}>
+                        <Text textColor={onlineStatus == 1 ? 'lightgreen' : onlineStatus == 0 ? 'lightcoral' : 'orange'} userSelect={"none"} onClick={() => { setTimeOffsetModal(true) }} style={{ cursor: "pointer" }}>
                             {onlineStatus == 1 ? "Connected" : onlineStatus == 0 ? "Disconnected" : "Large Time Diff"} <FontAwesomeIcon icon={faCircleDot} />
                         </Text>
                         <Flex flexDirection={"column"} textAlign={"end"} alignSelf={"end"} alignItems={"end"} rowGap={"0.3rem"}>
@@ -1445,12 +1417,37 @@ export default function Dashboard(props: any) {
             <Modal isOpen={timeOffsetModal} onClose={() => { }} isCentered size={"lg"}>
                 <ModalOverlay />
                 <ModalContent>
-                    <ModalHeader>Large Time Difference</ModalHeader>
+                    {onlineStatus === 0 && <ModalHeader>Connection Lost</ModalHeader>}
+                    {onlineStatus === 1 && <ModalHeader>Time Offset</ModalHeader>}
+                    {onlineStatus !== 1 && onlineStatus !== 0 && <ModalHeader>Large Time Difference</ModalHeader>}
                     <ModalBody>
-                        <Text>We have detected a large time difference between your device and the server.</Text>
-                        <Text>We have temporarily adjusted the clock to match the server time.</Text>
-                        <Text>However, this method is not as accurate as changing the system to sync with an NTP server.</Text>
-                        <Text>Please consult Google or person with technical knowledge to adjust your system time.</Text>
+                        {onlineStatus === 0 && (
+                            <>
+                                <Text>Connection to server is lost.</Text>
+                                <Text>Time synchronization is not possible.</Text>
+                                <Text>Game will continue to run but time will not be accurate.</Text>
+                            </>
+                        )}
+                        {onlineStatus === 1 && (
+                            <>
+                                <Text>An accurate time is needed to be able sync the actions happened in multiple computers</Text>
+                                <Text>It seems that your device is synced with the server time with only minor difference.</Text>
+                                <Text>It is great and you don't have to do anything!</Text>
+                                <Text>However, if you want more precsion, you may adjust your computer to sync with local observatory or CloudFlare NTP services.</Text>
+                                <br />
+                                <Text>Latency: {timeOffsetText}ms (Update every few minutes)</Text>
+                            </>
+                        )}
+                        {onlineStatus === 2 && (
+                            <>
+                                <Text>We have detected a large time difference between your device and the server.</Text>
+                                <Text>We have temporarily adjusted the clock to match the server time.</Text>
+                                <Text>However, this method is not as accurate as changing the system to sync with an NTP server.</Text>
+                                <Text>Please adjust your computer to sync with local observatory or CloudFlare NTP services.</Text>
+                                <br />
+                                <Text>Latency: {timeOffsetText}ms (Update every few minutes)</Text>
+                            </>
+                        )}
                     </ModalBody>
                     <ModalFooter>
                         <Button colorScheme='red' mr={3} onClick={() => { setTimeOffsetModal(false) }}>
@@ -1523,55 +1520,7 @@ export default function Dashboard(props: any) {
                                     <Flex my="0.5rem"><Switch colorScheme='teal' size='md' isChecked={gameSettings.layout.smDevice} onChange={() => { setGameSettings({ ...gameSettings, layout: { ...gameSettings.layout, smDevice: !gameSettings.layout.smDevice } }) }} /> <Box mt={"-0.2rem"} ml={"0.5rem"}>Enable Helper Button</Box></Flex>
                                 </AccordionPanel>
                             </AccordionItem>
-                            <AccordionItem>
-                                <h2>
-                                    <AccordionButton>
-                                        <Box as='span' flex='1' textAlign='left'>
-                                            Game Stages
-                                        </Box>
-                                        <AccordionIcon />
-                                    </AccordionButton>
-                                </h2>
-                                <AccordionPanel>
-                                    <TableContainer>
-                                        <Table>
-                                            <Thead>
-                                                <Tr>
-                                                    <Th>Stage</Th>
-                                                    <Th>Duration</Th>
-                                                </Tr>
-                                            </Thead>
-                                            <Tbody>
-                                                {Object.keys(syncGameSettings.stages).map((stage, index) => {
-                                                    return (
-                                                        <Tr key={index}>
-                                                            <Td p={"0.5rem"}>{stage}</Td>
-                                                            <Td p={"0.5rem"}>
-                                                                <NumberInput min={0} max={999} w={"5rem"} size={"sm"} value={Number(syncGameSettings.stages[stage as keyof typeof syncGameSettings.stages])}
-                                                                    onChange={(value: any) => {
-                                                                        ydoc.transact((_y: any) => {
-                                                                            const gamePropsSettings = gameProps.get("settings") as Y.Map<any>;
-                                                                            gamePropsSettings.set("stages", { ...gamePropsSettings.toJSON().stages, [stage]: Number(value) });
-                                                                        })
-                                                                    }}
-                                                                >
-                                                                    <NumberInputField />
-                                                                    <NumberInputStepper>
-                                                                        <NumberIncrementStepper />
-                                                                        <NumberDecrementStepper />
-                                                                    </NumberInputStepper>
-                                                                </NumberInput>
-                                                            </Td>
-                                                        </Tr>
-                                                    )
-                                                })}
-                                            </Tbody>
-                                        </Table>
-                                    </TableContainer>
-                                    <Button mt={"0.5rem"} onClick={() => { setGameSettings({ ...gameSettings, stages: { ...gameProps.get("settings").toJSON()["stages"] } }) }} colorScheme="purple" size={"sm"}>Save as preference</Button>
-                                </AccordionPanel>
-                            </AccordionItem>
-                            <AccordionItem>
+                            {/* <AccordionItem>
                                 <h2>
                                     <AccordionButton>
                                         <Box as='span' flex='1' textAlign='left'>
@@ -1632,7 +1581,7 @@ export default function Dashboard(props: any) {
                                         </SimpleGrid>
                                     </Box>
                                 </AccordionPanel>
-                            </AccordionItem>
+                            </AccordionItem> */}
                             <AccordionItem>
                                 <h2>
                                     <AccordionButton>

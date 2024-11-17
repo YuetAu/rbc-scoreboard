@@ -1,3 +1,4 @@
+/* MUTED DUE TO DEPRECATION ON itemsState NO LONGER BEING INITIALIZED, AWAITING FIX
 import { Box, Flex } from "@chakra-ui/react";
 
 const clickHandler = (e: any, props: any) => {
@@ -29,4 +30,4 @@ export function ColorPicker(props: any) {
             </Box>
         </Flex>
     )
-}
+} */
