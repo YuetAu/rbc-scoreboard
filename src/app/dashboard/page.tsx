@@ -354,8 +354,6 @@ export default function Dashboard(props: any) {
             : (GAME_STAGES_TIME[GAME_STAGES.indexOf(clockData.get("stage"))] * 1000) - (clockData.get("elapsed") as number) - ((Date.now() + timeOffset.current) - (clockData.get("timestamp") as number));
 
 
-        console.log(clockData.get("stage"), clockData.get("paused"), remainingTime)
-
         // Check if still have remaining time in the current stage
         if (remainingTime >= 0) {
 
@@ -410,7 +408,7 @@ export default function Dashboard(props: any) {
 
             //if (gameProps.get("replay")) { replayHistoryHandler((clockData.get("stage") as string), elapsedTime); }
 
-            // Recall itself 57 milliseconds after
+            // Recall itself 47 milliseconds after
             // Yes, it isn't real-time, but it seems ones.
             // The site will crash if you make it real-time. ¯\_(ツ)_/¯
             if (!(clockData.get("paused") as boolean)) {
@@ -419,7 +417,7 @@ export default function Dashboard(props: any) {
                 // e.g. clockData.observeDeep(updateClockText);
                 if (clockInterval.current == null) {
                     // Direct callback instead of wrapping another anomyous function to prevent memory leak ٩(´•⌢•｀ )۶⁼³₌₃
-                    const tmpClockInterval = setInterval(updateClockText, 57);
+                    const tmpClockInterval = setInterval(updateClockText, 47);
                     clockInterval.current = tmpClockInterval;
                 }
             } else {
@@ -433,6 +431,7 @@ export default function Dashboard(props: any) {
 
             // End of stage
             soundCheck((clockData.get("stage") as string) + "END", 0);
+            console.log(`End of ${clockData.get("stage") as string}`);
 
             // Check if still have stage
             if (GAME_STAGES.indexOf(clockData.get("stage") as string) + 1 < GAME_STAGES.length) {
@@ -440,12 +439,8 @@ export default function Dashboard(props: any) {
                 const newGameStage = GAME_STAGES[GAME_STAGES.indexOf(clockData.get("stage") as string) + 1];
                 console.log(`Resetting Timer for ${newGameStage}`);
                 const remainingTime = GAME_STAGES_TIME[GAME_STAGES.indexOf(newGameStage)] * 1000;
-                ydoc.transact((_y) => {
-                    clockData.set("stage", newGameStage);
-                    clockData.set("timestamp", (Date.now() + timeOffset.current));
-                    clockData.set("elapsed", 0);
-                    clockData.set("paused", remainingTime > 0 ? false : true);
-                })
+
+                var override = false;
 
                 if (newGameStage == "END") {
                     toast({
@@ -454,10 +449,10 @@ export default function Dashboard(props: any) {
                         duration: 5000,
                     })
                 }
+
                 // Game start wait judge approval
                 if (newGameStage == "GAME") {
-                    stopClock();
-                    resetStage();
+                    override = true;
                 }
 
                 // Stop all clock when game end to add points if needed
@@ -465,6 +460,18 @@ export default function Dashboard(props: any) {
                     stopPossessionClock();
                     stopRedShotClock();
                     stopBlueShotClock();
+                }
+
+                ydoc.transact((_y) => {
+                    clockData.set("stage", newGameStage);
+                    clockData.set("timestamp", (Date.now() + timeOffset.current));
+                    clockData.set("elapsed", 0);
+                    clockData.set("paused", override ?? remainingTime > 0 ? false : true);
+                })
+
+                if (override) {
+                    clearInterval(clockInterval.current);
+                    clockInterval.current = null;
                 }
             }
         }
@@ -514,7 +521,7 @@ export default function Dashboard(props: any) {
 
         if (clockInterval.current == null) {
             // Direct callback instead of wrapping another anomyous function to prevent memory leak ٩(´•⌢•｀ )۶⁼³₌₃
-            const tmpClockInterval = setInterval(updateClockText, 57);
+            const tmpClockInterval = setInterval(updateClockText, 47);
             clockInterval.current = tmpClockInterval;
         }
     }
@@ -615,6 +622,12 @@ export default function Dashboard(props: any) {
             clockData.set("stageTrigger", false);
             clockData.set("paused", override ?? remainingTime > 0 ? false : true);
         })
+
+        if (override) {
+            clearInterval(clockInterval.current);
+            clockInterval.current = null;
+        }
+
         toast({
             title: `Skip stage ${clockData.get("stage") as string}`,
             status: 'success',
