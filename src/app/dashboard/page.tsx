@@ -374,7 +374,7 @@ export default function Dashboard(props: any) {
                             case "possession":
                                 startPossessionClock();
                                 stopClock();
-                                break;
+                                return;
                         }
                         break;
                 }
@@ -417,7 +417,7 @@ export default function Dashboard(props: any) {
                 // e.g. clockData.observeDeep(updateClockText);
                 if (clockInterval.current == null) {
                     // Direct callback instead of wrapping another anomyous function to prevent memory leak ٩(´•⌢•｀ )۶⁼³₌₃
-                    const tmpClockInterval = setInterval(updateClockText, 47);
+                    const tmpClockInterval = setInterval(updateClockText, 17);
                     clockInterval.current = tmpClockInterval;
                 }
             } else {
@@ -521,13 +521,19 @@ export default function Dashboard(props: any) {
 
         if (clockInterval.current == null) {
             // Direct callback instead of wrapping another anomyous function to prevent memory leak ٩(´•⌢•｀ )۶⁼³₌₃
-            const tmpClockInterval = setInterval(updateClockText, 47);
+            const tmpClockInterval = setInterval(updateClockText, 17);
             clockInterval.current = tmpClockInterval;
         }
     }
 
     const stopClock = () => {
+        // Clear interval if paused
+        // Clear first to prevent updateClockText mess up the sound
+        clearInterval(clockInterval.current);
+        clockInterval.current = null;
+
         console.log("Clock Stopped")
+
         const elapsed = ((Date.now() + timeOffset.current) - (clockData.get("timestamp") as number)) + (clockData.get("elapsed") as number)
         ydoc.transact((_y) => {
             clockData.set("stage", clockData.get("stage") as string);
@@ -546,10 +552,6 @@ export default function Dashboard(props: any) {
         })
         // Delay 50ms to prevent updateClockText start the sound again
         // setTimeout(() => { forceStopSound(); }, 50);
-
-        // Clear interval if paused
-        clearInterval(clockInterval.current);
-        clockInterval.current = null;
     }
 
     const toggleClock = () => {
@@ -737,7 +739,7 @@ export default function Dashboard(props: any) {
 
             if (!(redShotClockData.get("paused") as boolean)) {
                 if (redShotClockInterval.current == null) {
-                    const tmpRedShotClockInterval = setInterval(updateRedShotClockText, 100);
+                    const tmpRedShotClockInterval = setInterval(updateRedShotClockText, 37);
                     redShotClockInterval.current = tmpRedShotClockInterval;
                 }
             } else {
@@ -745,7 +747,7 @@ export default function Dashboard(props: any) {
                 redShotClockInterval.current = null;
             }
         } else {
-
+            stopClock();
             soundCheck("REDSHOTCLOCKEND", 0);
 
             clearInterval(redShotClockInterval.current);
@@ -759,7 +761,6 @@ export default function Dashboard(props: any) {
                 })
             }
             redShotClockInterval.current = null;
-            stopClock();
             console.log("Red Shot Clock Timeout")
         }
     }
@@ -782,7 +783,7 @@ export default function Dashboard(props: any) {
 
             if (!(blueShotClockData.get("paused") as boolean)) {
                 if (blueShotClockInterval.current == null) {
-                    const tmpBlueShotClockInterval = setInterval(updateBlueShotClockText, 100);
+                    const tmpBlueShotClockInterval = setInterval(updateBlueShotClockText, 37);
                     blueShotClockInterval.current = tmpBlueShotClockInterval;
                 }
             } else {
@@ -790,7 +791,7 @@ export default function Dashboard(props: any) {
                 blueShotClockInterval.current = null;
             }
         } else {
-
+            stopClock();
             soundCheck("BLUESHOTCLOCKEND", 0);
 
             clearInterval(blueShotClockInterval.current);
@@ -804,7 +805,6 @@ export default function Dashboard(props: any) {
                 })
             }
             blueShotClockInterval.current = null;
-            stopClock();
             console.log("Blue Shot Clock Timeout")
         }
     }
@@ -826,7 +826,7 @@ export default function Dashboard(props: any) {
 
             if (!(possessionClockData.get("paused") as boolean)) {
                 if (possessionClockInterval.current == null) {
-                    const tmpPossessionClockInterval = setInterval(updatePossessionClockText, 100);
+                    const tmpPossessionClockInterval = setInterval(updatePossessionClockText, 37);
                     possessionClockInterval.current = tmpPossessionClockInterval;
                 }
             } else {
