@@ -367,9 +367,6 @@ export default function Dashboard(props: any) {
             ? (gameTimeOverride.current[GAME_STAGES.indexOf(clockData.get("stage"))] * 1000) - (clockData.get("elapsed") as number)
             : (gameTimeOverride.current[GAME_STAGES.indexOf(clockData.get("stage"))] * 1000) - (clockData.get("elapsed") as number) - ((Date.now() + timeOffset.current) - (clockData.get("timestamp") as number));
 
-
-        console.log(`Stage: ${clockData.get("stage") as string} | Stage Time: ${gameTimeOverride.current[GAME_STAGES.indexOf(clockData.get("stage"))]} | Elapsed: ${elapsedTime} | Remaining: ${remainingTime}`);
-
         // Check if still have remaining time in the current stage
         if (remainingTime >= 0) {
 
