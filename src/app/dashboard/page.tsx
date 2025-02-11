@@ -132,11 +132,11 @@ export default function Dashboard(props: any) {
             setGameIDModal(false);
 
             if (gameID.endsWith("-240")) {
-                setGameTimeOverride([60, 240, 0]);
+                gameTimeOverride.current = [60, 240, 0];
             } else if (gameID.endsWith("-180")) {
-                setGameTimeOverride([60, 180, 0]);
+                gameTimeOverride.current = [60, 180, 0];
             } else {
-                setGameTimeOverride([60, 120, 0]);
+                gameTimeOverride.current = [60, 120, 0];
             }
 
             yJsClient.getAwareness().on("change", () => {
@@ -346,7 +346,7 @@ export default function Dashboard(props: any) {
     const [clockStage, setClockStage] = useState("PREP" as string);
     const [clockPaused, setClockPaused] = useState(true);
 
-    const [gameTimeOverride, setGameTimeOverride] = useState([60, 120, 0]);
+    const gameTimeOverride = useRef(GAME_STAGES_TIME);
 
 
     // [Core] Clock Main Function
@@ -360,8 +360,8 @@ export default function Dashboard(props: any) {
         // To ensure every clock show the same time when stopped
         const elapsedTime = clockData.get("paused") ? clockData.get("elapsed") as number : (clockData.get("elapsed") as number) + ((Date.now() + timeOffset.current) - (clockData.get("timestamp") as number));
         const remainingTime = clockData.get("paused")
-            ? (gameTimeOverride[GAME_STAGES.indexOf(clockData.get("stage"))] * 1000) - (clockData.get("elapsed") as number)
-            : (gameTimeOverride[GAME_STAGES.indexOf(clockData.get("stage"))] * 1000) - (clockData.get("elapsed") as number) - ((Date.now() + timeOffset.current) - (clockData.get("timestamp") as number));
+            ? (gameTimeOverride.current[GAME_STAGES.indexOf(clockData.get("stage"))] * 1000) - (clockData.get("elapsed") as number)
+            : (gameTimeOverride.current[GAME_STAGES.indexOf(clockData.get("stage"))] * 1000) - (clockData.get("elapsed") as number) - ((Date.now() + timeOffset.current) - (clockData.get("timestamp") as number));
 
 
         // Check if still have remaining time in the current stage
@@ -448,7 +448,7 @@ export default function Dashboard(props: any) {
                 // Get the new stage name and remaining time
                 const newGameStage = GAME_STAGES[GAME_STAGES.indexOf(clockData.get("stage") as string) + 1];
                 console.log(`Resetting Timer for ${newGameStage}`);
-                const remainingTime = gameTimeOverride[GAME_STAGES.indexOf(newGameStage)] * 1000;
+                const remainingTime = gameTimeOverride.current[GAME_STAGES.indexOf(newGameStage)] * 1000;
 
                 var override = false;
 
@@ -616,7 +616,7 @@ export default function Dashboard(props: any) {
         if (index + skipStage < 0) { stopClock(); return; }
         if (index + skipStage > GAME_STAGES.length - 1) { stopClock(); return; }
         const nextStage = GAME_STAGES[index + skipStage];
-        const remainingTime = gameTimeOverride[index + skipStage] * 1000;
+        const remainingTime = gameTimeOverride.current[index + skipStage] * 1000;
 
         let override = false;
         if (nextStage == "GAME") {
