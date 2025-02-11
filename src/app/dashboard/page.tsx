@@ -64,6 +64,10 @@ export default function Dashboard(props: any) {
                 const endTime = Date.now();
                 const serverTime = parseInt(await response.text());
 
+                if (isNaN(serverTime)) {
+                    throw new Error("Invalid Server Time");
+                }
+
                 const roundTripTime = endTime - startTime;
                 const offset = serverTime - (endTime - roundTripTime / 2);
 
