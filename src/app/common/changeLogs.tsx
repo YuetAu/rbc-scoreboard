@@ -13,7 +13,7 @@ For example, if you want a 180s game, you may use GameID "[RANDOM WORDS/NUMBER/a
 
 例如“USTRobocon-180”代表180秒比賽。
         `,
-        date: "2024-09-01",
+        date: "2025-02-11",
         author: "Yuet"
     },
     {
