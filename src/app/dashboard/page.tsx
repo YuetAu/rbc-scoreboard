@@ -64,6 +64,10 @@ export default function Dashboard(props: any) {
                 const endTime = Date.now();
                 const serverTime = parseInt(await response.text());
 
+                if (isNaN(serverTime)) {
+                    throw new Error("Invalid Server Time");
+                }
+
                 const roundTripTime = endTime - startTime;
                 const offset = serverTime - (endTime - roundTripTime / 2);
 
@@ -362,7 +366,6 @@ export default function Dashboard(props: any) {
         const remainingTime = clockData.get("paused")
             ? (gameTimeOverride.current[GAME_STAGES.indexOf(clockData.get("stage"))] * 1000) - (clockData.get("elapsed") as number)
             : (gameTimeOverride.current[GAME_STAGES.indexOf(clockData.get("stage"))] * 1000) - (clockData.get("elapsed") as number) - ((Date.now() + timeOffset.current) - (clockData.get("timestamp") as number));
-
 
         // Check if still have remaining time in the current stage
         if (remainingTime >= 0) {
