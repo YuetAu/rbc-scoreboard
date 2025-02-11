@@ -131,6 +131,14 @@ export default function Dashboard(props: any) {
             setPossessionData(yJsClient.getYDoc().getMap("possessionData") as Y.Map<any>);
             setGameIDModal(false);
 
+            if (gameID.endsWith("-240")) {
+                setGameTimeOverride([60, 240, 0]);
+            } else if (gameID.endsWith("-180")) {
+                setGameTimeOverride([60, 180, 0]);
+            } else {
+                setGameTimeOverride([60, 120, 0]);
+            }
+
             yJsClient.getAwareness().on("change", () => {
                 const newRoomClient: any[] = [];
                 for (const [key, value] of yJsClient.getAwareness().getStates()) {
@@ -338,17 +346,8 @@ export default function Dashboard(props: any) {
     const [clockStage, setClockStage] = useState("PREP" as string);
     const [clockPaused, setClockPaused] = useState(true);
 
-    const [gameTimeOverride, setGameTimeOverride] = useState(GAME_STAGES_TIME);
+    const [gameTimeOverride, setGameTimeOverride] = useState([60, 120, 0]);
 
-    useEffect(() => {
-        if (gameID.endsWith("-240")) {
-            setGameTimeOverride([60, 240, 0]);
-        } else if (gameID.endsWith("-180")) {
-            setGameTimeOverride([60, 180, 0]);
-        } else {
-            setGameTimeOverride(GAME_STAGES_TIME);
-        }
-    }, [gameID]);
 
     // [Core] Clock Main Function
     const updateClockText = () => {
