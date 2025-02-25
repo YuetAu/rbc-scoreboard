@@ -17,20 +17,20 @@ export const TEAMS = {
             "ename": "IVE Autobots Fighter"
         },
         {
-            "cname": "理工 赤影",
-            "ename": "Poly Crimson"
+            "cname": "理工 理機",
+            "ename": "PolyU Busy Bugs"
         },
         {
-            "cname": "理工 紅彗星1號",
-            "ename": "Poly PolyBotics"
+            "cname": "理工 紅磚",
+            "ename": "PolyU Redbrick Dunker"
         },
         {
             "cname": "城大 夢成真",
-            "ename": "City Dream Development"
+            "ename": "CityU DreamComeTrue"
         },
         {
             "cname": "城大 夢一城",
-            "ename": "City DreamWalk"
+            "ename": "CityU DreamWalk"
         },
         {
             "cname": "港大 明德",
@@ -41,16 +41,16 @@ export const TEAMS = {
             "ename": "HKU Sapientia"
         },
         {
-            "cname": "嶺南 虎地特選3.6牛牛",
-            "ename": "Lingnan Team 1"
+            "cname": "浸大 機械人團隊",
+            "ename": "BU Robotics team"
         },
         {
-            "cname": "中大 植搗黃農",
-            "ename": "CU Golden Farmer"
+            "cname": "中大 迎籃而上",
+            "ename": "CU Airdropper"
         },
         {
-            "cname": "中大 長驅植進",
-            "ename": "CU Wonder Seed"
+            "cname": "中大 傳神灌注",
+            "ename": "CU AllStar"
         },
         {
             "cname": "教大 魯師",
