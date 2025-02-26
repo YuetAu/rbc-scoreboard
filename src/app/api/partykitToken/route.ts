@@ -1,4 +1,3 @@
-export const runtime = "edge";
 import { unstable_noStore as noStore } from "next/cache";
 import * as jose from "jose";
 
