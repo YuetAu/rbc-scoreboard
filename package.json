@@ -6,7 +6,10 @@
     "dev": "next dev --turbo",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "pages:build": "npx @cloudflare/next-on-pages",
+    "preview": "npm run pages:build && wrangler pages dev",
+    "deploy": "npm run pages:build && wrangler pages deploy"
   },
   "dependencies": {
     "@chakra-ui/next-js": "^2.4.2",
@@ -43,6 +46,7 @@
     "yjs": "^13.6.20"
   },
   "devDependencies": {
+    "@cloudflare/next-on-pages": "^1.13.8",
     "@types/glob": "^8.1.0",
     "@types/node": "^20.17.6",
     "@types/react": "^18.3.12",
@@ -54,5 +58,13 @@
     "serwist": "^9.0.10",
     "tailwindcss": "^3.4.15",
     "typescript": "^5.6.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "workerd"
+    ],
+    "ignoredBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }

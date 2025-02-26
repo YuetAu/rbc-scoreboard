@@ -1,4 +1,3 @@
-
 import withSerwistInit from "@serwist/next";
 
 const withSerwist = withSerwistInit({
