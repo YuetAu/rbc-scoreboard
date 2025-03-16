@@ -8,13 +8,13 @@ import { ScoreDisplay } from "@/app/props/dashboard/ScoreDisplay";
 import { PossessionClock, ShotClock } from "@/app/props/dashboard/ShotClock";
 import TimerBox from "@/app/props/dashboard/TimerBox";
 import { YJsClient } from "@/app/yjsClient/yjsClient";
-import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, Flex, Grid, GridItem, Image, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, NumberDecrementStepper, NumberIncrementStepper, NumberInput, NumberInputField, NumberInputStepper, Popover, PopoverArrow, PopoverBody, PopoverContent, PopoverTrigger, SimpleGrid, Switch, Table, TableContainer, Tbody, Td, Text, Th, Thead, Tr, useToast } from "@chakra-ui/react";
+import { Accordion, AccordionButton, AccordionIcon, AccordionItem, AccordionPanel, Box, Button, Flex, Grid, GridItem, Image, Input, Modal, ModalBody, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalOverlay, Switch, Text, useToast } from "@chakra-ui/react";
 import '@fontsource-variable/noto-sans-tc';
 import "@fontsource-variable/quicksand";
 import { faCircleDot } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { generateSlug } from "random-word-slugs";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Key, useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import * as Y from "yjs";
 import { changeLogs } from "./common/changeLogs";
@@ -139,6 +139,8 @@ export default function Dashboard(props: any) {
                 gameTimeOverride.current = [60, 240, 0];
             } else if (gameID.endsWith("-180")) {
                 gameTimeOverride.current = [60, 180, 0];
+            } else if (gameID.endsWith("-160")) {
+                gameTimeOverride.current = [60, 160, 0];
             } else {
                 gameTimeOverride.current = [60, 120, 0];
             }
@@ -1328,7 +1330,7 @@ export default function Dashboard(props: any) {
                 <GridItem rowSpan={1} colSpan={2} m={"1vw"}>
                     <Flex flexDir={"row"} justifyContent={"space-between"}>
                         <ShotClock color={"blue"} timeText={blueShotClockText} startClock={startBlueShotClock} resetClock={resetBlueShotClock} clockPaused={blueShotClockPaused} possessionClockPaused={possessionClockPaused} possessionData={possessionData} smDevice={gameSettings.layout.smDevice} />
-                        <PossessionClock timeText={possessionClockText} startClock={startPossessionClock} resetClock={resetPossessionClock} clockPaused={possessionClockPaused} smDevice={gameSettings.layout.smDevice} />
+                        <PossessionClock timeText={possessionClockText} startClock={startPossessionClock} stopClock={stopPossessionClock} resetClock={resetPossessionClock} clockPaused={possessionClockPaused} smDevice={gameSettings.layout.smDevice} />
                         <ShotClock color={"red"} timeText={redShotClockText} startClock={startRedShotClock} resetClock={resetRedShotClock} clockPaused={redShotClockPaused} possessionClockPaused={possessionClockPaused} possessionData={possessionData} smDevice={gameSettings.layout.smDevice} />
                     </Flex>
                 </GridItem>
@@ -1488,7 +1490,7 @@ export default function Dashboard(props: any) {
                 <ModalContent>
                     <ModalHeader>Change Log</ModalHeader>
                     <ModalBody>
-                        {changeLogs.map((log, index) => {
+                        {changeLogs.map((log: { version: string; date: string; content: string; author: string; }, index: Key | null | undefined) => {
                             return (
                                 <Box key={index} mb={"1rem"}>
                                     <Text fontSize={"0.8em"} as={"sub"}>{log.version}</Text>

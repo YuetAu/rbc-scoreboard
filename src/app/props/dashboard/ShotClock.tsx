@@ -81,7 +81,8 @@ export function PossessionClock(props: any) {
                     userSelect: "none",
                     cursor: "pointer",
                 }}
-                onClick={(e) => { if (!props.smDevice) { props.resetClock(); props.startClock(); } }}
+                onClick={() => { props.clockPaused ? props.startClock() : props.stopClock(); }}
+                onContextMenu={() => { if (!props.smDevice) { props.resetClock(); props.startClock(); } }}
             >
                 <Text fontSize={"0.5em"}>Possession</Text>
                 <Text fontSize={"0.8em"} margin={"0.2rem"} fontFamily={"'Source Code Pro Variable', sans-serif"}>{props.timeText.seconds}.{props.timeText.milliseconds}</Text>
@@ -93,7 +94,27 @@ export function PossessionClock(props: any) {
                         left={"-0.5rem"}
                         width={"8rem"}
                         zIndex={5}
-                        backgroundColor={props.clockPaused ? "white" : "gray.500"}
+                        backgroundColor={"white"}
+                        shadow={"md"} rounded={"sm"} style={{
+                            fontSize: "1rem",
+                            textAlign: "center",
+                            lineHeight: "2rem",
+                            color: "black",
+                            //width: "2rem",
+                            userSelect: "none",
+                            cursor: "pointer",
+                        }}
+                        onClick={() => { props.clockPaused ? props.startClock() : props.stopClock(); }}
+                    >
+                        {props.clockPaused ? "Start" : "Pause"}
+                    </Box>
+                    <Box
+                        position={"absolute"}
+                        top={"7rem"}
+                        left={"-0.5rem"}
+                        width={"8rem"}
+                        zIndex={5}
+                        backgroundColor={"white"}
                         shadow={"md"} rounded={"sm"} style={{
                             fontSize: "1rem",
                             textAlign: "center",
@@ -105,10 +126,10 @@ export function PossessionClock(props: any) {
                         }}
                         onClick={() => { if (props.clockPaused) { props.resetClock(); props.startClock(); } }}
                     >
-                        {"Start Now"}
+                        {"Reset Start"}
                     </Box>
                 </>)}
             </Box>
-        </Flex>
+        </Flex >
     )
 }
