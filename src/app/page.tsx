@@ -282,7 +282,7 @@ export default function Dashboard(props: any) {
             case "BLUESHOTCLOCK":
                 if (elapsedTime && gameSettingsRef.current.sounds.shotClock8sTone) {
                     const secondsElapsed = Math.ceil(elapsedTime / 1000);
-                    if (secondsElapsed == 8 && !lastTone2Second.current && tone2Sound) {
+                    if (secondsElapsed == 9 && !lastTone2Second.current && tone2Sound) {
                         tone2Sound.play();
                         lastTone2Second.current = true;
                     } else {
