@@ -31,7 +31,7 @@
     "generate-avatar": "^1.4.10",
     "glob": "^11.0.0",
     "jose": "^5.9.6",
-    "next": "14.2.21",
+    "next": "14.2.26",
     "partykit": "^0.0.104",
     "random-word-slugs": "^0.1.7",
     "react": "^18.3.1",
