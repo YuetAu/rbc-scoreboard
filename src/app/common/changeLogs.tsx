@@ -1,6 +1,18 @@
 
 export const changeLogs = [
     {
+        version: "1.1.1",
+        internalCode: 111,
+        title: "Congratulations to Hong Kong University Robocon Team!",
+        content: `
+Congratulations to Hong Kong University Robocon Team for winning the Robocon Hong Kong Regional 2025.
+
+Wish them best of luck for the coming internation competition!
+        `,
+        date: "2025-07-24",
+        author: "Yuet"
+    },
+    {
         version: "1.1.0",
         internalCode: 110,
         title: "Game Time now modifiable by GameID",
