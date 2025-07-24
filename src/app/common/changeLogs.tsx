@@ -7,7 +7,7 @@ export const changeLogs = [
         content: `
 Congratulations to Hong Kong University Robocon Team for winning the Robocon Hong Kong Regional 2025.
 
-Wish them best of luck for the coming internation competition!
+Wish them best of luck for the coming international competition!
         `,
         date: "2025-07-24",
         author: "Yuet"
